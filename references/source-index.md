@@ -15,6 +15,7 @@ This file is not the full corpus. It is the navigation index for finding where e
 | PR041–PR060 | `prompt-corpus/famous-prompts-pr041-pr060.md` | Official prompt packs, media prompt roundups, FlowGPT, OpenAI Community prompt threads, image prompt guides | Includes OpenAI Academy, Tom’s Guide, Medium prompt lists, FlowGPT, OpenAI Cookbook, OpenAI Community threads, and educational prompt PDFs. |
 | PR061–PR080 | `prompt-corpus/famous-prompts-pr061-pr080.md` | Official prompt libraries, prompt marketplaces, image prompt ecosystems, agent/template frameworks | Includes Anthropic, OpenAI Cookbook, Learn Prompting, DAIR, PromptHero, PromptBase, AIPRM, AutoGPT, BabyAGI, Semantic Kernel, LangChain, Midjourney, OpenArt, Lexica. |
 | PR081–PR100 | `prompt-corpus/famous-prompts-pr081-pr100.md` | Fabric patterns, Cursor rules, coding-agent prompts, multi-agent frameworks, prompt indexes | Includes Fabric, Cursor rules, Cline, Roo Code, Open Interpreter, Aider, Continue, GPT Engineer, ChatDev, MetaGPT, AutoGen, CrewAI, SuperAGI, CAMEL, GitHub prompt topic indexes. |
+| PR101–PR120 | `prompt-corpus/famous-prompts-pr101-pr120.md` | Reddit/community prompt threads, prompt-evaluation posts, PromptOps discussions, project-instruction discussions | Includes favorite prompt threads, micro-prompts, popular prompt claims, anti-hallucination prompts, RAG discussions, prompt evaluation rubrics, prompt versioning, prompt management, and ChatGPT Project instruction discussions. |
 
 ## Skill Files
 
@@ -45,6 +46,7 @@ This file is not the full corpus. It is the navigation index for finding where e
 | Coding-agent prompts | Cursor rules, Cline, Roo Code, Aider, Open Interpreter | Shows prompts as project rules, tool instructions, and repo-aware workflows. |
 | Multi-agent prompts | AutoGPT, BabyAGI, ChatDev, MetaGPT, AutoGen, CrewAI, CAMEL | Shows prompt design moving from single-turn text to roles, tasks, tools, and process orchestration. |
 | Prompt pattern libraries | Fabric, DAIR Prompting Guide, Learn Prompting | Good for reusable prompt structures and named task patterns. |
+| PromptOps / management | Reddit versioning threads, prompt management tools, eval discussions | Shows how prompts become maintained assets rather than one-off messages. |
 
 ## Corpus Rules
 
@@ -56,7 +58,7 @@ This file is not the full corpus. It is the navigation index for finding where e
 
 ## Current Status
 
-- Famous prompt corpus seed: PR001–PR100 complete.
+- Famous prompt corpus seed: PR001–PR120 complete.
 - Core skills created: prompt analysis, prompt rewrite, corpus indexing, source collection.
 - Manual tests created: prompt analysis and prompt rewrite.
-- Next likely batch: PR101–PR150 or separate specialized files for Reddit prompt threads, GitHub prompt packs, image prompts, and coding-agent prompts.
+- Next likely batch: PR121–PR140 with GitHub prompt packs, Claude Skills, Cursor rules, or coding-agent prompt sources.
