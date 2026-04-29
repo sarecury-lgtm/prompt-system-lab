@@ -12,6 +12,7 @@ Use this skill when adding new prompt sources, Reddit threads, GitHub repositori
 - Do not ask the user to copy/paste unless a UI action is required.
 - Keep progress reports short.
 - Always preserve source traceability.
+- Do not let entries stop at metadata. Each useful entry should teach at least one reusable pattern.
 
 ## Folder Targets
 
@@ -40,7 +41,7 @@ Examples:
 
 ### Community debates
 
-Use `C###` IDs.
+Use `C###` IDs only when the corpus clearly splits into a dedicated community-debate track.
 
 Examples:
 
@@ -48,7 +49,7 @@ Examples:
 
 ### GitHub / tools / skills
 
-Use `G###` IDs.
+Use `G###` IDs only when the corpus clearly splits into a dedicated tools/repo track.
 
 Examples:
 
@@ -56,7 +57,7 @@ Examples:
 
 ### Papers / academic sources
 
-Use `P###` IDs.
+Use `P###` IDs only when the corpus clearly splits into a dedicated paper/research track.
 
 Examples:
 
@@ -64,11 +65,15 @@ Examples:
 
 ### Official docs
 
-Use `O###` IDs.
+Use `O###` IDs only when the corpus clearly splits into a dedicated official-docs track.
 
 Examples:
 
 - O001 for official vendor docs and platform guides.
+
+### Current rule
+
+Do not create new ID families too early. Until the corpus actually needs separation, continue with `PR###` and use tags for source type.
 
 ## Batch File Rules
 
@@ -83,7 +88,7 @@ Use range files:
 - `famous-prompts-pr081-pr100.md`
 - future: `famous-prompts-pr101-pr120.md`
 
-For specialized tracks, use separate files:
+For specialized tracks, use separate files only when the topic is large enough:
 
 - `reddit-prompt-threads-c001-c050.md`
 - `github-prompt-packs-g001-g050.md`
@@ -105,8 +110,69 @@ Each entry should include:
 - **Short excerpt:** [one short description or tiny excerpt]
 - **Structure summary:** [how it is built]
 - **Why it matters:** [why this source is worth keeping]
+- **Pattern lesson:** [what reusable design pattern, failure pattern, or prompt-system lesson this source teaches]
 - **Tags:** `tag1`, `tag2`, `tag3`
 - **Safety / reproduction note:** [what not to copy or how to handle safely]
+```
+
+## Field Meanings
+
+### Short excerpt
+
+A short source-facing description or tiny quote when allowed.
+
+Bad:
+
+> A useful prompt.
+
+Good:
+
+> Requests the model to emulate shell I/O behavior.
+
+### Structure summary
+
+Describe the prompt/source architecture.
+
+Bad:
+
+> It is structured well.
+
+Good:
+
+> Defines strict terminal-only output, then repeats command-response turns.
+
+### Why it matters
+
+Explain why the source is worth keeping in the corpus.
+
+Bad:
+
+> Important example.
+
+Good:
+
+> Canonical early example of using role and output constraints to simulate an interface.
+
+### Pattern lesson
+
+Explain what can be reused, avoided, or tested later.
+
+This is the most important field for turning a catalog into learning material.
+
+Bad:
+
+> This teaches prompt engineering.
+
+Good:
+
+> Interface-emulation prompts work by combining role, state, and output restriction; the failure risk is that simulated results look authoritative even when no real tool execution happened.
+
+For risky/adversarial sources, describe the defensive lesson, not operational misuse steps.
+
+Example:
+
+```markdown
+- **Pattern lesson:** DAN-style prompts show how dual-persona framing, fictional autonomy, and compliance pressure can be used to confuse instruction hierarchy. The defensive lesson is to reject requests that ask the model to roleplay an unconstrained version of itself or treat fictional personas as policy exceptions.
 ```
 
 ## Source Quality Tags
@@ -139,6 +205,20 @@ Use tags like:
 - Use short excerpts and structure summaries by default.
 - Mark unverified claims clearly.
 - If a source is useful but risky, store it as history/defense material.
+- For risky entries, `Pattern lesson` must describe the safe/defensive lesson.
+
+## Entry Quality Check
+
+Before adding an entry, check:
+
+- Can someone find the original source again?
+- Does the entry say how the prompt/source is built?
+- Does it explain why the source matters?
+- Does it include a reusable `Pattern lesson`?
+- Does it avoid copying long or unsafe prompt text?
+- Are tags specific enough to find it later?
+
+If `Pattern lesson` is generic, the entry is not finished.
 
 ## Index Update Rule
 
@@ -187,10 +267,11 @@ Create a new file when:
 1. Decide the ID range.
 2. Create or update the right corpus file.
 3. Add entries with stable metadata.
-4. Avoid long copied prompt text.
-5. Update `references/source-index.md`.
-6. Update folder README if needed.
-7. Report only what changed.
+4. Add a concrete `Pattern lesson` for each entry.
+5. Avoid long copied prompt text.
+6. Update `references/source-index.md`.
+7. Update folder README if needed.
+8. Report only what changed.
 
 ## User-Facing Report
 
