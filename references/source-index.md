@@ -16,6 +16,22 @@ This file is not the full corpus. It is the navigation index for finding where e
 | PR061–PR080 | `prompt-corpus/famous-prompts-pr061-pr080.md` | Official prompt libraries, prompt marketplaces, image prompt ecosystems, agent/template frameworks | Includes Anthropic, OpenAI Cookbook, Learn Prompting, DAIR, PromptHero, PromptBase, AIPRM, AutoGPT, BabyAGI, Semantic Kernel, LangChain, Midjourney, OpenArt, Lexica. |
 | PR081–PR100 | `prompt-corpus/famous-prompts-pr081-pr100.md` | Fabric patterns, Cursor rules, coding-agent prompts, multi-agent frameworks, prompt indexes | Includes Fabric, Cursor rules, Cline, Roo Code, Open Interpreter, Aider, Continue, GPT Engineer, ChatDev, MetaGPT, AutoGen, CrewAI, SuperAGI, CAMEL, GitHub prompt topic indexes. |
 
+## Skill Files
+
+| Skill | File | Purpose |
+|---|---|---|
+| Prompt Analysis | `skills/prompt-analysis.md` | Analyze prompt quality, structure, risks, and improvement opportunities. |
+| Prompt Rewrite | `skills/prompt-rewrite.md` | Rewrite weak or messy prompts into clean, strong, project-instruction, or skill-lite versions. |
+| Corpus Indexing | `skills/corpus-indexing.md` | Manage ID rules, batch files, tags, deduplication, and index updates. |
+| Source Collection | `skills/source-collection.md` | Collect famous, controversial, official, GitHub, Reddit, paper, marketplace, and agent-prompt sources in a traceable way. |
+
+## Test Files
+
+| Test file | Purpose |
+|---|---|
+| `tests/prompt-analysis-tests.md` | Manual test cases for prompt analysis behavior. |
+| `tests/prompt-rewrite-tests.md` | Manual test cases for prompt rewrite behavior. |
+
 ## Source Families
 
 | Family | Examples | Why it matters |
@@ -41,4 +57,6 @@ This file is not the full corpus. It is the navigation index for finding where e
 ## Current Status
 
 - Famous prompt corpus seed: PR001–PR100 complete.
+- Core skills created: prompt analysis, prompt rewrite, corpus indexing, source collection.
+- Manual tests created: prompt analysis and prompt rewrite.
 - Next likely batch: PR101–PR150 or separate specialized files for Reddit prompt threads, GitHub prompt packs, image prompts, and coding-agent prompts.
