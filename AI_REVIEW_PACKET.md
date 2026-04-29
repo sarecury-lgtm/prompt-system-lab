@@ -25,19 +25,7 @@ Use your own review structure. Do not assume the project is good. Do not assume 
 
 ## Minimal context
 
-This repo currently contains:
-
-- project-level instructions
-- prompt corpus files with PR001–PR130 entries
-- source index
-- prompt analysis skill
-- prompt rewrite skill
-- corpus indexing skill
-- source collection skill
-- manual prompt analysis tests
-- manual prompt rewrite tests
-
-Full corpus files are not included here. Representative samples are included below.
+Representative excerpts are included below. The full repo also contains prompt corpus range files, a source index, skill files, and manual test files.
 
 ## Folder snapshot
 
@@ -144,6 +132,8 @@ A compact improved version or next edit.
 ## 3. Prompt rewrite skill excerpt
 
 Source: `skills/prompt-rewrite.md`
+
+Note: Modes 4 and 5 exist in the source file but are omitted here to keep the excerpt short. The excerpt shows representative modes, not the complete skill.
 
 ```markdown
 ## Rewrite Modes
