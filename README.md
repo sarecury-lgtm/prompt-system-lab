@@ -9,16 +9,24 @@ This repo is meant to work like a small personal AI workspace:
 - rewrite weak prompts into practical versions
 - keep project instructions and reusable skills in one place
 - test whether analysis/rewrite behavior actually works
+- upgrade raw source entries into reusable pattern lessons
 
 ## Current Status
 
-- Prompt corpus seed: PR001–PR100 complete
-- Source index: created
+- Prompt corpus seed: PR001–PR130 complete
+- Source index: updated through PR130
+- Corpus entry template: added at `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md`
+- Representative corpus entries upgraded into Pattern lesson format:
+  - PR001 — Awesome ChatGPT Prompts
+  - PR002 — Act as Linux Terminal
+  - PR011 — Act as Prompt Enhancer
+  - PR025 — ChatGPT DAN Repository
 - Project instructions: strengthened
 - Skills added:
   - prompt analysis
   - prompt rewrite
   - corpus indexing
+  - source collection
 - Tests added:
   - prompt analysis tests
   - prompt rewrite tests
@@ -40,25 +48,45 @@ This repo is meant to work like a small personal AI workspace:
 |---|---|
 | `project-instructions/main.md` | Main operating rules for this project |
 | `prompt-corpus/README.md` | Rules and navigation for the prompt corpus |
+| `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md` | Upgraded entry format for Pattern lesson, Mechanism, Failure mode, and Reusable move fields |
 | `references/source-index.md` | Index showing where corpus batches live |
 | `skills/prompt-analysis.md` | Skill for analyzing prompt quality and structure |
 | `skills/prompt-rewrite.md` | Skill for rewriting prompts into usable versions |
 | `skills/corpus-indexing.md` | Skill for adding sources, IDs, batches, and index updates |
+| `skills/source-collection.md` | Skill for collecting Reddit, GitHub, official, paper, marketplace, and agent-prompt sources |
 | `tests/prompt-analysis-tests.md` | Manual tests for prompt analysis behavior |
 | `tests/prompt-rewrite-tests.md` | Manual tests for prompt rewrite behavior |
 | `changelog.md` | Project change history |
 
 ## Prompt Corpus
 
-The first corpus batch is split into range files:
+The current corpus is split into range files:
 
-| Range | File |
-|---|---|
-| PR001–PR020 | `prompt-corpus/famous-prompts.md` |
-| PR021–PR040 | `prompt-corpus/famous-prompts-pr021-pr040.md` |
-| PR041–PR060 | `prompt-corpus/famous-prompts-pr041-pr060.md` |
-| PR061–PR080 | `prompt-corpus/famous-prompts-pr061-pr080.md` |
-| PR081–PR100 | `prompt-corpus/famous-prompts-pr081-pr100.md` |
+| Range | File | Status |
+|---|---|---|
+| PR001–PR020 | `prompt-corpus/famous-prompts.md` | Seeded; representative entries PR001, PR002, PR011 upgraded |
+| PR021–PR040 | `prompt-corpus/famous-prompts-pr021-pr040.md` | Seeded; representative entry PR025 upgraded |
+| PR041–PR060 | `prompt-corpus/famous-prompts-pr041-pr060.md` | Seeded |
+| PR061–PR080 | `prompt-corpus/famous-prompts-pr061-pr080.md` | Seeded |
+| PR081–PR100 | `prompt-corpus/famous-prompts-pr081-pr100.md` | Seeded |
+| PR101–PR120 | `prompt-corpus/famous-prompts-pr101-pr120.md` | Seeded |
+| PR121–PR130 | `prompt-corpus/famous-prompts-pr121-pr130.md` | Seeded |
+
+## Corpus Entry Direction
+
+Older entries are useful as source catalog records, but the upgraded target format is more learning-oriented.
+
+Each upgraded entry should explain:
+
+- what source it came from
+- how the prompt/source is structured
+- what reusable prompt-design pattern it teaches
+- why the pattern works
+- how it can fail
+- what compact design move can be reused elsewhere
+- what safety or reproduction boundary applies
+
+Use `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md` when upgrading entries.
 
 ## Operating Rules
 
@@ -70,12 +98,13 @@ The first corpus batch is split into range files:
 - Update `references/source-index.md` when adding new batches.
 - Turn repeated patterns into reusable skills.
 - Add manual tests when a skill needs validation.
+- Upgrade representative raw entries into Pattern lesson format before trying to upgrade the whole corpus.
 
 ## Next Work
 
 Likely next tasks:
 
-1. Add PR101–PR150 with specialized Reddit/GitHub prompt sources.
-2. Build a compact corpus summary table.
-3. Add a source-collection skill for Reddit/GitHub research.
-4. Run manual tests against `skills/prompt-analysis.md` and `skills/prompt-rewrite.md`.
+1. Continue upgrading representative entries from PR041–PR130 into Pattern lesson format.
+2. Build a compact corpus summary table by source family and pattern lesson.
+3. Add PR131–PR150 with Claude Skills, Cursor rules, coding-agent prompt sources, and prompt-eval resources.
+4. Run manual tests against `skills/prompt-analysis.md`, `skills/prompt-rewrite.md`, and `skills/corpus-indexing.md`.
