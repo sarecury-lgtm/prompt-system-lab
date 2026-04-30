@@ -2,11 +2,18 @@
 
 ## 2026-04-30
 
+### Added
+
+- Added `prompt-corpus/PATTERN_LESSONS_INDEX.md` as the practical entry point for using corpus-derived patterns.
+- Added `skills/prompt-design-workflow.md` for turning rough user goals into usable prompts without overbuilding.
+- Added a `Start Here` section to `README.md` so the repo is easier to use immediately.
+
 ### Changed
 
 - Refreshed repository navigation to match the current corpus state through PR130.
 - Updated `README.md` with:
   - PR001–PR130 corpus status
+  - practical entry points for prompt design, rewrite, analysis, and indexing
   - `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md`
   - representative Pattern lesson upgrades
   - source collection skill reference
@@ -28,7 +35,7 @@
 ### Notes
 
 - The corpus still contains many older seed-format entries. This is intentional for now.
-- The next useful step is to upgrade one representative entry from each remaining source family before attempting bulk conversion.
+- The next useful step is to expand `PATTERN_LESSONS_INDEX.md` with one representative pattern from each remaining source family.
 
 ## 2026-04-29
 
