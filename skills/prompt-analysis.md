@@ -115,6 +115,8 @@ Mark these clearly:
 - Paid/proprietary prompt copied without permission.
 - Claims of “10x better” or “never hallucinate” without tests.
 
+- Impossible absolute rules like "never hallucinate", "always be perfect", or "never make mistakes" without observable fallback behavior.
+
 ## Improvement Moves
 
 Use these fixes:
@@ -127,6 +129,7 @@ Use these fixes:
 - Add boundary rules.
 - Add a small self-check.
 - Add 2–3 test cases.
+- Replace impossible absolutes with observable fallback behavior: mark unsupported claims as unknown/unverified, add caveats and required missing information when confidence is low, and use verification or test criteria instead of guarantee wording.
 - Split a giant prompt into smaller modules.
 - Move reference material into corpus/reference files instead of stuffing it into one prompt.
 
