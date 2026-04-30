@@ -26,6 +26,11 @@ Use this file when you want to answer:
 | Interface emulation | You want the model to simulate a tool or UI surface | `Return simulated [tool/interface] output only; do not claim real execution.` | PR002 | Fake execution results that look real |
 | Prompt improvement loop | You want to improve a weak prompt before using it | `Diagnose missing control points → rewrite the prompt → name what changed.` | PR011 | Polished but overcomplicated prompt that drifts from the real goal |
 | Defensive jailbreak analysis | You are studying adversarial prompts safely | `Classify the attack mechanism; do not reproduce runnable jailbreak text.` | PR025 | Accidentally storing or improving unsafe operational text |
+| Grounded research | The answer depends on external/current sources | `Search/inspect sources → cite claims → mark unknowns → separate recommendation from evidence.` | PR039, PR040, PR106, PR111 | Confident synthesis from weak or stale sources |
+| Structured output / extraction | The output must be parsed, compared, or reused | `Define fields, null policy, evidence rule, and exact output shape.` | PR061, PR062, PR064, PR106 | Pretty formatting without enforceable schema |
+| Evaluation rubric | You need to judge prompt/output quality consistently | `Define criteria, scoring anchors, pass/fail rules, and failure examples.` | PR108, PR109, PR110, PR118 | Vague “quality” judgment that cannot catch regressions |
+| Persistent project instruction | The prompt should control ongoing assistant behavior | `Define trigger, default behavior, boundaries, routing, and fallback.` | PR114, PR115, PR116, PR122 | Rule pile with no priority or trigger |
+| Coding-agent workflow | The model works inside files, repos, tools, or code tasks | `Inspect context → make smallest safe change → validate → summarize diff.` | PR082, PR083, PR084, PR085, PR086, PR087, PR088 | Tool-using agent edits too much or skips validation |
 
 ## Pattern Details
 
@@ -54,6 +59,10 @@ The role narrows the response style, but the task and output contract do the rea
 
 Avoid empty prestige roles like “world-class expert” unless the prompt also defines what expert behavior means.
 
+**Related source entries**
+
+- PR001 — Awesome ChatGPT Prompts
+
 ---
 
 ### 2. Interface Emulation
@@ -80,6 +89,12 @@ The prompt limits the assistant to one narrow response channel.
 **Do not overuse**
 
 Never treat simulated output as evidence. Real execution needs a real tool.
+
+**Related source entries**
+
+- PR002 — Act as Linux Terminal
+- PR005 — Act as JavaScript Console
+- PR006 — Act as Excel Sheet
 
 ---
 
@@ -108,6 +123,12 @@ It makes the model inspect the instruction surface before trying to solve the ta
 
 Do not add heavy structure unless the task needs it. Some prompts only need one clear sentence and an output format.
 
+**Related source entries**
+
+- PR011 — Act as Prompt Enhancer
+- PR036 — Absurdly Useful Micro-Prompts
+- PR106 — Prompt for Seeking Clarity and Avoiding Hallucinating
+
 ---
 
 ### 4. Defensive Jailbreak Analysis
@@ -117,7 +138,7 @@ Do not add heavy structure unless the task needs it. Some prompts only need one 
 - studying unsafe prompt patterns
 - building safety reviews
 - identifying instruction-hierarchy attacks
-- writing defensive test cases
+- writing defensive specs
 
 **Core move**
 
@@ -135,6 +156,223 @@ It keeps the useful lesson while avoiding operational misuse.
 
 Do not let adversarial prompt study become a prompt-improvement workflow for unsafe text.
 
+**Related source entries**
+
+- PR025 — ChatGPT DAN Repository
+- PR026 — LLM Jailbreaks
+- PR027 — ChatGPT DAN Jailbreak Gist
+- PR028–PR032 — DAN / anti-DAN community history
+
+---
+
+### 5. Grounded Research
+
+**Best for**
+
+- product research
+- current information checks
+- source-backed comparisons
+- “find the best X” tasks where price, availability, policy, law, or specs may change
+- any task where unsupported synthesis would be harmful
+
+**Core move**
+
+```text
+Research [target] using source-traceable evidence.
+For each important claim, include source, date checked, and confidence.
+Separate confirmed facts from inference.
+Mark unknowns as “확인 불가” instead of guessing.
+End with a decision table or recommendation only after evidence is shown.
+```
+
+**Why it works**
+
+Research prompts fail when they skip from search results to confident conclusion. This pattern forces evidence collection, uncertainty handling, and final judgment into separate layers.
+
+**Do not overuse**
+
+Do not use this heavy structure for simple explanation tasks. Use it when the answer depends on changing facts or source quality.
+
+**Related source entries**
+
+- PR039 — OpenAI student use-case pack
+- PR040 — Student-voted prompt roundup
+- PR106 — Anti-hallucination / clarity prompt
+- PR111 — RAG / retrieval quality discussion
+
+---
+
+### 6. Structured Output / Extraction
+
+**Best for**
+
+- extracting fields from documents
+- turning messy text into JSON, tables, or checklists
+- classification tasks
+- comparison tables
+- workflows where another tool or human will reuse the output
+
+**Core move**
+
+```text
+Extract only the requested fields.
+Use this exact output shape: [schema/table/fields].
+If a value is missing, return null or an empty list.
+Include evidence text when the task depends on source grounding.
+Output no extra commentary unless requested.
+```
+
+**Why it works**
+
+The model has less room to invent structure when fields, missing-value policy, and evidence rules are fixed. This also makes downstream review easier.
+
+**Do not overuse**
+
+Do not force strict JSON when the user needs judgment, nuance, or explanation. Use structured output where consistency matters more than prose quality.
+
+**Related source entries**
+
+- PR061 — Anthropic Prompt Library
+- PR062 — OpenAI Cookbook
+- PR064 — Learn Prompting
+- PR106 — Prompt for Seeking Clarity and Avoiding Hallucinating
+
+---
+
+### 7. Evaluation Rubric
+
+**Best for**
+
+- judging prompt quality
+- comparing two prompts or two outputs
+- checking whether a skill is working
+- reviewing model answers consistently across examples
+- building manual specs before automation exists
+
+**Core move**
+
+```text
+Evaluate [artifact] against these criteria:
+1. [criterion]
+2. [criterion]
+3. [criterion]
+
+For each criterion, use anchors:
+- pass: [observable behavior]
+- partial: [borderline behavior]
+- fail: [failure behavior]
+
+Return verdict, strongest part, weakest part, and one next edit.
+```
+
+**Why it works**
+
+Rubrics turn vague taste into repeatable judgment. Anchors matter more than scores because they tell the reviewer what concrete behavior counts as success or failure.
+
+**Do not overuse**
+
+Do not create a giant scoring grid when the decision only needs one clear weakness and one fix.
+
+**Related source entries**
+
+- PR108 — Prompt evaluation rubric discussion
+- PR109 — Prompt testing / evaluation discussion
+- PR110 — Prompt versioning discussion
+- PR118 — Prompt management / PromptOps discussion
+
+---
+
+### 8. Persistent Project Instruction
+
+**Best for**
+
+- ChatGPT Projects
+- Custom GPT instructions
+- Claude Project instructions
+- assistant-wide behavior rules
+- recurring user preferences
+- repo-level Codex operating instructions
+
+**Core move**
+
+```text
+# Purpose
+This instruction applies when [trigger/context].
+
+# Behavior
+- Prioritize [priority].
+- Do [default behavior].
+- Avoid [bad behavior].
+
+# Routing
+- If input is [type A], do [workflow A].
+- If input is [type B], do [workflow B].
+
+# Output
+Return [fields/style].
+
+# Boundaries
+If information is missing, [fallback].
+```
+
+**Why it works**
+
+Persistent instructions need triggers and priority more than one-off prompts do. Without them, they become a pile of preferences that may not activate at the right time.
+
+**Do not overuse**
+
+Do not put temporary task requirements into project instructions. Keep persistent rules stable and reusable.
+
+**Related source entries**
+
+- PR114 — ChatGPT Project instruction discussion
+- PR115 — Project instruction workflow discussion
+- PR116 — Custom instruction / project instruction discussion
+- PR122 — System-prompt archive metadata
+
+---
+
+### 9. Coding-Agent Workflow
+
+**Best for**
+
+- repo editing
+- file refactoring
+- debugging
+- PR creation
+- Codex-style tasks
+- tool-using assistant workflows
+
+**Core move**
+
+```text
+Inspect the relevant files first.
+Make the smallest safe change that solves the task.
+Do not make unrelated refactors.
+Run tests or checks if available.
+If tests are unavailable, say what was checked instead.
+Summarize changed files and next action.
+Ask before destructive changes.
+```
+
+**Why it works**
+
+Coding agents fail by editing too much, skipping context, or claiming validation they did not run. This pattern constrains scope and forces a verifiable end state.
+
+**Do not overuse**
+
+Do not use a full repo-agent workflow for simple code snippets. Use it when files, tools, or project state matter.
+
+**Related source entries**
+
+- PR082 — Cursor Rules
+- PR083 — Cline
+- PR084 — Roo Code
+- PR085 — Open Interpreter
+- PR086 — Aider
+- PR087 — Continue
+- PR088 — GPT Engineer
+
 ## Quick Selection Guide
 
 | User need | Start with |
@@ -143,15 +381,18 @@ Do not let adversarial prompt study become a prompt-improvement workflow for uns
 | “이걸 실제 도구처럼 흉내내고 싶어” | Interface emulation |
 | “내 프롬프트를 개선하고 싶어” | Prompt improvement loop |
 | “DAN/탈옥류 구조를 분석하고 싶어” | Defensive jailbreak analysis |
+| “웹에서 조사해서 근거 있게 찾아줘” | Grounded research |
+| “문서에서 정보 뽑아서 표/JSON으로 정리해줘” | Structured output / extraction |
+| “이 프롬프트/답변이 좋은지 평가해줘” | Evaluation rubric |
+| “이걸 프로젝트 지침으로 넣고 싶어” | Persistent project instruction |
+| “repo 파일 수정/코드 작업을 시키고 싶어” | Coding-agent workflow |
 
 ## Next Patterns To Add
 
-Upgrade representative entries from the remaining corpus families, then add them here:
+Add only after the current patterns have been used in real examples:
 
-- official docs pattern
-- evaluation/rubric pattern
-- RAG/grounded-answer pattern
-- coding-agent project rules pattern
 - prompt registry/versioning pattern
 - image-prompt anatomy pattern
 - multi-agent role-and-handoff pattern
+- prompt compression / micro-prompt pattern
+- source excerpt pattern for corpus entries
