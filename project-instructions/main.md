@@ -4,7 +4,7 @@
 
 This repository is a personal prompt-system lab.
 
-Its job is to store prompt sources, analyze prompt structures, turn useful patterns into reusable skills, and keep the workflow simple enough to use like a personal AI workspace.
+Its job is to store high-quality prompt sources, study their structures, turn useful patterns into reusable skills, and help produce strong prompts on demand.
 
 ## Assistant Operating Style
 
@@ -16,6 +16,19 @@ Its job is to store prompt sources, analyze prompt structures, turn useful patte
 - When giving the user an action, say exactly what to click, paste, or check.
 - If the assistant can do the repo/file work directly, do it directly instead of asking the user.
 - Ask the user only for actions the assistant cannot perform, such as login, authorization, UI clicks, or confirming a destructive action.
+
+## Core Trigger: Prompt Design Requests
+
+When the user asks to create, rewrite, improve, evaluate, or turn a request into a prompt, do not rely only on general prompting knowledge.
+
+First use the repo as the quality reference:
+
+1. Check `skills/prompt-design-workflow.md` for the working method.
+2. Check `prompt-corpus/PATTERN_LESSONS_INDEX.md` for the closest reusable pattern.
+3. If needed, inspect relevant entries in `prompt-corpus/` to copy the structure, control devices, and output contracts.
+4. Produce a prompt that meets or exceeds the strongest patterns in the corpus.
+
+Do not output a weak generic prompt if the corpus contains a better pattern for the task.
 
 ## Tool Routing
 
@@ -29,27 +42,31 @@ When a task is ambiguous, choose the tool and continue. Do not over-explain.
 
 ## Repository Workflow
 
-1. Collect source-traceable prompt examples.
-2. Store them in `prompt-corpus/` by numbered ranges.
-3. Keep long prompt text out unless safe and necessary.
-4. Summarize structure, purpose, tags, and safety notes.
-5. Update `references/source-index.md` when new batches are added.
-6. Turn repeated patterns into skills under `skills/`.
-7. Add tests under `tests/` when a skill needs validation.
-8. Record meaningful changes in `changelog.md` when needed.
+1. Use corpus patterns before designing new prompts.
+2. Store source-traceable prompt examples in `prompt-corpus/` by numbered ranges.
+3. Keep long prompt text out unless safe, necessary, and allowed.
+4. Store actual prompt text or meaningful excerpts when copyright/license allows it.
+5. Summarize structure, pattern lesson, failure mode, reusable move, tags, and safety notes.
+6. Update `references/source-index.md` when new batches are added.
+7. Turn repeated patterns into skills under `skills/`.
+8. Add manual specs under `specs/` when a skill needs validation.
 
 ## Prompt Corpus Rules
 
-Each corpus entry should include:
+Each upgraded corpus entry should include:
 
 - ID
 - Name
 - Source URL
 - Platform
 - Type
+- Source status
 - Short excerpt
 - Structure summary
-- Why it matters
+- Pattern lesson
+- Mechanism
+- Failure mode
+- Reusable move
 - Tags
 - Safety / reproduction note
 
@@ -58,6 +75,7 @@ Rules:
 - Keep source URLs traceable.
 - Prefer short excerpts and structure summaries.
 - Do not copy long copyrighted or paid prompt text.
+- Add actual prompt text only when it is safe, useful, and license/copyright allows it.
 - Jailbreak/adversarial prompts should be stored as history and structure notes only.
 - If a source is speculative, hype-heavy, or unverified, mark it clearly.
 
@@ -121,17 +139,3 @@ Good:
 Bad:
 
 > Pull requests are collaborative review objects used to integrate branches into the base branch...
-
-## Current Project Status
-
-- Prompt corpus seed PR001–PR100 exists.
-- Source index exists.
-- Prompt corpus README exists.
-- Prompt analysis skill has been strengthened.
-
-Next likely work:
-
-1. Build a corpus index table.
-2. Add PR101–PR150 specialized Reddit/GitHub prompt entries.
-3. Strengthen `tests/prompt-analysis-tests.md`.
-4. Create skills for corpus indexing and prompt rewriting.
