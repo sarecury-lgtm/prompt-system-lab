@@ -11,10 +11,25 @@ This repo is meant to work like a small personal AI workspace:
 - test whether analysis/rewrite behavior actually works
 - upgrade raw source entries into reusable pattern lessons
 
+## Start Here
+
+If you want to actually use this repo, start with these files:
+
+| Need | Use this file |
+|---|---|
+| Find a reusable prompt-design pattern | `prompt-corpus/PATTERN_LESSONS_INDEX.md` |
+| Turn a rough goal into a usable prompt | `skills/prompt-design-workflow.md` |
+| Rewrite an existing prompt | `skills/prompt-rewrite.md` |
+| Analyze why a prompt is weak | `skills/prompt-analysis.md` |
+| Add or organize new source entries | `skills/corpus-indexing.md` |
+| Find where corpus batches live | `references/source-index.md` |
+
 ## Current Status
 
 - Prompt corpus seed: PR001–PR130 complete
 - Source index: updated through PR130
+- Practical pattern index: added at `prompt-corpus/PATTERN_LESSONS_INDEX.md`
+- Prompt design workflow skill: added at `skills/prompt-design-workflow.md`
 - Corpus entry template: added at `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md`
 - Representative corpus entries upgraded into Pattern lesson format:
   - PR001 — Awesome ChatGPT Prompts
@@ -25,6 +40,7 @@ This repo is meant to work like a small personal AI workspace:
 - Skills added:
   - prompt analysis
   - prompt rewrite
+  - prompt design workflow
   - corpus indexing
   - source collection
 - Tests added:
@@ -48,8 +64,10 @@ This repo is meant to work like a small personal AI workspace:
 |---|---|
 | `project-instructions/main.md` | Main operating rules for this project |
 | `prompt-corpus/README.md` | Rules and navigation for the prompt corpus |
+| `prompt-corpus/PATTERN_LESSONS_INDEX.md` | Practical index of reusable prompt-design moves extracted from the corpus |
 | `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md` | Upgraded entry format for Pattern lesson, Mechanism, Failure mode, and Reusable move fields |
 | `references/source-index.md` | Index showing where corpus batches live |
+| `skills/prompt-design-workflow.md` | Skill for turning rough user goals into usable prompts |
 | `skills/prompt-analysis.md` | Skill for analyzing prompt quality and structure |
 | `skills/prompt-rewrite.md` | Skill for rewriting prompts into usable versions |
 | `skills/corpus-indexing.md` | Skill for adding sources, IDs, batches, and index updates |
@@ -105,6 +123,6 @@ Use `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md` when upgrading entries.
 Likely next tasks:
 
 1. Continue upgrading representative entries from PR041–PR130 into Pattern lesson format.
-2. Build a compact corpus summary table by source family and pattern lesson.
+2. Expand `prompt-corpus/PATTERN_LESSONS_INDEX.md` with official-doc, evaluation, RAG, coding-agent, PromptOps, image-prompt, and multi-agent patterns.
 3. Add PR131–PR150 with Claude Skills, Cursor rules, coding-agent prompt sources, and prompt-eval resources.
-4. Run manual tests against `skills/prompt-analysis.md`, `skills/prompt-rewrite.md`, and `skills/corpus-indexing.md`.
+4. Run manual tests against `skills/prompt-design-workflow.md`, `skills/prompt-analysis.md`, `skills/prompt-rewrite.md`, and `skills/corpus-indexing.md`.
