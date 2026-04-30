@@ -31,14 +31,13 @@ This file is not the full corpus. It is the navigation index for finding where e
 | Prompt Analysis | `skills/prompt-analysis.md` | Analyze prompt quality, structure, risks, and improvement opportunities. |
 | Prompt Rewrite | `skills/prompt-rewrite.md` | Rewrite weak or messy prompts into clean, strong, project-instruction, or skill-lite versions. |
 | Corpus Indexing | `skills/corpus-indexing.md` | Manage ID rules, batch files, tags, deduplication, and index updates. |
-| Source Collection | `skills/source-collection.md` | Collect famous, controversial, official, GitHub, Reddit, paper, marketplace, and agent-prompt sources in a traceable way. |
 
-## Test Files
+## Spec Files
 
-| Test file | Purpose |
+| Spec file | Purpose |
 |---|---|
-| `tests/prompt-analysis-tests.md` | Manual test cases for prompt analysis behavior. |
-| `tests/prompt-rewrite-tests.md` | Manual test cases for prompt rewrite behavior. |
+| `specs/prompt-analysis-specs.md` | Manual spec cases for prompt analysis behavior. |
+| `specs/prompt-rewrite-specs.md` | Manual spec cases for prompt rewrite behavior. |
 
 ## Source Families
 
@@ -68,7 +67,7 @@ This file is not the full corpus. It is the navigation index for finding where e
 ## Current Status
 
 - Famous prompt corpus seed: PR001–PR130 complete.
-- Core skills created: prompt analysis, prompt rewrite, corpus indexing, source collection.
+- Core skills created: prompt analysis, prompt rewrite, corpus indexing.
 - Corpus entry template created and first representative upgrades started.
-- Manual tests created: prompt analysis and prompt rewrite.
+- Manual specs created: prompt analysis and prompt rewrite.
 - Next likely batch: PR131–PR150 with Claude Skills, Cursor rules, coding-agent prompt sources, or prompt-evaluation resources.

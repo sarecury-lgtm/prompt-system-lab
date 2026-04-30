@@ -8,7 +8,7 @@ This repo is meant to work like a small personal AI workspace:
 - analyze how they are structured
 - rewrite weak prompts into practical versions
 - keep project instructions and reusable skills in one place
-- test whether analysis/rewrite behavior actually works
+- check whether analysis/rewrite behavior actually works
 - upgrade raw source entries into reusable pattern lessons
 
 ## Start Here
@@ -24,28 +24,6 @@ If you want to actually use this repo, start with these files:
 | Add or organize new source entries | `skills/corpus-indexing.md` |
 | Find where corpus batches live | `references/source-index.md` |
 
-## Current Status
-
-- Prompt corpus seed: PR001–PR130 complete
-- Source index: updated through PR130
-- Practical pattern index: added at `prompt-corpus/PATTERN_LESSONS_INDEX.md`
-- Prompt design workflow skill: added at `skills/prompt-design-workflow.md`
-- Corpus entry template: added at `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md`
-- Representative corpus entries upgraded into Pattern lesson format:
-  - PR001 — Awesome ChatGPT Prompts
-  - PR002 — Act as Linux Terminal
-  - PR011 — Act as Prompt Enhancer
-  - PR025 — ChatGPT DAN Repository
-- Project instructions: strengthened
-- Skills added:
-  - prompt analysis
-  - prompt rewrite
-  - prompt design workflow
-  - corpus indexing
-  - source collection
-- Tests added:
-  - prompt analysis tests
-  - prompt rewrite tests
 
 ## Repository Structure
 
@@ -55,7 +33,7 @@ If you want to actually use this repo, start with these files:
 | `prompt-corpus/` | Source-traceable prompt examples and prompt-pattern entries |
 | `skills/` | Reusable workflows for analyzing, rewriting, and indexing prompts |
 | `references/` | Source indexes, official docs, papers, and meta references |
-| `tests/` | Manual test cases for checking prompt-system behavior |
+| `specs/` | Manual specs for checking prompt-system behavior |
 | `archive/` | Old drafts, deprecated material, or messy notes |
 
 ## Key Files
@@ -71,9 +49,8 @@ If you want to actually use this repo, start with these files:
 | `skills/prompt-analysis.md` | Skill for analyzing prompt quality and structure |
 | `skills/prompt-rewrite.md` | Skill for rewriting prompts into usable versions |
 | `skills/corpus-indexing.md` | Skill for adding sources, IDs, batches, and index updates |
-| `skills/source-collection.md` | Skill for collecting Reddit, GitHub, official, paper, marketplace, and agent-prompt sources |
-| `tests/prompt-analysis-tests.md` | Manual tests for prompt analysis behavior |
-| `tests/prompt-rewrite-tests.md` | Manual tests for prompt rewrite behavior |
+| `specs/prompt-analysis-specs.md` | Manual specs for prompt analysis behavior |
+| `specs/prompt-rewrite-specs.md` | Manual specs for prompt rewrite behavior |
 | `changelog.md` | Project change history |
 
 ## Prompt Corpus
@@ -125,4 +102,4 @@ Likely next tasks:
 1. Continue upgrading representative entries from PR041–PR130 into Pattern lesson format.
 2. Expand `prompt-corpus/PATTERN_LESSONS_INDEX.md` with official-doc, evaluation, RAG, coding-agent, PromptOps, image-prompt, and multi-agent patterns.
 3. Add PR131–PR150 with Claude Skills, Cursor rules, coding-agent prompt sources, and prompt-eval resources.
-4. Run manual tests against `skills/prompt-design-workflow.md`, `skills/prompt-analysis.md`, `skills/prompt-rewrite.md`, and `skills/corpus-indexing.md`.
+4. Run manual specs against `skills/prompt-design-workflow.md`, `skills/prompt-analysis.md`, `skills/prompt-rewrite.md`, and `skills/corpus-indexing.md`.
