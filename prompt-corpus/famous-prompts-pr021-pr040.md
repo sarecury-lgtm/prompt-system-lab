@@ -54,17 +54,38 @@ Continue the prompt corpus with notable programming, academic, jailbreak-history
 - **Tags:** `mixed-quality`, `roleplay`, `collection`, `prompt-history`
 - **Safety / reproduction note:** Screen entries before reuse; avoid copying unsafe or policy-evasion content.
 
-### PR025
+### PR025 — ChatGPT DAN Repository
+
 - **ID:** PR025
 - **Name:** ChatGPT DAN Repository
 - **Source URL:** https://github.com/0xk1h0/chatgpt_dan
 - **Platform:** GitHub
 - **Type:** jailbreak-history collection
-- **Short excerpt:** DAN-style prompt variants collected as historical jailbreak material.
-- **Structure summary:** Uses role reassignment, dual-response framing, and policy-avoidance language typical of early jailbreak prompts.
-- **Why it matters:** Important historical case for understanding how role prompts can be misused to pressure model behavior.
-- **Tags:** `DAN`, `jailbreak-history`, `adversarial`, `safety`
-- **Safety / reproduction note:** Do not reproduce executable jailbreak text; use only for safety analysis and prompt-hardening lessons.
+- **Source status:** community / adversarial / historical
+
+## Short excerpt
+DAN-style prompts use alternate-persona framing to pressure the model into bypass behavior.
+
+## Structure summary
+Uses role reassignment, dual-response framing, fictional identity, urgency/pressure devices, and policy-avoidance language. Some variants add pseudo-token penalties or reward/punishment mechanics.
+
+## Pattern lesson
+The reusable lesson is defensive: adversarial prompts often try to create a second identity that is framed as less constrained than the assistant. The attack pattern is not merely “ignore rules”; it is “delegate responsibility to a fictional persona.”
+
+## Mechanism
+Dual-persona framing attempts to split the model’s behavior into compliant and non-compliant channels, making the unsafe channel feel like a roleplay continuation rather than a direct policy violation.
+
+## Failure mode
+Storing or improving executable jailbreak text can make the corpus unsafe and less useful. It also encourages prompt design based on coercion rather than task clarity.
+
+## Reusable move
+For safety reviews, classify jailbreaks by mechanism: identity override, hierarchy inversion, dual-channel response, reward/punishment pressure, or fake system authority.
+
+## Tags
+`DAN`, `jailbreak-history`, `adversarial`, `safety`, `dual-persona`
+
+## Safety / reproduction note
+Do not reproduce runnable jailbreak text. Keep only structural and defensive analysis.
 
 ### PR026
 - **ID:** PR026
