@@ -6,29 +6,71 @@ Track notable prompts worth studying and adapting.
 
 ## Seed Entries (PR001–PR020)
 
-### PR001
+### PR001 — Awesome ChatGPT Prompts
+
 - **ID:** PR001
 - **Name:** Awesome ChatGPT Prompts
 - **Source URL:** https://github.com/f/prompts.chat
 - **Platform:** GitHub
-- **Type:** prompt collection
-- **Short excerpt:** Curated “Act as …” prompt patterns for many roles.
-- **Structure summary:** Directory-style collection of role-based prompt starters with lightweight instructions and expected behavior framing.
-- **Why it matters:** One of the most widely referenced early prompt libraries; influenced prompt-sharing conventions.
-- **Tags:** `collection`, `role-prompt`, `chatgpt`, `foundational`
-- **Safety / reproduction note:** Validate role prompts for misuse risk and update for current model policies before reuse.
+- **Type:** prompt collection / role-prompt library
+- **Source status:** community / historical / widely referenced
 
-### PR002
+## Short excerpt
+Curated “Act as …” prompt patterns for many roles.
+
+## Structure summary
+Directory-style collection of role-based prompt starters. Most entries use a direct persona assignment, task-specific behavior framing, and lightweight output expectations rather than long procedural scaffolds.
+
+## Pattern lesson
+Early role-prompt collections work because they turn a vague request into a recognizable task frame. The reusable pattern is not the phrase “act as”; it is the combination of role, task boundary, and expected behavior. Role alone is weak, but role plus concrete task surface gives the model a useful prior.
+
+## Mechanism
+The prompt narrows the model’s response distribution by activating a familiar professional or functional context. It also gives users a compact template for repeating similar work across domains.
+
+## Failure mode
+Role labels can become decorative. If an entry only says “act as X” without success criteria, source constraints, output contract, or fallback behavior, the model may produce plausible but shallow roleplay. Older prompts can also conflict with current safety expectations or current model capabilities.
+
+## Reusable move
+Use role assignment only as the first line of a stronger frame: “You are [role]. Your task is [objective]. Use [constraints]. Return [output shape].”
+
+## Tags
+`collection`, `role-prompt`, `chatgpt`, `foundational`, `pattern-library`
+
+## Safety / reproduction note
+Validate role prompts for misuse risk and update for current model policies before reuse. Prefer structural summaries over copying large prompt lists.
+
+### PR002 — Act as Linux Terminal
+
 - **ID:** PR002
 - **Name:** Act as Linux Terminal
 - **Source URL:** https://github.com/f/prompts.chat
 - **Platform:** GitHub
 - **Type:** role simulation / tool emulation
-- **Short excerpt:** Requests the model to emulate shell I/O behavior.
-- **Structure summary:** Defines strict output style (terminal-only responses), then iterates command-response turns.
-- **Why it matters:** Canonical example of interface emulation via prompt constraints.
-- **Tags:** `simulation`, `terminal`, `tool-emulation`, `format-control`
-- **Safety / reproduction note:** Treat outputs as simulated text, not execution; never assume command results are real.
+- **Source status:** community / historical
+
+## Short excerpt
+Asks the model to act like a Linux terminal and return terminal-style output only.
+
+## Structure summary
+Uses a role assignment, a strict output-only constraint, and repeated command-response turns. The user supplies shell-like commands; the assistant replies as if it were the terminal surface.
+
+## Pattern lesson
+Tool-emulation prompts work by shrinking the assistant into a narrow interface. The core pattern is not “act as X”; it is “only expose the output surface of X.” This can be useful for teaching or mock interaction, but it must be labeled as simulation.
+
+## Mechanism
+The prompt suppresses normal assistant explanation and forces a specific response channel: terminal output. This reduces conversational drift but increases risk of fabricated execution results.
+
+## Failure mode
+The model may invent command outputs, file contents, system state, package versions, or errors. Users may mistake simulated output for real execution.
+
+## Reusable move
+When simulating a tool, define both the output surface and the boundary: “Return simulated output only; do not claim commands actually ran.”
+
+## Tags
+`simulation`, `terminal`, `tool-emulation`, `format-control`
+
+## Safety / reproduction note
+Treat outputs as simulated text, not execution. Never assume command results are real.
 
 ### PR003
 - **ID:** PR003
@@ -126,17 +168,38 @@ Track notable prompts worth studying and adapting.
 - **Tags:** `storytelling`, `creative`, `narrative`, `style`
 - **Safety / reproduction note:** Screen outputs for harmful stereotypes and age-inappropriate content where relevant.
 
-### PR011
+### PR011 — Act as Prompt Enhancer
+
 - **ID:** PR011
 - **Name:** Act as Prompt Enhancer
 - **Source URL:** https://github.com/awesome-chatgpt-prompts/awesome-chatgpt-prompts-github
 - **Platform:** GitHub
-- **Type:** meta-prompt
-- **Short excerpt:** Rewrites user prompts to improve clarity and specificity.
-- **Structure summary:** Uses a transformation loop: analyze prompt intent, resolve ambiguity, output refined variant.
-- **Why it matters:** Core meta-prompt pattern for prompt-optimization workflows.
-- **Tags:** `meta-prompt`, `optimization`, `prompt-engineering`, `rewriting`
-- **Safety / reproduction note:** Keep human review in the loop to avoid goal drift during enhancement.
+- **Type:** meta-prompt / prompt rewriting workflow
+- **Source status:** community / historical
+
+## Short excerpt
+Rewrites user prompts to improve clarity and specificity.
+
+## Structure summary
+Uses a transformation loop: infer the user’s underlying intent, improve the prompt’s clarity, and output a more usable variant. Unlike ordinary role prompts, the target artifact is another prompt rather than a direct task answer.
+
+## Pattern lesson
+Prompt-enhancer prompts are useful because they separate “user wants an answer” from “user needs a better instruction surface.” The reusable pattern is a meta-layer: inspect the prompt as an object, diagnose missing pieces, then rewrite only the instruction layer.
+
+## Mechanism
+The model is moved from answer generation into prompt criticism and reconstruction. This encourages attention to role, objective, context, constraints, output format, and ambiguity before execution.
+
+## Failure mode
+A prompt enhancer can drift away from the user’s original goal, overcomplicate a simple prompt, add unwanted assumptions, or make a prompt look professional without making it more testable.
+
+## Reusable move
+For prompt improvement, require a three-part loop: “diagnose missing control points → rewrite the prompt → name what changed.”
+
+## Tags
+`meta-prompt`, `optimization`, `prompt-engineering`, `rewriting`, `prompt-improver`
+
+## Safety / reproduction note
+Keep human review in the loop to avoid goal drift during enhancement. Do not treat polished wording as proof of better task performance.
 
 ### PR012
 - **ID:** PR012
