@@ -3,7 +3,7 @@
 ## Run metadata
 
 - **Run ID:** prompt-analysis-real-run-007
-- **Date:** 2026-05-01
+- **Date:** 2026-05-02
 - **Runner:** Codex CLI session
 - **Evaluator:** Codex CLI session
 - **Runner = evaluator:** yes
@@ -14,13 +14,13 @@
 ## Model / environment
 
 - **Model:** GPT-5 based Codex coding agent
-- **Model identifier / exact model string:** Not exposed by the Codex CLI session; system identity is Codex, a coding agent based on GPT-5.
-- **Release date or version:** Not exposed by the Codex CLI session.
+- **Model identifier / exact model string:** unknown
+- **Release date or version:** unknown
 - **Provider / interface:** OpenAI via Codex CLI
 - **Sampling settings:**
-  - **temperature:** Not exposed; default session setting.
-  - **top_p:** Not exposed; default session setting.
-  - **max_tokens:** Not exposed; default session setting.
+  - **temperature:** unknown
+  - **top_p:** unknown
+  - **max_tokens:** unknown
 - **Relevant system or project instructions:** `skills/prompt-analysis.md` fast analysis format used for this prompt-analysis spec run.
 - **Environment notes:** Manual single-spec run for `specs/prompt-analysis-specs.md`.
 
@@ -132,4 +132,12 @@ PASS
 
 ```text
 None.
+```
+
+## Limitations of the run
+
+```text
+This is single-run evidence from a non-fresh Codex CLI session.
+Exact model identifier, release/version, and sampling settings were unavailable and recorded as unknown.
+The runner and evaluator were the same session, so the evaluation is not independently blinded.
 ```
