@@ -17,6 +17,7 @@ If you want to actually use this repo, start with these files:
 
 | Need | Use this file |
 |---|---|
+| Learn how to use the repo | `USAGE.md` |
 | Find a reusable prompt-design pattern | `prompt-corpus/PATTERN_LESSONS_INDEX.md` |
 | Turn a rough goal into a usable prompt | `skills/prompt-design-workflow.md` |
 | Rewrite an existing prompt | `skills/prompt-rewrite.md` |
@@ -32,6 +33,7 @@ If you want to actually use this repo, start with these files:
 | `project-instructions/` | Core operating instructions for this personal AI system |
 | `prompt-corpus/` | Source-traceable prompt examples and prompt-pattern entries |
 | `skills/` | Reusable workflows for analyzing, rewriting, and indexing prompts |
+| `examples/` | Practical prompt artifacts that show patterns in use |
 | `references/` | Source indexes, official docs, papers, and meta references |
 | `specs/` | Manual specs for checking prompt-system behavior |
 | `archive/` | Old drafts, deprecated material, or messy notes |
@@ -45,6 +47,7 @@ If you want to actually use this repo, start with these files:
 | `prompt-corpus/PATTERN_LESSONS_INDEX.md` | Practical index of reusable prompt-design moves extracted from the corpus |
 | `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md` | Upgraded entry format for Pattern lesson, Mechanism, Failure mode, and Reusable move fields |
 | `references/source-index.md` | Index showing where corpus batches live |
+| `references/external-projects.md` | Map of adjacent public projects and what layer each one informs |
 | `skills/prompt-design-workflow.md` | Skill for turning rough user goals into usable prompts |
 | `skills/prompt-analysis.md` | Skill for analyzing prompt quality and structure |
 | `skills/prompt-rewrite.md` | Skill for rewriting prompts into usable versions |
