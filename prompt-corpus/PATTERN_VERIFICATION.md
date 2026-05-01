@@ -266,3 +266,263 @@ with source-specific non-sensitive excerpts or structured notes showing the
 actual workflow sequence: inspect repo context, plan, edit, validate, report
 diff, and ask before risky/destructive actions. Without that upgrade, the
 pattern is plausible but partly generic.
+
+## Second Verification Scope
+
+This second pass checks three remaining core patterns from
+`PATTERN_LESSONS_INDEX.md` against the current local corpus entries.
+
+Only the current repository corpus text was used. No source URLs were opened or
+new external evidence was researched.
+
+Additional files checked for this pass:
+
+- `prompt-corpus/PATTERN_LESSONS_INDEX.md`
+- `prompt-corpus/famous-prompts.md`
+- `prompt-corpus/famous-prompts-pr021-pr040.md`
+- `prompt-corpus/famous-prompts-pr061-pr080.md`
+- `prompt-corpus/famous-prompts-pr101-pr120.md`
+
+## 4. Grounded Research
+
+### Pattern name
+
+Grounded research
+
+### Claimed reusable move
+
+`Search/inspect sources -> cite claims -> mark unknowns -> separate recommendation from evidence.`
+
+### Related source entries from PATTERN_LESSONS_INDEX.md
+
+- PR039 - OpenAI student use-case pack
+- PR040 - Student-voted prompt roundup
+- PR106 - Anti-hallucination / clarity prompt
+- PR111 - RAG / retrieval quality discussion
+
+### Evidence found in current corpus entries
+
+PR039 weakly supports the pattern. Its entry is an official student use-case
+pack organized around study, writing, planning, creativity, and productivity
+tasks. The entry shows mainstream research-adjacent uses, but it does not
+describe source citation, unknown marking, evidence separation, or a
+recommendation workflow.
+
+PR040 weakly supports the pattern. Its entry is a journalism-style roundup of
+student-voted prompts and practical use cases. Its safety note says article
+summaries may omit context or exact wording and that original sources are
+preferred when available. That supports source-quality caution, but not the
+full grounded research loop.
+
+PR106 partially supports the pattern. Its entry describes a structured prompt
+for asking clarifying questions and avoiding unsupported claims. It explicitly
+mentions assumptions, counter-hypotheses, confidence checks, clarification
+triggers, uncertainty handling, and the need for source grounding and
+evaluation. This supports "mark unknowns" and "do not make unsupported claims,"
+but it does not by itself show source inspection, citation, or recommendation
+separation.
+
+There is a source-number mismatch for PR111. `PATTERN_LESSONS_INDEX.md`
+describes PR111 as "RAG / retrieval quality discussion," but the current corpus
+entry PR111 is "10x Prompt Evaluator," a prompt-improver/evaluator prompt that
+uses rubric dimensions such as clarity, context, task definition, output
+format, examples, and constraints. The current RAG / retrieval quality entry is
+PR109, not PR111. PR109 would support retrieval-first grounding and warns that
+RAG quality depends on retrieval quality, but PR109 is not listed for this
+pattern in the index.
+
+### What is source-specific vs generic
+
+Source-specific:
+
+- PR040 supports a source-quality warning: article summaries may omit context
+  or exact wording, so original sources are preferable.
+- PR106 supports assumptions, counter-hypotheses, confidence checks,
+  clarification triggers, uncertainty handling, and the need for source
+  grounding.
+- PR109, if used instead of PR111, would support retrieval-first answering and
+  retrieval-quality caution.
+
+Generic:
+
+- The full sequence "search/inspect sources -> cite claims -> mark unknowns ->
+  separate recommendation from evidence" is mostly synthesized from research
+  best practices rather than directly shown in the cited entries.
+- PR039 and PR040 are student-use and prompt-roundup sources, not strong
+  evidence for a general grounded-research prompt workflow.
+- The index's PR111 citation is stale or misnumbered for this pattern.
+
+### Verdict
+
+partially corpus-supported
+
+### What source excerpt or entry upgrade is needed next
+
+Fix the source-entry mapping so the RAG / retrieval-quality support points to
+PR109, or add a real PR111-style grounded-research entry if the numbering is
+intended. Upgrade PR039, PR040, PR106, and PR109 with structured notes showing
+the specific research workflow steps: inspect sources, cite claims, label
+unknowns, separate evidence from inference, and make recommendations only after
+the evidence is shown.
+
+## 5. Structured Output / Extraction
+
+### Pattern name
+
+Structured output / extraction
+
+### Claimed reusable move
+
+`Define fields, null policy, evidence rule, and exact output shape.`
+
+### Related source entries from PATTERN_LESSONS_INDEX.md
+
+- PR061 - Anthropic Prompt Library
+- PR062 - OpenAI Cookbook
+- PR064 - Learn Prompting
+- PR106 - Prompt for Seeking Clarity and Avoiding Hallucinating
+
+### Evidence found in current corpus entries
+
+PR061 partially supports the pattern. Its entry describes official prompt
+examples across writing, analysis, coding, and productivity tasks. Its
+structure summary says the examples are task-oriented recipes with clear role,
+context, and output expectations. This supports output expectations at a broad
+level, but does not specifically show field definitions, null policy, or
+evidence rules.
+
+There is a naming mismatch for PR062. `PATTERN_LESSONS_INDEX.md` labels it as
+OpenAI Cookbook, but the current corpus entry PR062 is Anthropic Prompt
+Engineering Overview. The current PR062 still supports structured output at a
+summary level: it describes prompt design as specifying task, context,
+constraints, examples, and output shape. It does not explicitly mention null
+policy or evidence text.
+
+There is also a naming mismatch for PR064. `PATTERN_LESSONS_INDEX.md` labels it
+as Learn Prompting, but the current corpus entry PR064 is OpenAI Prompt
+Examples / Cookbook. The current PR064 strongly supports the pattern. Its short
+excerpt names structured outputs, classification, extraction, retrieval, and
+assistant workflows. Its structure summary says the examples combine task
+framing, input data, output schema, and validation ideas.
+
+PR106 partially supports the evidence and missing-information side of the
+pattern. Its entry describes assumptions, counter-hypotheses, confidence
+checks, and clarification triggers, and warns that anti-hallucination prompts
+still require source grounding and evaluation. This supports uncertainty and
+evidence discipline, but does not directly show an extraction schema or null
+policy.
+
+### What is source-specific vs generic
+
+Source-specific:
+
+- PR064 directly supports structured outputs, classification, extraction,
+  output schema, and validation ideas.
+- PR062 supports specifying output shape as part of prompt design.
+- PR061 supports prompt examples with clear output expectations.
+- PR106 supports source grounding, confidence checks, and clarification
+  triggers.
+
+Generic:
+
+- "Null policy" is not directly supported by the current local entry summaries.
+- "Evidence rule" is compatible with PR106 and PR064, but the exact extraction
+  rule is not shown in local excerpts.
+- The index names for PR062 and PR064 appear stale or shifted, even though the
+  current IDs still partly support the pattern.
+
+### Verdict
+
+corpus-supported
+
+### What source excerpt or entry upgrade is needed next
+
+Add source-specific examples or structured notes to PR064 showing exact schema,
+missing-value behavior, and validation expectations. Add a short note to PR106
+connecting uncertainty handling to extraction outputs: when evidence is absent,
+return null or ask a clarification question rather than inventing a value. Fix
+the PR062 and PR064 display names in the index in a future update.
+
+## 6. Evaluation Rubric
+
+### Pattern name
+
+Evaluation rubric
+
+### Claimed reusable move
+
+`Define criteria, scoring anchors, pass/fail rules, and failure examples.`
+
+### Related source entries from PATTERN_LESSONS_INDEX.md
+
+- PR108 - Prompt evaluation rubric discussion
+- PR109 - Prompt testing / evaluation discussion
+- PR110 - Prompt versioning discussion
+- PR118 - Prompt management / PromptOps discussion
+
+### Evidence found in current corpus entries
+
+There are several source-number mismatches between the index labels and the
+current corpus entries.
+
+PR108 does not support the evaluation-rubric pattern as cited. The current
+entry is a metacognition prompt claim about making the model observe its own
+certainty generation or pattern matching. Its safety note says to evaluate
+output behavior rather than assuming introspective claims are literally true,
+but it is not a rubric discussion.
+
+PR109 does not support the evaluation-rubric pattern as cited. The current
+entry is a RAG / hallucination-control claim with a retrieval-first workflow
+and a warning that RAG quality depends on retrieval quality. It is more relevant
+to grounded research than to rubric design.
+
+PR110 strongly supports part of the pattern. The current entry is "How to
+Evaluate the Quality of a Prompt." It describes a rubric-oriented discussion
+covering clarity, context, output format, and feasibility. Its safety note says
+to prefer behavior-based evals over purely aesthetic prompt scoring. This
+supports criteria and behavior-based evaluation, but the local summary does not
+show scoring anchors, pass/fail rules, or failure examples.
+
+PR118 partially supports the broader evaluation/testing context. It describes
+tools for prompt management and testing, with practical pain points around
+prompt libraries, testing, regression checks, and collaboration. This supports
+the need for testing infrastructure, but it does not provide a rubric structure.
+
+The current PR111 entry, although not listed for this pattern in the index,
+would also support evaluation rubrics. It describes a prompt evaluator using
+rubric dimensions such as clarity, context, task definition, output format,
+examples, and constraints, and warns that "10x" claims require actual tests.
+
+### What is source-specific vs generic
+
+Source-specific:
+
+- PR110 supports rubric-oriented evaluation using clarity, context, output
+  format, and feasibility.
+- PR110 supports behavior-based evals over aesthetic scoring.
+- PR118 supports testing and regression-check infrastructure as a recurring
+  prompt-management need.
+- PR111, if added to this pattern, supports evaluator dimensions such as
+  clarity, context, task definition, output format, examples, and constraints.
+
+Generic:
+
+- The current cited entries do not show explicit scoring anchors such as pass,
+  partial, and fail.
+- Failure examples are not visible in the local summaries.
+- PR108 and PR109 are stale or wrong citations for this pattern.
+- "Prompt versioning discussion" is not the current PR110 label; current PR110
+  is the stronger evaluation-rubric source.
+
+### Verdict
+
+partially corpus-supported
+
+### What source excerpt or entry upgrade is needed next
+
+Fix the index mapping so PR110 and PR111 are the primary rubric sources, while
+PR118 remains supporting context for testing infrastructure. Upgrade PR110 and
+PR111 with non-sensitive source excerpts or structured notes that show actual
+criteria, scoring anchors, pass/fail rules, and failure examples. Remove or
+replace PR108 and PR109 from this pattern unless future corpus entries provide
+rubric-specific evidence for them.
