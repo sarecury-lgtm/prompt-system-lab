@@ -14,6 +14,11 @@ Finish the first 100-entry seed corpus with prompt pattern libraries, agent prom
 - **Type:** prompt pattern framework
 - **Short excerpt:** Large library of reusable prompts called “patterns” for real-world tasks.
 - **Structure summary:** Task-specific prompt files organized as reusable command-like patterns.
+- **Evidence note:**
+  - **Short excerpt or paraphrased structure:** Local entry frames Fabric as task-specific prompt files packaged as reusable command-like patterns.
+  - **Reusable move:** Store each repeatable prompt as a named pattern with a clear task target and expected behavior.
+  - **Pattern connection:** Supports the corpus pattern-library approach behind the Pattern Lessons Index: prompts become maintainable reusable moves rather than one-off chat text.
+  - **Verification limit:** Exact Fabric pattern text was not verified from local repo content; this note uses the existing paraphrased structure.
 - **Why it matters:** One of the clearest examples of treating prompts as a reusable operating layer rather than one-off chat text.
 - **Tags:** `fabric`, `patterns`, `prompt-library`, `workflow`
 - **Safety / reproduction note:** Review each pattern before reuse; some patterns may assume specific tools or user intent.

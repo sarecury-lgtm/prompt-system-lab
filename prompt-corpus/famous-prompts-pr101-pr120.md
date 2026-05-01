@@ -115,6 +115,11 @@ Start the second corpus batch with community-first prompt sources: Reddit prompt
 - **Type:** RAG / hallucination-control claim
 - **Short excerpt:** Community post about forcing retrieval-grounded answers to reduce hallucinations.
 - **Structure summary:** Retrieval-first workflow pattern: answer only through provided/retrieved context.
+- **Evidence note:**
+  - **Short excerpt or paraphrased structure:** Local entry summarizes the structure as a retrieval-first workflow that answers only through provided or retrieved context.
+  - **Reusable move:** Require evidence retrieval before synthesis, then constrain the answer to grounded context.
+  - **Pattern connection:** Supports the Grounded research lesson because it separates evidence collection from final claims and reduces unsupported synthesis.
+  - **Verification limit:** Exact Reddit prompt text was not verified from local repo content; this note uses the existing structure summary rather than quoting the source.
 - **Why it matters:** Shows RAG as a practical prompt/workflow answer to hallucination concerns and also a target of community skepticism.
 - **Tags:** `RAG`, `hallucination`, `grounding`, `reddit`
 - **Safety / reproduction note:** RAG quality depends on retrieval quality; do not treat it as a magic fix.
