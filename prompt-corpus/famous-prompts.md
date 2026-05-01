@@ -21,6 +21,12 @@ Curated “Act as …” prompt patterns for many roles.
 ## Structure summary
 Directory-style collection of role-based prompt starters. Most entries use a direct persona assignment, task-specific behavior framing, and lightweight output expectations rather than long procedural scaffolds.
 
+## Evidence note
+- **Short excerpt or paraphrased structure:** Local entry records this as a curated "Act as ..." prompt pattern collection with many role-based prompt starters.
+- **Reusable move:** Start with a practical role, then bind it to a task boundary and expected behavior.
+- **Pattern connection:** Supports the Role + task frame lesson because the useful control comes from role plus task surface, not from persona language alone.
+- **Verification limit:** This note relies on the local corpus summary and source metadata; no long source prompt text was re-quoted.
+
 ## Pattern lesson
 Early role-prompt collections work because they turn a vague request into a recognizable task frame. The reusable pattern is not the phrase “act as”; it is the combination of role, task boundary, and expected behavior. Role alone is weak, but role plus concrete task surface gives the model a useful prior.
 
@@ -182,6 +188,12 @@ Rewrites user prompts to improve clarity and specificity.
 
 ## Structure summary
 Uses a transformation loop: infer the user’s underlying intent, improve the prompt’s clarity, and output a more usable variant. Unlike ordinary role prompts, the target artifact is another prompt rather than a direct task answer.
+
+## Evidence note
+- **Short excerpt or paraphrased structure:** Local entry summarizes the prompt as rewriting user prompts to improve clarity and specificity.
+- **Reusable move:** Treat the prompt as the object of work: diagnose intent and missing controls, then return a cleaner prompt.
+- **Pattern connection:** Supports the Prompt improvement loop lesson because it separates prompt diagnosis and rewriting from answering the original task.
+- **Verification limit:** Exact upstream prompt wording was not verified locally; this uses the repo's existing paraphrased structure.
 
 ## Pattern lesson
 Prompt-enhancer prompts are useful because they separate “user wants an answer” from “user needs a better instruction surface.” The reusable pattern is a meta-layer: inspect the prompt as an object, diagnose missing pieces, then rewrite only the instruction layer.

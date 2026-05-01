@@ -74,6 +74,11 @@ Start the second corpus batch with community-first prompt sources: Reddit prompt
 - **Type:** anti-hallucination / clarity prompt
 - **Short excerpt:** Structured prompt meant to make the model ask clarifying questions and avoid unsupported claims.
 - **Structure summary:** Uses assumptions, counter-hypotheses, confidence checks, and clarification triggers.
+- **Evidence note:**
+  - **Short excerpt or paraphrased structure:** Local entry identifies assumptions, counter-hypotheses, confidence checks, and clarification triggers as the main structure.
+  - **Reusable move:** Require the model to surface uncertainty, ask for missing context, and separate supported claims from assumptions.
+  - **Pattern connection:** Supports both Grounded research and Structured output / extraction lessons because hallucination control needs explicit uncertainty handling and evidence discipline.
+  - **Verification limit:** Exact Reddit prompt text was not verified from local repo content; this note uses the existing structure summary rather than quoting the source.
 - **Why it matters:** Useful source for practical hallucination-control and uncertainty-handling prompt patterns.
 - **Tags:** `anti-hallucination`, `clarity`, `uncertainty`, `reddit`
 - **Safety / reproduction note:** “Avoid hallucination” prompts still require source grounding and evaluation.
