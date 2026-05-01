@@ -1,0 +1,31 @@
+# Pork Belly And Thin-Sliced Beef/Pork
+
+## What To Check
+
+- Meat type: 냉동 대패삼겹살, 삼겹살, 우삼겹
+- Total weight and slice style
+- Origin, manufacturer, importer, and seller
+- Storage condition: frozen, chilled, vacuum-packed, individually packed
+- Fat ratio and review complaints
+
+## Common Traps
+
+- Listing title says 삼겹살 but option changes to another cut or mixed product.
+- Very cheap products may have high fat, strong smell, or unclear source.
+- Frozen meat can arrive partially thawed.
+
+## Strong Evidence
+
+- Product page clearly states cut, weight, origin, and storage condition.
+- Recent reviews discuss smell, fat ratio, texture, packaging, and delivery condition.
+
+## Mark Unknown
+
+- Missing origin/manufacturer/importer
+- Ambiguous cut or mixed options
+- Quality claims without review support
+
+## Output Implications
+
+- Track repeated negative categories: 잡내, 누린내, 비계 과다, 해동 배송, 포장 파손, 질김.
+- Prefer transparent source and lower regret risk over the absolute lowest price.
