@@ -266,3 +266,56 @@ with source-specific non-sensitive excerpts or structured notes showing the
 actual workflow sequence: inspect repo context, plan, edit, validate, report
 diff, and ask before risky/destructive actions. Without that upgrade, the
 pattern is plausible but partly generic.
+
+## Verification pass 003 — Persistent instruction, coding workflow, improvement loop
+
+### Persistent project instruction
+Verdict: partially corpus-supported
+
+Evidence checked:
+- PR114 — Prompt workflow/versioning discussion supports maintained prompt artifacts, but not project-instruction behavior directly.
+- PR115 — Complex workflow discussion supports prompt workflows and evaluation, but does not show persistent instruction triggers or priority.
+- PR116 — Prompt versioning discussion supports Git/tool-based prompt management, adjacent to persistence but not enough by itself.
+- PR120 — ChatGPT Project custom-instruction discussion directly supports persistent instruction layers, scope, and priority concerns.
+- PR122 — System-prompt archive metadata supports structural study of instruction layering, tool rules, and assistant behavior constraints.
+
+Concerns:
+- The strongest local evidence is PR120 and PR122, while the index currently emphasizes PR114-PR116 and PR122.
+- Current entries are mostly summaries, so trigger/default behavior/boundary examples are inferred from structure rather than verified source excerpts.
+
+Recommended follow-up:
+- Add concise evidence notes to PR120 and PR122 showing trigger, scope, priority, boundary, and fallback structure.
+
+### Coding-agent workflow
+Verdict: partially corpus-supported
+
+Evidence checked:
+- PR086 — Cursor rules support repo-local coding instructions for style, architecture, tests, and framework conventions.
+- PR087 — Cursor Directory supports adapting rules to the actual repo rather than blindly importing generic rules.
+- PR088 — Cline supports planning, editing files, tool use, reporting results, constraints, and confirmation points.
+- PR090 — Open Interpreter supports local tool execution expectations, runtime feedback, approval, and sandboxing concerns.
+- PR091 — Aider supports repository context, diffs, edit format, commit-aware changes, patch review, and tests.
+- PR093 — GPT Engineer supports clarifying questions, project plans, generated code artifacts, and review/testing needs.
+
+Concerns:
+- Local entries support the broad workflow, but "smallest safe change" and "summarize diff" remain partly synthesized from coding-agent practice.
+- PR088 and PR091 are the strongest matches but still need source-specific evidence notes.
+
+Recommended follow-up:
+- Upgrade PR088 and PR091 with concise evidence notes for inspect, plan, edit, validate, report, and permission boundaries.
+
+### Prompt improvement loop
+Verdict: corpus-supported
+
+Evidence checked:
+- PR011 — Prompt Enhancer directly supports diagnosing missing control points, rewriting the prompt, and naming what changed.
+- PR036 — Micro-prompts support lightweight prompt improvement and redirection, but only as compact add-ons rather than a full loop.
+- PR106 — Clarity/anti-hallucination prompt supports asking clarifying questions and surfacing uncertainty before answering.
+- PR111 — Prompt evaluator meta-prompt supports rubric-style review and improvement across clarity, context, task definition, output format, examples, and constraints.
+
+Concerns:
+- PR011 is the main direct evidence; PR036 and PR106 are supporting or adjacent rather than full prompt-improvement loops.
+- PR111 is a stronger evaluator/improver source than the current index relationship suggests, but it is not listed under this pattern.
+
+Recommended follow-up:
+- Add or strengthen PR111 evidence notes before deciding whether the index should cite it for Prompt improvement loop.
