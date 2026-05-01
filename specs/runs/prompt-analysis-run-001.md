@@ -1,10 +1,12 @@
-# Prompt Analysis Spec Run 001
+# Prompt Analysis Spec Run 001 - Dry Run / Simulated Run
 
 ## Purpose
 
 Record the first manual run of `specs/prompt-analysis-specs.md` against `skills/prompt-analysis.md`.
 
-This is not an automated test run. It is a manual behavior check to see whether the prompt-analysis skill produces the kind of judgments the specs expect.
+This is not an automated test run or a real model-output capture. It is a dry run / simulated run: a manual behavior check to see whether the prompt-analysis skill appears to produce the kind of judgments the specs expect.
+
+The `Observed analysis` entries below should be treated as reconstructed notes or summaries. They are not verified raw model output, and they should not be used as evidence that the exact model response matched the spec.
 
 ## Run Summary
 
@@ -12,11 +14,25 @@ This is not an automated test run. It is a manual behavior check to see whether 
 - **Skill checked:** `skills/prompt-analysis.md`
 - **Spec file:** `specs/prompt-analysis-specs.md`
 - **Specs sampled:** 5 / 10
+- **Run type:** Dry run / simulated run
+- **Raw output captured:** No
+- **Confidence level:** Low for exact-output claims; useful only as a planning and methodology note
 - **Result:** 4 pass, 1 partial
 
 ## Findings
 
 The skill is generally usable for quick prompt review. It catches vague roles, tool simulation risk, unsafe jailbreak structure, and project-instruction behavior. The weakest area is overbuilt prompt analysis: it catches impossible rules, but should be more direct about replacing absolute claims with testable fallback behavior.
+
+## Real Run Recording Standard
+
+A real spec run must separate raw model output from evaluation:
+
+1. Put the spec input into the actual model exactly as written.
+2. Paste the received model answer as raw output, without edits, cleanup, rewriting, or summarization.
+3. Compare that raw output against the `Expected match`.
+4. Write the PASS / PARTIAL / FAIL judgment separately below the raw output.
+
+Use `specs/runs/REAL_RUN_TEMPLATE.md` for future real execution records.
 
 ## Case Results
 
