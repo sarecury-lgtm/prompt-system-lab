@@ -24,13 +24,13 @@ Use this file when you want to answer:
 |---|---|---|---|---|
 | Role + task frame | The prompt is vague and needs a clear work mode | `You are [role]. Your task is [objective]. Use [constraints]. Return [output shape].` | PR001 | Decorative roleplay without success criteria |
 | Interface emulation | You want the model to simulate a tool or UI surface | `Return simulated [tool/interface] output only; do not claim real execution.` | PR002 | Fake execution results that look real |
-| Prompt improvement loop | You want to improve a weak prompt before using it | `Diagnose missing control points → rewrite the prompt → name what changed.` | PR011 | Polished but overcomplicated prompt that drifts from the real goal |
+| Prompt improvement loop | You want to improve a weak prompt before using it | `Diagnose missing control points → rewrite the prompt → name what changed.` | PR011; PR036, PR106, PR111 (partial/adjacent) | Polished but overcomplicated prompt that drifts from the real goal |
 | Defensive jailbreak analysis | You are studying adversarial prompts safely | `Classify the attack mechanism; do not reproduce runnable jailbreak text.` | PR025 | Accidentally storing or improving unsafe operational text |
 | Grounded research | The answer depends on external/current sources | `Search/inspect sources → cite claims → mark unknowns → separate recommendation from evidence.` | PR039, PR040, PR106, PR111 | Confident synthesis from weak or stale sources |
 | Structured output / extraction | The output must be parsed, compared, or reused | `Define fields, null policy, evidence rule, and exact output shape.` | PR061, PR062, PR064, PR106 | Pretty formatting without enforceable schema |
 | Evaluation rubric | You need to judge prompt/output quality consistently | `Define criteria, scoring anchors, pass/fail rules, and failure examples.` | PR108, PR109, PR110, PR118 | Vague “quality” judgment that cannot catch regressions |
-| Persistent project instruction | The prompt should control ongoing assistant behavior | `Define trigger, default behavior, boundaries, routing, and fallback.` | PR114, PR115, PR116, PR122 | Rule pile with no priority or trigger |
-| Coding-agent workflow | The model works inside files, repos, tools, or code tasks | `Inspect context → make smallest safe change → validate → summarize diff.` | PR086, PR087, PR088, PR089, PR090, PR091, PR092, PR093 | Tool-using agent edits too much or skips validation |
+| Persistent project instruction | The prompt should control ongoing assistant behavior | `Define trigger, default behavior, boundaries, routing, and fallback.` | PR120, PR122; PR114-PR116 (indirect workflow/versioning support) | Rule pile with no priority or trigger |
+| Coding-agent workflow | The model works inside files, repos, tools, or code tasks | `Inspect context → make smallest safe change → validate → summarize diff.` | PR088, PR091; PR086, PR087, PR090, PR093 (partial); PR089, PR092 (indirect) | Tool-using agent edits too much or skips validation |
 
 ## Pattern Details
 
@@ -126,8 +126,9 @@ Do not add heavy structure unless the task needs it. Some prompts only need one 
 **Related source entries**
 
 - PR011 — Act as Prompt Enhancer
-- PR036 — Absurdly Useful Micro-Prompts
-- PR106 — Prompt for Seeking Clarity and Avoiding Hallucinating
+- PR036 — Absurdly Useful Micro-Prompts (partial; lightweight improvement add-ons)
+- PR106 — Prompt for Seeking Clarity and Avoiding Hallucinating (adjacent; clarification before answering)
+- PR111 — Prompt evaluator meta-prompt (partial; evaluator/improver structure)
 
 ---
 
@@ -325,10 +326,11 @@ Do not put temporary task requirements into project instructions. Keep persisten
 
 **Related source entries**
 
-- PR114 — ChatGPT Project instruction discussion
-- PR115 — Project instruction workflow discussion
-- PR116 — Custom instruction / project instruction discussion
+- PR120 — ChatGPT Project custom-instruction discussion
 - PR122 — System-prompt archive metadata
+- PR114 — Prompt workflow/versioning discussion (indirect)
+- PR115 — Complex prompt workflow discussion (indirect)
+- PR116 — Prompt versioning and management discussion (indirect)
 
 ---
 
@@ -365,14 +367,14 @@ Do not use a full repo-agent workflow for simple code snippets. Use it when file
 
 **Related source entries**
 
-- PR086 — Cursor Rules / `.cursorrules` Pattern
-- PR087 — Cursor Directory Rules
 - PR088 — Cline System Prompt Lineage
-- PR089 — Roo Code / Roo-Code Agent Prompts
-- PR090 — Open Interpreter System Prompt Lineage
 - PR091 — Aider Coding Prompts
-- PR092 — Continue.dev Prompt Templates
-- PR093 — GPT Engineer Prompt Lineage
+- PR086 — Cursor Rules / `.cursorrules` Pattern (partial)
+- PR087 — Cursor Directory Rules (partial)
+- PR090 — Open Interpreter System Prompt Lineage (partial)
+- PR093 — GPT Engineer Prompt Lineage (partial)
+- PR089 — Roo Code / Roo-Code Agent Prompts (indirect)
+- PR092 — Continue.dev Prompt Templates (indirect)
 
 ## Quick Selection Guide
 
