@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-05-02
+
+### Added
+
+- Added `examples/research-prompts/online-product-research.md` as a practical example for grounded product research.
+- Added prompt-analysis real run 007 and prompt-rewrite real run 001.
+- Added corpus evidence notes, a focused pattern verification pass, and pattern index corrections.
+- Added the external project reference map and `USAGE.md` as the practical entry point for the repo.
+
+### Changed
+
+- Updated `README.md` to point to `USAGE.md` and the examples layer.
+- Kept the repository structure aligned around corpus evidence, pattern lessons, operational skills/examples, and specs/real runs.
+
 ## 2026-04-30
 
 ### Added
