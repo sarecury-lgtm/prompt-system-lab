@@ -30,7 +30,7 @@ Use this file when you want to answer:
 | Structured output / extraction | The output must be parsed, compared, or reused | `Define fields, null policy, evidence rule, and exact output shape.` | PR061, PR062, PR064, PR106 | Pretty formatting without enforceable schema |
 | Evaluation rubric | You need to judge prompt/output quality consistently | `Define criteria, scoring anchors, pass/fail rules, and failure examples.` | PR108, PR109, PR110, PR118 | Vague “quality” judgment that cannot catch regressions |
 | Persistent project instruction | The prompt should control ongoing assistant behavior | `Define trigger, default behavior, boundaries, routing, and fallback.` | PR114, PR115, PR116, PR122 | Rule pile with no priority or trigger |
-| Coding-agent workflow | The model works inside files, repos, tools, or code tasks | `Inspect context → make smallest safe change → validate → summarize diff.` | PR082, PR083, PR084, PR085, PR086, PR087, PR088 | Tool-using agent edits too much or skips validation |
+| Coding-agent workflow | The model works inside files, repos, tools, or code tasks | `Inspect context → make smallest safe change → validate → summarize diff.` | PR086, PR087, PR088, PR089, PR090, PR091, PR092, PR093 | Tool-using agent edits too much or skips validation |
 
 ## Pattern Details
 
@@ -365,13 +365,14 @@ Do not use a full repo-agent workflow for simple code snippets. Use it when file
 
 **Related source entries**
 
-- PR082 — Cursor Rules
-- PR083 — Cline
-- PR084 — Roo Code
-- PR085 — Open Interpreter
-- PR086 — Aider
-- PR087 — Continue
-- PR088 — GPT Engineer
+- PR086 — Cursor Rules / `.cursorrules` Pattern
+- PR087 — Cursor Directory Rules
+- PR088 — Cline System Prompt Lineage
+- PR089 — Roo Code / Roo-Code Agent Prompts
+- PR090 — Open Interpreter System Prompt Lineage
+- PR091 — Aider Coding Prompts
+- PR092 — Continue.dev Prompt Templates
+- PR093 — GPT Engineer Prompt Lineage
 
 ## Quick Selection Guide
 
