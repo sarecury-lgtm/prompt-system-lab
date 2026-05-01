@@ -14,6 +14,11 @@ Continue the prompt corpus with official prompt libraries, prompt marketplaces, 
 - **Type:** official prompt library
 - **Short excerpt:** Official Claude prompt examples across writing, analysis, coding, and productivity tasks.
 - **Structure summary:** Task-oriented prompt examples framed as reusable recipes with clear role, context, and output expectations.
+- **Evidence note:**
+  - **Short excerpt or paraphrased structure:** Local entry describes official examples as reusable recipes with role, context, and output expectations.
+  - **Reusable move:** Turn a task into a concrete recipe: define the job, provide context, and specify the expected output shape.
+  - **Pattern connection:** Supports the Structured output / extraction lesson because reusable prompt examples become stronger when output expectations are explicit and reviewable.
+  - **Verification limit:** Exact Anthropic example text was not verified from local repo content; this note uses the existing structure summary and avoids quoting long source text.
 - **Why it matters:** Strong official source for studying Claude-style prompt tone and structure.
 - **Tags:** `official`, `anthropic`, `claude`, `prompt-library`
 - **Safety / reproduction note:** Prefer linking and summarizing examples rather than copying long prompt text.
