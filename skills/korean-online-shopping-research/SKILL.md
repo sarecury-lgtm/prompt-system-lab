@@ -28,16 +28,29 @@ Best fit:
 7. Flag unknowns and regret risks.
 8. Produce a practical buy / hold / avoid judgment.
 
+## Judgment Thresholds
+
+- BUY requires enough product-page evidence, price evidence, and review evidence.
+- A product may be the best available candidate but still be HOLD.
+- Do not give BUY when recent review text/photo evidence is missing for meat products.
+- Do not give BUY when origin, manufacturer, processor, importer, seller identity, weight, or delivered price is unclear.
+- Large review count or recent purchase volume is a signal, not proof of review trust.
+- If evidence is incomplete but the product is still promising, label it HOLD / top candidate, not BUY.
+- A suspiciously cheap product needs stronger evidence, not weaker evidence.
+- Prefer HOLD over weak BUY when regret-risk evidence is unresolved.
+
 ## Output Contract
 
 Return:
-- recommendation: buy / hold / avoid
+- best candidate
+- buy / hold / avoid judgment
 - comparison table
 - delivery-included unit price when calculable
 - product-page evidence
 - review evidence
 - unknowns
 - regret-risk flags
+- missing evidence needed to upgrade HOLD to BUY
 - concise purchase rationale
 
 If evidence is insufficient, say what is missing instead of guessing.
