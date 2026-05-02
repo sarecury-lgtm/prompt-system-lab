@@ -4,6 +4,15 @@ Load only the files needed for the request. Usually use 1-3 reference files.
 
 ## Routing
 
+Any product research:
+- `references/verification/distrust-first.md`
+
+Unrestricted product search:
+- `references/verification/cross-platform-search.md`
+
+Marketplace price/review issues:
+- `references/verification/marketplace-common-traps.md`
+
 Korean meat purchase research:
 - `references/meat/pork-belly.md`
 - `references/price-tricks/shipping-included-unit-price.md`
@@ -13,6 +22,7 @@ Platform comparison:
 - `references/marketplaces/coupang.md`
 - `references/marketplaces/naver-shopping.md`
 - Add `kurly.md` or `ssg.md` only when those platforms are in scope.
+- Marketplace-specific files should only be used for platform-specific quirks.
 
 Suspiciously cheap listings:
 - `references/price-tricks/shipping-included-unit-price.md`
