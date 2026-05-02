@@ -34,6 +34,16 @@ Best fit:
 - Prefer a smaller but better-evidenced candidate pool over a large list of weak candidates.
 - Separate best current candidate, actual BUY, HOLD needing more evidence, and AVOID.
 
+## Category Winners And Overall Winner
+
+- When the user names multiple product categories, do not collapse them into one undifferentiated ranking.
+- First select a best current candidate within each relevant category.
+- Then make an overall judgment with category caveats.
+- Adjacent categories may win their own category and may even win overall if their price, evidence, and use-case fit are strong enough.
+- However, an adjacent-category product should not erase the intended category. If 우삼겹 wins on value, still report the best 대패삼겹살/삼겹살-family candidate separately.
+- If the user's practical intent is cheap frozen pork belly for pan grilling, 삼겹살/대패삼겹살/냉삼/바로구이 candidates should be evaluated as their own family before an overall winner is chosen.
+- Separate category winner, overall winner, best current candidate, and BUY / HOLD / AVOID judgment.
+
 ## Core Workflow
 
 1. Identify the purchase decision.
