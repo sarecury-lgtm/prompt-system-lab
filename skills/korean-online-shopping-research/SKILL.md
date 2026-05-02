@@ -24,6 +24,16 @@ Best fit:
 - Separate the best current candidate from a BUY judgment.
 - If all candidates are HOLD, say no BUY was found yet and explain what search must expand.
 
+## Wide Search And Disproof
+
+- Search broadly by purchase intent, not only the user's exact product words.
+- Build a candidate pool from multiple source types before judging.
+- Treat the first attractive candidate as a hypothesis to disprove, not as the likely answer.
+- For each candidate, ask: "What would make the user regret buying this?"
+- Do not stop at HOLD. HOLD triggers broader search or a clear "no BUY found yet."
+- Prefer a smaller but better-evidenced candidate pool over a large list of weak candidates.
+- Separate best current candidate, actual BUY, HOLD needing more evidence, and AVOID.
+
 ## Core Workflow
 
 1. Identify the purchase decision.
