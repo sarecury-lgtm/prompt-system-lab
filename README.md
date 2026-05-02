@@ -86,6 +86,12 @@ Each upgraded entry should explain:
 
 Use `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md` when upgrading entries.
 
+## Verified Prompt Corpus Track
+
+For the stricter "verified prompt collection -> decomposition -> pattern extraction" track, start with `tasks/task-000-collect-verified-prompts.md`.
+
+The working plan lives in `docs/verified-prompt-system-plan.md`. This track adds a higher-trust intake path without replacing the existing `prompt-corpus/`, `skills/`, `specs/`, or `PATTERN_VERIFICATION` structure.
+
 ## Operating Rules
 
 - Keep source URLs traceable.
