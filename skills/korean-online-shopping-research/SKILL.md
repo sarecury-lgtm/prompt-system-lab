@@ -17,6 +17,13 @@ Best fit:
 - Bulk price scraping or automation
 - Claims that cannot be verified from product, seller, review, or official source pages
 
+## Core Philosophy
+
+- Trust nothing by default.
+- Search should try to disprove candidates, not confirm the first attractive listing.
+- Separate the best current candidate from a BUY judgment.
+- If all candidates are HOLD, say no BUY was found yet and explain what search must expand.
+
 ## Core Workflow
 
 1. Identify the purchase decision.
