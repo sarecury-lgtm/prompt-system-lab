@@ -12,6 +12,33 @@ Reconnect PR001–PR130 to the evidence and promotion pipeline without putting t
 - Treat current registry values as provisional.
 - Preserve source traceability and copyright/safety boundaries.
 
+## Progress — 2026-07-22
+
+| Phase | Status | Evidence |
+|---|---|---|
+| A — inventory validation | manual pass complete; deterministic CI check committed but not yet run | `audit/corpus-registry-validation.md`, `scripts/validate_corpus_registry.py` |
+| B — entry triage | priority pass complete for structured entries, evidence notes, runtime pattern sources, and all 7 active sources | `corpus/registry.csv` |
+| C — runtime pattern audit | initial audit complete for all 9 patterns | `audit/runtime-pattern-evidence.csv` |
+| D — pilot comparisons | cases, scoring, and variant contracts ready; model runs not yet completed | `specs/experiments/corpus-restoration-pilots/` |
+| E — promotion decisions | blocked until pilot outputs and Kare Notes exist | none |
+
+Current registry counts:
+
+- reviewed: 10
+- recovered: 4
+- raw: 116
+- tested: 0
+- verified: 0
+- rejected: 0
+
+Current pattern grades:
+
+- E1: 4
+- E0: 5
+- E2–E4: 0
+
+The runtime bundle remains unchanged.
+
 ## Phase A — Inventory validation
 
 For each row in `corpus/registry.csv`:
