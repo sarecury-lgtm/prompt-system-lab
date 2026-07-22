@@ -1,0 +1,15 @@
+{
+  "experiment_id": "expert-collaboration-pilot-001",
+  "case_ids": ["C9", "C13"],
+  "conditions": ["baseline", "pattern-only", "active", "full"],
+  "model": "gpt-5.5",
+  "evaluator_model": "gpt-5.5",
+  "top_k": 4,
+  "retrieval_context_chars": 6000,
+  "maximum_questions": 3,
+  "question_rounds": 1,
+  "execution_seed": 93173,
+  "anonymization_seed": 22817,
+  "evaluator_count": 2,
+  "tools_allowed": false
+}

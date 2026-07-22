@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/prompt-corpus/batch-result.schema.json",
+  "title": "Prompt corpus Work batch result",
+  "type": "object",
+  "required": ["batch_id", "sources"],
+  "additionalProperties": false,
+  "properties": {
+    "batch_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/sourceResult"
+      }
+    }
+  },
+  "$defs": {
+    "nullableDate": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "lesson": {
+      "type": ["object", "null"],
+      "required": [
+        "short_excerpt",
+        "structure_summary",
+        "pattern_lesson",
+        "mechanism",
+        "failure_mode",
+        "reusable_move",
+        "safety_note"
+      ],
+      "properties": {
+        "short_excerpt": {"type": ["string", "null"]},
+        "structure_summary": {"type": ["string", "null"]},
+        "pattern_lesson": {"type": "string", "minLength": 1},
+        "mechanism": {"type": "string", "minLength": 1},
+        "failure_mode": {"type": "string", "minLength": 1},
+        "reusable_move": {"type": "string", "minLength": 1},
+        "safety_note": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "sourceResult": {
+      "type": "object",
+      "required": [
+        "source_id",
+        "name",
+        "source_url",
+        "source_status",
+        "upgrade_status",
+        "pattern_link_status",
+        "related_patterns",
+        "evidence_relation",
+        "evidence_note",
+        "source_checked",
+        "checked_at",
+        "verification_basis",
+        "verified_at",
+        "tested",
+        "test_evidence",
+        "source_type",
+        "tags",
+        "lesson"
+      ],
+      "properties": {
+        "source_id": {"type": "string", "pattern": "^PR[0-9]{3}$"},
+        "name": {"type": "string", "minLength": 1},
+        "source_url": {"type": "string", "minLength": 1},
+        "source_status": {"type": "string", "minLength": 1},
+        "upgrade_status": {
+          "enum": ["cataloged", "lesson-draft", "verified", "tested"]
+        },
+        "pattern_link_status": {
+          "enum": ["unlinked", "candidate", "referenced", "confirmed"]
+        },
+        "related_patterns": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "evidence_relation": {
+          "enum": ["direct", "partial", "adjacent", "synthesized", "unverified"]
+        },
+        "evidence_note": {"type": ["string", "null"]},
+        "source_checked": {"type": "boolean"},
+        "checked_at": {"$ref": "#/$defs/nullableDate"},
+        "verification_basis": {
+          "enum": ["external-source", "corpus-summary", "pattern-document", null]
+        },
+        "verified_at": {"$ref": "#/$defs/nullableDate"},
+        "tested": {"type": "boolean"},
+        "test_evidence": {"type": ["string", "null"]},
+        "source_type": {"type": ["string", "null"]},
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "lesson": {"$ref": "#/$defs/lesson"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

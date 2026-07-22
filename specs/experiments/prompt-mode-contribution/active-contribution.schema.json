@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source_assessments", "keep_active", "fallback_reason"],
+  "properties": {
+    "source_assessments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "used_in_active_prompt",
+          "contributions",
+          "verdict",
+          "reason"
+        ],
+        "properties": {
+          "source_id": {"type": "string", "pattern": "^PR[0-9]{3}$"},
+          "used_in_active_prompt": {"type": "boolean"},
+          "contributions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "description",
+                "active_prompt_excerpt",
+                "pattern_only_overlap",
+                "already_in_pattern_only",
+                "changes_judgment_or_deliverable",
+                "supported_by_source"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "new_core_constraint",
+                    "decision_changing_variable",
+                    "concrete_counterexample",
+                    "realistic_alternative",
+                    "executable_validation",
+                    "stop_expand_switch_rule",
+                    "material_deliverable_improvement",
+                    "none"
+                  ]
+                },
+                "description": {"type": "string"},
+                "active_prompt_excerpt": {"type": "string"},
+                "pattern_only_overlap": {"type": "string"},
+                "already_in_pattern_only": {"type": "boolean"},
+                "changes_judgment_or_deliverable": {"type": "boolean"},
+                "supported_by_source": {"type": "boolean"}
+              }
+            }
+          },
+          "verdict": {
+            "type": "string",
+            "enum": ["unique", "not_unique", "unused"]
+          },
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "keep_active": {"type": "boolean"},
+    "fallback_reason": {"type": "string"}
+  }
+}

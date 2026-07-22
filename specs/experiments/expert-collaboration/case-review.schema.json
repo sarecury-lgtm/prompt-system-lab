@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reviews", "overall_ready", "overall_reasons"],
+  "properties": {
+    "reviews": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "too_easy",
+          "hidden_answer_problem",
+          "condition_bias",
+          "rubric_discrimination",
+          "unskilled_evaluator_overrating_risk",
+          "required_revisions",
+          "verdict"
+        ],
+        "properties": {
+          "case_id": {"type": "string", "enum": ["A3", "A7", "C9", "C10", "C11", "C13", "C14", "C16"]},
+          "too_easy": {"$ref": "#/$defs/check"},
+          "hidden_answer_problem": {"$ref": "#/$defs/check"},
+          "condition_bias": {"$ref": "#/$defs/check"},
+          "rubric_discrimination": {"$ref": "#/$defs/check"},
+          "unskilled_evaluator_overrating_risk": {"$ref": "#/$defs/check"},
+          "required_revisions": {"type": "array", "items": {"type": "string"}},
+          "verdict": {"type": "string", "enum": ["PASS", "REVISE"]}
+        }
+      }
+    },
+    "overall_ready": {"type": "boolean"},
+    "overall_reasons": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["flag", "reason"],
+      "properties": {
+        "flag": {"type": "boolean"},
+        "reason": {"type": "string"}
+      }
+    }
+  }
+}

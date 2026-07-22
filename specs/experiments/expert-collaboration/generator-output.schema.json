@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["selected_patterns", "used_source_ids", "used_reusable_moves", "final_prompt"],
+  "properties": {
+    "selected_patterns": {"type": "array", "items": {"type": "string"}},
+    "used_source_ids": {"type": "array", "items": {"type": "string", "pattern": "^PR[0-9]{3}$"}},
+    "used_reusable_moves": {"type": "array", "items": {"type": "string"}},
+    "final_prompt": {"type": "string", "minLength": 1}
+  }
+}

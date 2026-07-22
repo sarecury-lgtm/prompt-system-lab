@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["evaluations"],
+  "properties": {
+    "evaluations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "anonymous_id", "scores", "artifact_checks", "generic_only",
+          "critical_failures", "new_variable_assessments", "total_score", "summary"
+        ],
+        "properties": {
+          "anonymous_id": {"type": "string", "pattern": "^R[A-F0-9]{8}$"},
+          "scores": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["purpose_understanding", "professional_independence", "design_ability", "judgment_boundary", "practical_value"],
+            "properties": {
+              "purpose_understanding": {"type": "integer", "minimum": 0, "maximum": 4},
+              "professional_independence": {"type": "integer", "minimum": 0, "maximum": 4},
+              "design_ability": {"type": "integer", "minimum": 0, "maximum": 4},
+              "judgment_boundary": {"type": "integer", "minimum": 0, "maximum": 4},
+              "practical_value": {"type": "integer", "minimum": 0, "maximum": 4}
+            }
+          },
+          "artifact_checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["artifact_id", "met", "evidence"],
+              "properties": {
+                "artifact_id": {"type": "string", "pattern": "^R[1-9][0-9]*$"},
+                "met": {"type": "boolean"},
+                "evidence": {"type": "string"}
+              }
+            }
+          },
+          "generic_only": {"type": "boolean"},
+          "critical_failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "reason"],
+              "properties": {
+                "type": {"type": "string", "enum": ["compliant_failure", "authoritarian_failure", "fabricated_fact_or_logic", "unconditional_decision_despite_missing_critical_information"]},
+                "reason": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          "new_variable_assessments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["variable_id", "material", "non_duplicate", "changed_judgment", "not_fabricated", "credited", "evidence"],
+              "properties": {
+                "variable_id": {"type": "string"},
+                "material": {"type": "boolean"},
+                "non_duplicate": {"type": "boolean"},
+                "changed_judgment": {"type": "boolean"},
+                "not_fabricated": {"type": "boolean"},
+                "credited": {"type": "boolean"},
+                "evidence": {"type": "string"}
+              }
+            }
+          },
+          "total_score": {"type": "integer", "minimum": 0, "maximum": 20},
+          "summary": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

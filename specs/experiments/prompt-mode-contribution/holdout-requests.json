@@ -1,0 +1,142 @@
+{
+  "requests": [
+    {
+      "id": "H01",
+      "source": "actual-user-request: read-only repository audit",
+      "type": "file-tool audit",
+      "public": {
+        "user_request": "이 저장소를 읽기 전용으로 감사하라. 원자료 → 패턴 → 생성된 프롬프트 또는 스킬 → 실제 실행 → 결과 개선 연결이 어디까지 존재하고 어디에서 끊기는지 확인하고, 전체 참조 관계를 검색·집계하라. 파일을 수정하거나 커밋하지 마라.",
+        "initial_information": [
+          "판단마다 파일 경로와 위치를 제시하고 확인된 사실과 해석을 구분한다."
+        ],
+        "tools_allowed": true
+      }
+    },
+    {
+      "id": "H02",
+      "source": "actual-user-request: retrieve runner file",
+      "type": "simple file retrieval",
+      "public": {
+        "user_request": "RUNNER_CANDIDATE_V1.md 이거를 줘.",
+        "initial_information": [],
+        "tools_allowed": true
+      }
+    },
+    {
+      "id": "H03",
+      "source": "actual-user-request: run corpus next command",
+      "type": "tool execution",
+      "public": {
+        "user_request": "python scripts/corpus_pipeline.py next --limit 10",
+        "initial_information": [
+          "현재 저장소에서 이 명령을 실행해 결과를 보여 달라는 요청이다."
+        ],
+        "tools_allowed": true
+      }
+    },
+    {
+      "id": "H04",
+      "source": "actual-user-request: complete run record",
+      "type": "complex file artifact",
+      "public": {
+        "user_request": "Read all five experiment evidence files and complete the existing RUN_RECORD_TEMPLATE using the actual raw outputs and evaluator JSON. Do not change unrelated repository files. Show the files changed and the final experiment conclusion.",
+        "initial_information": [
+          "The five evidence files are in specs/experiments/prompt-improvement-loop-minimal/results.",
+          "The execution environment is read-only; file changes are unavailable."
+        ],
+        "tools_allowed": false
+      }
+    },
+    {
+      "id": "H05",
+      "source": "specs/runs/prompt-analysis-real-run-003.md",
+      "type": "prompt analysis",
+      "public": {
+        "user_request": "Analyze this prompt using the fast analysis format: Improve my prompt. Make it clearer, more specific, and more effective.",
+        "initial_information": [],
+        "tools_allowed": false
+      }
+    },
+    {
+      "id": "H06",
+      "source": "specs/runs/prompt-analysis-real-run-004.md",
+      "type": "self-contained analysis",
+      "public": {
+        "user_request": "Analyze this prompt using the fast analysis format: Follow 47 rules. Never make mistakes. Always be perfect. Think deeply. Never hallucinate. Produce the best answer possible in every situation.",
+        "initial_information": [],
+        "tools_allowed": false
+      }
+    },
+    {
+      "id": "H07",
+      "source": "specs/runs/prompt-analysis-real-run-005.md",
+      "type": "current product research",
+      "public": {
+        "user_request": "Research online pork belly products. Compare price per 100g, origin, seller reliability, reviews, shipping cost, and uncertainty. Exclude products with unclear source information. Output a ranked table and short buying recommendation.",
+        "initial_information": [
+          "Current online facts and source links are required."
+        ],
+        "tools_allowed": true
+      }
+    },
+    {
+      "id": "H08",
+      "source": "specs/runs/prompt-analysis-real-run-007.md",
+      "type": "structured extraction",
+      "public": {
+        "user_request": "Extract invoice_number, vendor_name, invoice_date, total_amount, and currency from the document. If a field is missing, return null. Output only valid JSON. Include evidence text for each field.",
+        "initial_information": [
+          "The document will be supplied at execution time."
+        ],
+        "tools_allowed": false
+      }
+    },
+    {
+      "id": "H09",
+      "source": "specs/runs/prompt-rewrite-real-run-001.md",
+      "type": "simple prompt rewrite",
+      "public": {
+        "user_request": "Rewrite this prompt: Explain this well.",
+        "initial_information": [],
+        "tools_allowed": false
+      }
+    },
+    {
+      "id": "H10",
+      "source": "specs/experiments/prompt-improvement-loop-minimal/EVALUATE_AND_REVISE.md",
+      "type": "fixed-rubric evaluation",
+      "public": {
+        "user_request": "Evaluate the stored Stage 1 baseline and candidate outputs using the fixed EVALUATE_AND_REVISE rubric. Score only raw output behavior, identify the weakest candidate case, and propose one targeted candidate v2 revision. Do not change the rubric after seeing results.",
+        "initial_information": [
+          "Use specs/experiments/prompt-improvement-loop-minimal/EVALUATE_AND_REVISE.md and the existing result files. Return the evaluation JSON and concise revision rationale; do not modify repository files."
+        ],
+        "tools_allowed": true
+      }
+    },
+    {
+      "id": "H11",
+      "source": "actual-user-request: classify 18 validation errors",
+      "type": "file-tool cleanup",
+      "public": {
+        "user_request": "현재 검증에서 발견된 오류 18개를 정리하세요. 자동으로 확실하게 수정 가능한 항목만 실제 파일에 반영하고, 중복 source URL 10개 그룹은 삭제하거나 합치지 말고 검토 보고서로 분류하세요. 수정 후 검증 명령을 다시 실행하세요.",
+        "initial_information": [
+          "Grounded Research와 Evaluation Rubric의 의심 연결은 근거 없이 자동 수정하지 않는다.",
+          "The execution environment is read-only; file changes and Python validation are unavailable."
+        ],
+        "tools_allowed": false
+      }
+    },
+    {
+      "id": "H12",
+      "source": "actual-user-request: stalled command support",
+      "type": "emotional technical support",
+      "public": {
+        "user_request": "뭐가 진행되고는 있는 건가? 아무것도 안 뜨는데.",
+        "initial_information": [
+          "PowerShell에서 expert_collaboration_pilot.py run 명령을 실행한 뒤 프롬프트가 돌아오지 않고 화면에 새 출력이 없는 상태다."
+        ],
+        "tools_allowed": false
+      }
+    }
+  ]
+}
