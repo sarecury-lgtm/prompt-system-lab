@@ -1,0 +1,2 @@
+run_id,case_id,blinded_output_id,actual_variant,reviewer,intent_preservation,condition_retention,unsupported_inference,task_specific_usefulness,unnecessary_structure,robustness,time_token_burden,total,decisive_reason,unique_contribution,regression,shorter_equivalent_possible,kare_note
+,,,,,0,0,0,0,0,0,0,0,,,,,
