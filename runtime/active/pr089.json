@@ -1,0 +1,92 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "active-source-card",
+  "source": {
+    "source_id": "PR089",
+    "task_types": [
+      "여러 코딩 작업 유형을 서로 다른 도구·파일 권한으로 수행하는 저장소 에이전트 운영 설계"
+    ],
+    "required_request_signals": [
+      "하나의 코딩 에이전트가 조사·설계·구현·디버그·문서화 중 여러 유형을 처리함",
+      "작업 유형에 따라 읽기·편집·명령·외부 도구 또는 파일 범위 권한이 달라짐",
+      "사용자 대신 시스템이 가장 좁은 작업 모드를 선택해야 함"
+    ],
+    "do_not_apply": [
+      "한 번의 일반 코딩 작업",
+      "도구·파일 권한 차이가 없는 단순 분류나 프롬프트 모드 선택"
+    ],
+    "unique_behavior": "각 작업 모드에 역할, 활성 조건, 허용 도구 그룹, 파일 패턴, 금지 행동을 부여하고 가장 좁은 모드로 라우팅한다.",
+    "required_prompt_changes": [
+      "모드별 권한 계약이 명시된다.",
+      "모드 선택 조건과 전환·중단 조건이 명시된다.",
+      "파일 범위와 금지 행동이 모드별로 달라진다."
+    ],
+    "fallback": "모드별 도구·파일 권한 계약이 최종 프롬프트에 없으면 pattern-only로 복귀한다.",
+    "matching": {
+      "task_type_any": [
+        "coding assistant",
+        "repository assistant",
+        "coding agent policy",
+        "코딩 도우미",
+        "저장소 도우미",
+        "코딩 에이전트 운영"
+      ],
+      "required_all": [
+        {
+          "id": "multiple_work_types",
+          "any": [
+            "architecture",
+            "investigation",
+            "debug",
+            "implementation",
+            "documentation",
+            "아키텍처",
+            "조사",
+            "디버그",
+            "구현",
+            "문서"
+          ]
+        },
+        {
+          "id": "permission_variance",
+          "any": [
+            "different permissions",
+            "tool groups",
+            "read edit command",
+            "file patterns",
+            "권한을 다르게",
+            "도구 권한",
+            "읽기 편집 명령",
+            "파일 범위"
+          ]
+        },
+        {
+          "id": "automatic_routing",
+          "any": [
+            "route",
+            "choose mode",
+            "user need not specify",
+            "라우팅",
+            "모드 선택",
+            "자동 선택"
+          ]
+        }
+      ],
+      "exclude_any": [
+        "baseline",
+        "pattern-only",
+        "active",
+        "full corpus",
+        "프롬프트 모드",
+        "전체 자료 모드",
+        "활성 자료 모드"
+      ],
+      "requires_runtime_tools": false
+    }
+  },
+  "global_policy": {
+    "max_active_sources_per_request": 1,
+    "full_corpus_auto_search": false,
+    "fallback": "Discard this card and use pattern-only unless every matching condition is satisfied and its unique behavior appears in the final prompt."
+  }
+}

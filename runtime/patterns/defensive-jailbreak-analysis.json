@@ -1,0 +1,12 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "pattern-card",
+  "id": "defensive-jailbreak-analysis",
+  "name": "Defensive jailbreak analysis",
+  "use_when": "You are studying adversarial prompts safely",
+  "reusable_move": "Classify the attack mechanism; do not reproduce runnable jailbreak text.",
+  "source_entries": "PR025",
+  "main_risk": "Accidentally storing or improving unsafe operational text",
+  "detail_markdown": "**Best for**\n\n- studying unsafe prompt patterns\n- building safety reviews\n- identifying instruction-hierarchy attacks\n- writing defensive specs\n\n**Core move**\n\n```text\nAnalyze this as a defensive prompt-safety artifact.\nDo not reproduce or improve runnable jailbreak text.\nClassify the mechanism: identity override, hierarchy inversion, dual-channel response, reward/punishment pressure, fake system authority, or another mechanism.\n```\n\n**Why it works**\n\nIt keeps the useful lesson while avoiding operational misuse.\n\n**Do not overuse**\n\nDo not let adversarial prompt study become a prompt-improvement workflow for unsafe text.\n\n**Related source entries**\n\n- PR025 — ChatGPT DAN Repository\n- PR026 — LLM Jailbreaks\n- PR027 — ChatGPT DAN Jailbreak Gist\n- PR028–PR032 — DAN / anti-DAN community history",
+  "instruction": "Use this card as a design constraint. Write a new task-specific prompt; do not paste the reusable move unchanged unless it is already specific."
+}

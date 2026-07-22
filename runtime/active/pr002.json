@@ -1,0 +1,81 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "active-source-card",
+  "source": {
+    "source_id": "PR002",
+    "task_types": [
+      "텍스트 기반 도구·콘솔·인터페이스 시뮬레이션용 프롬프트 설계"
+    ],
+    "required_request_signals": [
+      "실제 실행이 아닌 시뮬레이션이어야 함",
+      "일반 명령 입력과 강사·운영자·메타 지시를 같은 대화에서 구분해야 함"
+    ],
+    "do_not_apply": [
+      "실제 셸이나 서버에서 명령을 실행해야 하는 작업",
+      "입력 채널이 하나뿐이고 메타 지시 구분이 필요 없는 단순 출력 요청"
+    ],
+    "unique_behavior": "명시된 메타 채널만 별도 처리하고 나머지 입력은 모의 인터페이스 입력으로 처리하는 폐쇄형 입력 문법을 정의한다.",
+    "required_prompt_changes": [
+      "허용 입력 유형과 판별 규칙이 명시된다.",
+      "인터페이스 출력과 메타 응답 채널이 분리된다.",
+      "실제 실행으로 오해시키는 표현이 금지된다."
+    ],
+    "fallback": "입력 문법과 메타 채널이 최종 프롬프트에 모두 나타나지 않으면 pattern-only로 복귀한다.",
+    "matching": {
+      "task_type_any": [
+        "simulate",
+        "simulation",
+        "interface emulator",
+        "terminal simulator",
+        "mock console",
+        "시뮬레이션",
+        "가상 콘솔",
+        "모의 콘솔",
+        "터미널 시뮬레이션",
+        "인터페이스 시뮬레이션"
+      ],
+      "required_all": [
+        {
+          "id": "multi_channel",
+          "any": [
+            "instructor",
+            "operator note",
+            "meta instruction",
+            "same chat",
+            "강사",
+            "운영자 지시",
+            "메타 지시",
+            "같은 대화"
+          ]
+        },
+        {
+          "id": "protocol_boundary",
+          "any": [
+            "command",
+            "input type",
+            "input grammar",
+            "output channel",
+            "명령",
+            "입력 유형",
+            "입력 구분",
+            "출력 채널"
+          ]
+        }
+      ],
+      "exclude_any": [
+        "actual shell",
+        "execute on server",
+        "run the command",
+        "실제 셸",
+        "실제 서버에서 실행",
+        "실제 명령 실행"
+      ],
+      "requires_runtime_tools": false
+    }
+  },
+  "global_policy": {
+    "max_active_sources_per_request": 1,
+    "full_corpus_auto_search": false,
+    "fallback": "Discard this card and use pattern-only unless every matching condition is satisfied and its unique behavior appears in the final prompt."
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "pattern-card",
+  "id": "role-task-frame",
+  "name": "Role + task frame",
+  "use_when": "The prompt is vague and needs a clear work mode",
+  "reusable_move": "You are [role]. Your task is [objective]. Use [constraints]. Return [output shape].",
+  "source_entries": "PR001",
+  "main_risk": "Decorative roleplay without success criteria",
+  "detail_markdown": "**Best for**\n\n- weak prompts like “analyze this” or “make this better”\n- writing, review, planning, explanation, and coaching prompts\n- turning casual requests into usable instruction surfaces\n\n**Core move**\n\n```text\nYou are [practical role].\nYour task is [specific objective].\nUse [context and constraints].\nReturn [specific output shape].\n```\n\n**Why it works**\n\nThe role narrows the response style, but the task and output contract do the real control work.\n\n**Do not overuse**\n\nAvoid empty prestige roles like “world-class expert” unless the prompt also defines what expert behavior means.\n\n**Related source entries**\n\n- PR001 — Awesome ChatGPT Prompts",
+  "instruction": "Use this card as a design constraint. Write a new task-specific prompt; do not paste the reusable move unchanged unless it is already specific."
+}

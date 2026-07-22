@@ -1,0 +1,12 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "pattern-card",
+  "id": "grounded-research",
+  "name": "Grounded research",
+  "use_when": "The answer depends on external/current sources",
+  "reusable_move": "Search/inspect sources → cite claims → mark unknowns → separate recommendation from evidence.",
+  "source_entries": "PR039, PR040, PR106, PR109",
+  "main_risk": "Confident synthesis from weak or stale sources",
+  "detail_markdown": "**Best for**\n\n- product research\n- current information checks\n- source-backed comparisons\n- “find the best X” tasks where price, availability, policy, law, or specs may change\n- any task where unsupported synthesis would be harmful\n\n**Core move**\n\n```text\nResearch [target] using source-traceable evidence.\nFor each important claim, include source, date checked, and confidence.\nSeparate confirmed facts from inference.\nMark unknowns as “확인 불가” instead of guessing.\nEnd with a decision table or recommendation only after evidence is shown.\n```\n\n**Why it works**\n\nResearch prompts fail when they skip from search results to confident conclusion. This pattern forces evidence collection, uncertainty handling, and final judgment into separate layers.\n\n**Do not overuse**\n\nDo not use this heavy structure for simple explanation tasks. Use it when the answer depends on changing facts or source quality.\n\n**Related source entries**\n\n- PR039 — OpenAI student use-case pack\n- PR040 — Student-voted prompt roundup\n- PR106 — Anti-hallucination / clarity prompt\n- PR109 — RAG / retrieval quality discussion",
+  "instruction": "Use this card as a design constraint. Write a new task-specific prompt; do not paste the reusable move unchanged unless it is already specific."
+}

@@ -1,0 +1,82 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "active-source-card",
+  "source": {
+    "source_id": "PR093",
+    "task_types": [
+      "요구사항에서 실행 가능한 다중 파일 애플리케이션·서비스를 생성하거나 불완전한 프로젝트를 완성하는 작업"
+    ],
+    "required_request_signals": [
+      "여러 파일·진입점·의존성·파일 간 계약을 함께 맞춰야 함",
+      "빈 함수·누락 파일·의존성 누락 같은 완전성 위험이 있음",
+      "실행 모델이 저장소 편집과 검증 도구를 사용할 수 있음"
+    ],
+    "do_not_apply": [
+      "단일 파일 또는 한 줄짜리 작은 수정",
+      "파일·도구를 사용할 수 없는 설명 작업"
+    ],
+    "unique_behavior": "핵심 코드 단위를 먼저 식별하고 진입점에서 import·의존성을 따라가며 완전한 파일과 파일 간 계약을 검증한다.",
+    "required_prompt_changes": [
+      "핵심 코드 단위와 진입점이 먼저 식별된다.",
+      "import·의존성 추적이 구현·검증 순서에 포함된다.",
+      "export, 환경 변수, API, 빌드 설정 등 파일 간 호환성 검사가 포함된다."
+    ],
+    "fallback": "진입점 기반 의존성 추적과 파일 간 호환성 검증이 최종 프롬프트에 없으면 pattern-only로 복귀한다.",
+    "matching": {
+      "task_type_any": [
+        "multi-file code generation",
+        "generate an application",
+        "build a service",
+        "complete an incomplete project",
+        "다중 파일 생성",
+        "애플리케이션 생성",
+        "서비스 구현",
+        "불완전한 프로젝트 완성"
+      ],
+      "required_all": [
+        {
+          "id": "cross_file_scope",
+          "any": [
+            "multiple files",
+            "entrypoint",
+            "dependencies",
+            "cross-file",
+            "imports",
+            "여러 파일",
+            "진입점",
+            "의존성",
+            "파일 간",
+            "import"
+          ]
+        },
+        {
+          "id": "completeness_risk",
+          "any": [
+            "runnable",
+            "incomplete",
+            "stubs",
+            "missing dependency",
+            "실행 가능",
+            "불완전",
+            "빈 함수",
+            "의존성 누락"
+          ]
+        }
+      ],
+      "exclude_any": [
+        "single file",
+        "one-line change",
+        "minimal patch",
+        "단일 파일",
+        "한 줄 수정",
+        "작은 패치"
+      ],
+      "requires_runtime_tools": true
+    }
+  },
+  "global_policy": {
+    "max_active_sources_per_request": 1,
+    "full_corpus_auto_search": false,
+    "fallback": "Discard this card and use pattern-only unless every matching condition is satisfied and its unique behavior appears in the final prompt."
+  }
+}

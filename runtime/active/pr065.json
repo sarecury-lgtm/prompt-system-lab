@@ -1,0 +1,111 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "active-source-card",
+  "source": {
+    "source_id": "PR065",
+    "task_types": [
+      "반복 가능하고 기계 실행 가능한 평가·벤치마크·회귀 실험 설계"
+    ],
+    "required_request_signals": [
+      "모델·프롬프트·조건을 반복 또는 버전별로 비교함",
+      "사례·기대 결과·사람 판정·독립 평가 중 하나 이상의 평가 근거가 있음",
+      "자동 실행기·CI·평가 파이프라인 같은 재현 가능한 실행 산출물이 필요함"
+    ],
+    "do_not_apply": [
+      "답변 하나를 일회성으로 검토하거나 점수만 매기는 작업",
+      "실행 가능한 평가 자료나 반복 비교가 필요 없는 일반 조언"
+    ],
+    "unique_behavior": "입력과 이상 행동을 담은 구조화 사례, 버전된 eval 단위, 채점 템플릿, 사람 라벨 기반 모델 평가자 검증을 구성한다.",
+    "required_prompt_changes": [
+      "평가 데이터 파일과 버전 식별자가 산출물에 포함된다.",
+      "자동 채점 형식과 파싱 가능한 판정 계약이 포함된다.",
+      "모델 평가자를 사람 판정으로 교정·검증하는 절차가 포함된다."
+    ],
+    "fallback": "실행 가능한 평가 패키지나 사람 라벨 기반 평가자 검증이 최종 프롬프트에 나타나지 않으면 pattern-only로 복귀한다.",
+    "matching": {
+      "task_type_any": [
+        "evaluation harness",
+        "eval pipeline",
+        "evaluation experiment",
+        "benchmark experiment",
+        "regression evaluation",
+        "performance experiment",
+        "holdout validation",
+        "평가 실행기",
+        "평가 파이프라인",
+        "평가 실험",
+        "본 실험",
+        "벤치마크 실험",
+        "회귀 평가",
+        "성능 실험",
+        "비교 실험",
+        "holdout 검증"
+      ],
+      "required_all": [
+        {
+          "id": "repeat_or_version",
+          "any": [
+            "repeat",
+            "reproducible",
+            "version",
+            "regression",
+            "conditions",
+            "반복",
+            "재현",
+            "버전",
+            "회귀",
+            "조건별"
+          ]
+        },
+        {
+          "id": "evaluation_evidence",
+          "any": [
+            "test cases",
+            "reference answers",
+            "human labels",
+            "independent evaluator",
+            "blind evaluation",
+            "사례",
+            "모범 답변",
+            "사람 판정",
+            "독립 평가",
+            "블라인드 평가",
+            "평가 기준"
+          ]
+        },
+        {
+          "id": "machine_process",
+          "any": [
+            "automate",
+            "runner",
+            "pipeline",
+            "CI",
+            "machine-runnable",
+            "run the experiment",
+            "execute the experiment",
+            "actual results",
+            "자동",
+            "실행기",
+            "파이프라인",
+            "실험을 실행",
+            "본 실험을 실행",
+            "실제 결과",
+            "CI"
+          ]
+        }
+      ],
+      "exclude_any": [
+        "one-time review",
+        "single answer score",
+        "답변 하나 평가",
+        "일회성 검토"
+      ],
+      "requires_runtime_tools": false
+    }
+  },
+  "global_policy": {
+    "max_active_sources_per_request": 1,
+    "full_corpus_auto_search": false,
+    "fallback": "Discard this card and use pattern-only unless every matching condition is satisfied and its unique behavior appears in the final prompt."
+  }
+}

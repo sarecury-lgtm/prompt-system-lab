@@ -1,0 +1,12 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "pattern-card",
+  "id": "structured-output-extraction",
+  "name": "Structured output / extraction",
+  "use_when": "The output must be parsed, compared, or reused",
+  "reusable_move": "Define fields, null policy, evidence rule, and exact output shape.",
+  "source_entries": "PR061, PR062, PR064, PR106",
+  "main_risk": "Pretty formatting without enforceable schema",
+  "detail_markdown": "**Best for**\n\n- extracting fields from documents\n- turning messy text into JSON, tables, or checklists\n- classification tasks\n- comparison tables\n- workflows where another tool or human will reuse the output\n\n**Core move**\n\n```text\nExtract only the requested fields.\nUse this exact output shape: [schema/table/fields].\nIf a value is missing, return null or an empty list.\nInclude evidence text when the task depends on source grounding.\nOutput no extra commentary unless requested.\n```\n\n**Why it works**\n\nThe model has less room to invent structure when fields, missing-value policy, and evidence rules are fixed. This also makes downstream review easier.\n\n**Do not overuse**\n\nDo not force strict JSON when the user needs judgment, nuance, or explanation. Use structured output where consistency matters more than prose quality.\n\n**Related source entries**\n\n- PR061 — Anthropic Prompt Library\n- PR062 — Anthropic Prompt Engineering Overview\n- PR064 — OpenAI Prompt Examples / Cookbook\n- PR106 — Prompt for Seeking Clarity and Avoiding Hallucinating",
+  "instruction": "Use this card as a design constraint. Write a new task-specific prompt; do not paste the reusable move unchanged unless it is already specific."
+}

@@ -1,0 +1,12 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "pattern-card",
+  "id": "evaluation-rubric",
+  "name": "Evaluation rubric",
+  "use_when": "You need to judge prompt/output quality consistently",
+  "reusable_move": "Define criteria, scoring anchors, pass/fail rules, and failure examples.",
+  "source_entries": "PR108, PR109, PR110, PR118",
+  "main_risk": "Vague “quality” judgment that cannot catch regressions",
+  "detail_markdown": "**Best for**\n\n- judging prompt quality\n- comparing two prompts or two outputs\n- checking whether a skill is working\n- reviewing model answers consistently across examples\n- building manual specs before automation exists\n\n**Core move**\n\n```text\nEvaluate [artifact] against these criteria:\n1. [criterion]\n2. [criterion]\n3. [criterion]\n\nFor each criterion, use anchors:\n- pass: [observable behavior]\n- partial: [borderline behavior]\n- fail: [failure behavior]\n\nReturn verdict, strongest part, weakest part, and one next edit.\n```\n\n**Why it works**\n\nRubrics turn vague taste into repeatable judgment. Anchors matter more than scores because they tell the reviewer what concrete behavior counts as success or failure.\n\n**Do not overuse**\n\nDo not create a giant scoring grid when the decision only needs one clear weakness and one fix.\n\n**Related source entries**\n\n- PR108 — Prompt Breaks AI Pattern-Matching in Real Time\n- PR109 — RAG / hallucination-control claim\n- PR110 — How to Evaluate the Quality of a Prompt\n- PR118 — Tools for Prompt Management and Testing",
+  "instruction": "Use this card as a design constraint. Write a new task-specific prompt; do not paste the reusable move unchanged unless it is already specific."
+}
