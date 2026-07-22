@@ -1,0 +1,33 @@
+{
+  "run_id": "2026-07-22-arg-exploratory",
+  "date": "2026-07-22",
+  "family": "argument-comment-analysis",
+  "status": "exploratory-not-promotion-evidence",
+  "generation_model": "GPT-5.6 Thinking",
+  "execution_model": "GPT-5.6 Thinking",
+  "same_session": true,
+  "tools": [],
+  "web_access": false,
+  "cases": [
+    "ARG-NORMAL-01",
+    "ARG-AMBIG-02",
+    "ARG-POOR-03",
+    "ARG-ADV-04",
+    "ARG-LONG-05"
+  ],
+  "variants": {
+    "A": "minimal baseline",
+    "B": "generic prompt improver",
+    "C": "current Prompt Compiler v0.2 with runtime bundle 0.3-draft",
+    "D": "PR085 claim-decomposition candidate"
+  },
+  "blinded": false,
+  "independent_reviewer": false,
+  "promotion_eligible": false,
+  "limitations": [
+    "The same model generated and executed every variant in one session.",
+    "Outputs were not blinded before provisional scoring.",
+    "No user Kare Notes or independent review exist yet.",
+    "The run measures whether visible differences exist; it cannot establish E3 or E4."
+  ]
+}
