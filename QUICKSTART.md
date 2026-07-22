@@ -1,4 +1,19 @@
-# Prompt Runtime v0.1 Quickstart
+# Prompt Compiler Quickstart
+
+## 가장 쉬운 사용법: ChatGPT Project
+
+AI가 요청을 이해하고 요청별 프롬프트를 새로 작성하게 하려면 `chatgpt-project/README.md`를 먼저 사용하세요.
+
+1. ChatGPT에서 `Prompt Compiler` Project를 만듭니다.
+2. `chatgpt-project/PROMPT_COMPILER_INSTRUCTIONS.md`를 Project instructions에 넣습니다.
+3. 안내된 패턴·workflow·active 정책 파일 3개를 Project sources로 추가합니다.
+4. 평범한 말로 하고 싶은 일을 입력하고, 생성된 프롬프트를 다른 AI에서 사용합니다.
+
+ChatGPT에서 프롬프트를 생성해도 Git 파일은 자동으로 변경되지 않습니다. 공식 변경은 별도의 `수정 → 테스트 → commit → push → PR` 과정으로 관리합니다.
+
+## 로컬 안전망: Prompt Runtime v0.1
+
+아래 Python 명령은 AI 작성기가 아니라 결정적인 template fallback입니다. ChatGPT를 사용할 수 없거나 라우팅·저장 동작만 확인할 때 사용합니다.
 
 ## 준비 사항
 

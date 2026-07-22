@@ -17,6 +17,7 @@ If you want to actually use this repo, start with these files:
 
 | Need | Use this file |
 |---|---|
+| Have ChatGPT turn an ordinary request into a ready-to-use prompt | `chatgpt-project/README.md` |
 | Learn how to use the repo | `USAGE.md` |
 | Find a reusable prompt-design pattern | `prompt-corpus/PATTERN_LESSONS_INDEX.md` |
 | Turn a rough goal into a usable prompt | `skills/prompt-design-workflow.md` |
@@ -43,6 +44,7 @@ If you want to actually use this repo, start with these files:
 | File | Purpose |
 |---|---|
 | `project-instructions/main.md` | Main operating rules for this project |
+| `chatgpt-project/PROMPT_COMPILER_INSTRUCTIONS.md` | AI writing contract for the user-facing ChatGPT Project |
 | `prompt-corpus/README.md` | Rules and navigation for the prompt corpus |
 | `prompt-corpus/PATTERN_LESSONS_INDEX.md` | Practical index of reusable prompt-design moves extracted from the corpus |
 | `prompt-corpus/CORPUS_ENTRY_TEMPLATE.md` | Upgraded entry format for Pattern lesson, Mechanism, Failure mode, and Reusable move fields |

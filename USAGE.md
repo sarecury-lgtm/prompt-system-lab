@@ -11,6 +11,7 @@ Most public references cover only one layer. Use [`references/external-projects.
 
 ## 1. Designing a new prompt
 
+- Easiest user-facing path: [`chatgpt-project/README.md`](chatgpt-project/README.md)
 - Start here: [`skills/prompt-design-workflow.md`](skills/prompt-design-workflow.md)
 - Give the AI: the goal, audience, input type, output shape, and any hard constraints
 - Expected output: a usable prompt that is short, specific, and testable
@@ -61,11 +62,12 @@ Most public references cover only one layer. Use [`references/external-projects.
 
 ### ChatGPT Project
 
-- Start here: [`project-instructions/main.md`](project-instructions/main.md) and [`USAGE.md`](USAGE.md)
-- Give the AI: the project instruction, the relevant skill file, and the specific corpus or example file
-- Expected output: a prompt, analysis, rewrite, or repo edit that matches the repo layers
-- Avoid: treating the project like a plain chat sandbox with no corpus reference
-- Copy-paste instruction: `Use prompt-corpus/PATTERN_LESSONS_INDEX.md first, then give me the smallest useful output.`
+- Start here: [`chatgpt-project/README.md`](chatgpt-project/README.md)
+- Put [`chatgpt-project/PROMPT_COMPILER_INSTRUCTIONS.md`](chatgpt-project/PROMPT_COMPILER_INSTRUCTIONS.md) in Project instructions and add the three listed source files
+- Give the AI: an ordinary-language description of what the final prompt should accomplish and any fixed constraints
+- Expected output: one task-specific, ready-to-copy prompt followed by a compact routing record
+- Avoid: asking the compiler to perform the underlying research, coding, or decision task
+- Copy-paste request: `세 가지 대안을 비용과 위험 기준으로 비교하고 최종 선택을 돕는 프롬프트를 만들어줘.`
 
 ### Claude chat / Claude Project
 
