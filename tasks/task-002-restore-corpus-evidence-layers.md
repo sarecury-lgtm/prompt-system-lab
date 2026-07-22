@@ -19,8 +19,8 @@ Reconnect PR001–PR130 to the evidence and promotion pipeline without putting t
 | A — inventory validation | manual pass complete; deterministic CI check committed but not yet run | `audit/corpus-registry-validation.md`, `scripts/validate_corpus_registry.py` |
 | B — entry triage | priority pass complete for structured entries, evidence notes, runtime pattern sources, and all 7 active sources | `corpus/registry.csv` |
 | C — runtime pattern audit | initial audit complete for all 9 patterns | `audit/runtime-pattern-evidence.csv` |
-| D — pilot comparisons | cases, scoring, and variant contracts ready; model runs not yet completed | `specs/experiments/corpus-restoration-pilots/` |
-| E — promotion decisions | blocked until pilot outputs and Kare Notes exist | none |
+| D — pilot comparisons | argument family exploratory run complete; blinded user review plus product and coding families remain | `specs/experiments/corpus-restoration-pilots/runs/2026-07-22-arg-exploratory/` |
+| E — promotion decisions | blocked; exploratory result does not qualify as E3 evidence | none |
 
 Current registry counts:
 
@@ -36,6 +36,15 @@ Current pattern grades:
 - E1: 4
 - E0: 5
 - E2–E4: 0
+
+Exploratory argument-pilot result:
+
+- minimal baseline mean: 13.2 / 14
+- generic improver mean: 12.0 / 14
+- current Prompt Compiler mean: 12.0 / 14
+- PR085 task candidate mean: 13.6 / 14
+- main visible PR085 contribution: exact claim and rebuttal-target mapping in multi-party or claim-dense threads
+- no runtime or evidence-grade change follows from this unblinded same-session result
 
 The runtime bundle remains unchanged.
 
