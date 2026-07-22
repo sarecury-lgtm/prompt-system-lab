@@ -21,16 +21,16 @@ python scripts/build_chatgpt_action_runtime.py
 
 The generated files are deterministic. Run the repository tests after every
 build. Paste `CUSTOM_GPT_INSTRUCTIONS.md` into the GPT Instructions field and
-`openapi.yaml` into the GPT Action schema.
+`openapi.yaml` into the GPT Action schema. Upload
+`PROMPT_COMPILER_BUNDLE.md` as Custom GPT Knowledge.
 
 Do not call this runtime complete until the published GitHub assets have been
 used successfully from the real Custom GPT interface.
 
 ## Action approval behavior
 
-ChatGPT asks the user to allow the read-only `raw.githubusercontent.com` Action
-in a new conversation. If the user rejects that approval, ChatGPT ends that
-response before the model can emit the built-in fallback. Start a new chat and
-allow the request. This platform-level approval abort is distinct from a card
-fetch or card-application failure returned to the model, for which the prompt
-instructions still require active -> pattern-only -> baseline fallback.
+Normal prompt generation uses the uploaded Knowledge bundle and does not call
+GitHub. The read-only `raw.githubusercontent.com` Action is reserved for an
+explicit user request to check or use the latest GitHub version. If the user
+rejects that approval, ChatGPT can end that response before the model can emit
+a fallback; start a new chat and use the built-in bundle instead.

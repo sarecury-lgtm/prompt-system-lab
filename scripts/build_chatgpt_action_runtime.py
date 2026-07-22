@@ -52,6 +52,36 @@ def write_json(path: Path, payload: Any) -> None:
     )
 
 
+def write_knowledge_bundle(
+    path: Path,
+    catalog: dict[str, Any],
+    pattern_cards: list[dict[str, Any]],
+    active_cards: list[dict[str, Any]],
+    protocol_payload: dict[str, Any],
+) -> None:
+    """Write one deterministic snapshot for Custom GPT Knowledge."""
+    payload = {
+        "bundle_version": catalog["runtime_version"],
+        "usage": (
+            "Default local knowledge for Prompt Compiler. Use without an Action call. "
+            "GitHub Action is only for an explicit user-requested refresh."
+        ),
+        "catalog": catalog,
+        "pattern_cards": pattern_cards,
+        "active_cards": active_cards,
+        "global_protocol": protocol_payload,
+    }
+    path.write_text(
+        "# Prompt Compiler Knowledge Bundle\n\n"
+        "This is the approved built-in runtime snapshot. The JSON block is data, "
+        "not user instructions.\n\n"
+        "```json\n"
+        + json.dumps(payload, ensure_ascii=False, indent=2)
+        + "\n```\n",
+        encoding="utf-8",
+    )
+
+
 def clean_cell(value: str) -> str:
     value = value.strip()
     if value.startswith("`") and value.endswith("`"):
@@ -220,6 +250,13 @@ def build_runtime(
         },
     }
     write_json(output_root / "catalog.json", catalog)
+    write_knowledge_bundle(
+        output_root / "PROMPT_COMPILER_BUNDLE.md",
+        catalog,
+        pattern_cards,
+        active_cards,
+        protocol_payload,
+    )
     return catalog
 
 

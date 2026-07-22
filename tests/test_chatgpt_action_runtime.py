@@ -18,7 +18,7 @@ def load_builder():
 
 
 class ChatGPTActionRuntimeTests(unittest.TestCase):
-    def test_builds_only_approved_patterns_and_active_sources(self):
+    def test_builds_only_approved_patterns_active_sources_and_bundle(self):
         builder = load_builder()
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "runtime"
@@ -48,7 +48,13 @@ class ChatGPTActionRuntimeTests(unittest.TestCase):
                 self.assertEqual(1, card["global_policy"]["max_active_sources_per_request"])
                 self.assertFalse(card["global_policy"]["full_corpus_auto_search"])
 
-    def test_custom_gpt_contract_requires_live_retrieval_and_fallback(self):
+            bundle = (output / "PROMPT_COMPILER_BUNDLE.md").read_text(encoding="utf-8")
+            self.assertIn('"pattern_cards"', bundle)
+            self.assertIn('"active_cards"', bundle)
+            self.assertIn('"global_protocol"', bundle)
+            self.assertIn('"bundle_version": "0.3-draft"', bundle)
+
+    def test_custom_gpt_contract_uses_bundle_by_default_and_action_on_request(self):
         instructions = (ROOT / "runtime" / "CUSTOM_GPT_INSTRUCTIONS.md").read_text(
             encoding="utf-8"
         )
@@ -60,11 +66,13 @@ class ChatGPTActionRuntimeTests(unittest.TestCase):
             "getActiveSourceCard",
             "getGlobalResponseProtocol",
         ):
-            self.assertIn(operation, instructions)
             self.assertIn(operation, schema)
-        self.assertIn("active card 호출 또는 적용 실패 → `pattern-only`", instructions)
-        self.assertIn("pattern card 호출 또는 적용 실패 → `baseline`", instructions)
+
+        self.assertIn("일반적인 프롬프트 제작 요청에서는 GitHub Action을 호출하지 않는다", instructions)
+        self.assertIn("명시적으로 요구한 경우에만 Action을 호출한다", instructions)
+        self.assertIn("active → pattern-only → baseline", instructions)
         self.assertIn("full corpus 자동 검색을 하지 않는다", instructions)
+        self.assertIn("getRuntimeCatalog", instructions)
         self.assertIn("enum: [pr002, pr026, pr065, pr086, pr089, pr091, pr093]", schema)
 
     def test_global_protocol_is_a_quality_gate_not_a_pattern(self):
@@ -74,8 +82,8 @@ class ChatGPTActionRuntimeTests(unittest.TestCase):
             )
         )
         self.assertEqual("evolving-reference", protocol["status"])
-        self.assertIn("작업 유형을 선택하는 패턴이 아니다", protocol["runtime_role"])
-        self.assertEqual(["복원", "잠금", "발전", "대조"], [x["stage"] for x in protocol["sequence"]])
+        self.assertEqual(4, len(protocol["sequence"]))
+        self.assertNotIn(protocol["id"], {"pattern-card", "active-source-card"})
 
 
 if __name__ == "__main__":
