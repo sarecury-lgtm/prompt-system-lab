@@ -1,0 +1,21 @@
+{
+  "experiment_id": "expert-collaboration-main-001",
+  "case_ids": ["A3", "A7", "C9", "C10", "C11", "C13", "C14", "C16"],
+  "conditions": ["baseline", "pattern-only", "active", "full"],
+  "base_repetitions": 2,
+  "conditional_repetition": 3,
+  "model": "gpt-5.5",
+  "evaluator_model": "gpt-5.5",
+  "top_k": 4,
+  "retrieval_context_chars": 6000,
+  "maximum_questions": 3,
+  "question_rounds": 1,
+  "execution_seed": 641923,
+  "anonymization_seed": 817331,
+  "evaluation_order_seed": 442109,
+  "evaluator_count": 2,
+  "maximum_evaluators": 3,
+  "winner_tie_tolerance": 0.25,
+  "tools_allowed": false,
+  "generic_only_domain_cap": 2
+}

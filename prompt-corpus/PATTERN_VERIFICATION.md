@@ -171,20 +171,21 @@ Coding-agent workflow
 
 ### Related source entries from PATTERN_LESSONS_INDEX.md
 
-- PR082 - Cursor Rules
-- PR083 - Cline
-- PR084 - Roo Code
-- PR085 - Open Interpreter
-- PR086 - Aider
-- PR087 - Continue
-- PR088 - GPT Engineer
+- PR088 - Cline System Prompt Lineage (direct)
+- PR091 - Aider Coding Prompts (direct)
+- PR086 - Cursor Rules / `.cursorrules` Pattern (partial)
+- PR087 - Cursor Directory Rules (partial)
+- PR090 - Open Interpreter System Prompt Lineage (partial)
+- PR093 - GPT Engineer Prompt Lineage (partial)
+- PR089 - Roo Code / Roo-Code Agent Prompts (indirect)
+- PR092 - Continue.dev Prompt Templates (indirect)
 
 ### Evidence found in current corpus entries
 
-There is a source-number mismatch between `PATTERN_LESSONS_INDEX.md` and the
-current corpus files. In `famous-prompts-pr081-pr100.md`, PR082 through PR085
-are Fabric extraction, summarization, art-prompt, and claim-analysis patterns.
-They do not support the coding-agent workflow pattern as cited.
+An earlier verification snapshot used a shifted PR082-PR088 mapping. The
+current `PATTERN_LESSONS_INDEX.md` mapping has been corrected to the coding-agent
+entries in PR086-PR093. The remaining question is evidence strength, not ID
+alignment.
 
 The current corpus entries that actually relate to coding-agent workflows are:
 
@@ -251,8 +252,8 @@ Generic:
 - "Summarize changed files and next action" is compatible with PR088 and PR091,
   but the exact reusable move is synthesized from agent-workflow norms rather
   than explicitly demonstrated in the local entry text.
-- The source list in the index appears stale or shifted. As written, the listed
-  PR082-PR085 entries do not support coding-agent workflow.
+- The current source list matches the coding-agent entries in PR086-PR093, but
+  several relations remain partial or indirect and still need source excerpts.
 
 ### Verdict
 
@@ -260,12 +261,11 @@ partially corpus-supported
 
 ### What source excerpt or entry upgrade is needed next
 
-First, fix the source-entry mapping in a future update: the current supporting
-entries appear to be PR086-PR093, not PR082-PR088. Then upgrade PR088 and PR091
+The source-entry mapping now uses PR086-PR093. Next, upgrade PR088 and PR091
 with source-specific non-sensitive excerpts or structured notes showing the
 actual workflow sequence: inspect repo context, plan, edit, validate, report
 diff, and ask before risky/destructive actions. Without that upgrade, the
-pattern is plausible but partly generic.
+pattern remains plausible but partly generic.
 
 ## Verification pass 003 — Persistent instruction, coding workflow, improvement loop
 
@@ -280,7 +280,7 @@ Evidence checked:
 - PR122 — System-prompt archive metadata supports structural study of instruction layering, tool rules, and assistant behavior constraints.
 
 Concerns:
-- The strongest local evidence is PR120 and PR122, while the index currently emphasizes PR114-PR116 and PR122.
+- The index now prioritizes PR120 and PR122 and marks PR114-PR116 as indirect support, but source-specific evidence notes are still missing.
 - Current entries are mostly summaries, so trigger/default behavior/boundary examples are inferred from structure rather than verified source excerpts.
 
 Recommended follow-up:
@@ -315,7 +315,7 @@ Evidence checked:
 
 Concerns:
 - PR011 is the main direct evidence; PR036 and PR106 are supporting or adjacent rather than full prompt-improvement loops.
-- PR111 is a stronger evaluator/improver source than the current index relationship suggests, but it is not listed under this pattern.
+- PR111 is now listed as partial evaluator/improver support, but its relation strength still depends on source-specific evidence.
 
 Recommended follow-up:
-- Add or strengthen PR111 evidence notes before deciding whether the index should cite it for Prompt improvement loop.
+- Add or strengthen PR111 evidence notes, then reassess whether its current partial relation should be retained.

@@ -1,0 +1,22 @@
+{
+  "batch_id": "test-cataloged-dry-run",
+  "sources": [
+    {
+      "source_id": "PR003",
+      "name": "Act as English Translator and Improver",
+      "source_url": "https://github.com/f/prompts.chat",
+      "source_status": "unverified",
+      "upgrade_status": "cataloged",
+      "related_patterns": [],
+      "evidence_relation": "unverified",
+      "evidence_note": null,
+      "source_checked": false,
+      "checked_at": null,
+      "verification_basis": null,
+      "verified_at": null,
+      "tested": false,
+      "test_evidence": null,
+      "lesson": null
+    }
+  ]
+}

@@ -26,7 +26,7 @@ Use this file when you want to answer:
 | Interface emulation | You want the model to simulate a tool or UI surface | `Return simulated [tool/interface] output only; do not claim real execution.` | PR002 | Fake execution results that look real |
 | Prompt improvement loop | You want to improve a weak prompt before using it | `Diagnose missing control points → rewrite the prompt → name what changed.` | PR011; PR036, PR106, PR111 (partial/adjacent) | Polished but overcomplicated prompt that drifts from the real goal |
 | Defensive jailbreak analysis | You are studying adversarial prompts safely | `Classify the attack mechanism; do not reproduce runnable jailbreak text.` | PR025 | Accidentally storing or improving unsafe operational text |
-| Grounded research | The answer depends on external/current sources | `Search/inspect sources → cite claims → mark unknowns → separate recommendation from evidence.` | PR039, PR040, PR106, PR111 | Confident synthesis from weak or stale sources |
+| Grounded research | The answer depends on external/current sources | `Search/inspect sources → cite claims → mark unknowns → separate recommendation from evidence.` | PR039, PR040, PR106, PR109 | Confident synthesis from weak or stale sources |
 | Structured output / extraction | The output must be parsed, compared, or reused | `Define fields, null policy, evidence rule, and exact output shape.` | PR061, PR062, PR064, PR106 | Pretty formatting without enforceable schema |
 | Evaluation rubric | You need to judge prompt/output quality consistently | `Define criteria, scoring anchors, pass/fail rules, and failure examples.` | PR108, PR109, PR110, PR118 | Vague “quality” judgment that cannot catch regressions |
 | Persistent project instruction | The prompt should control ongoing assistant behavior | `Define trigger, default behavior, boundaries, routing, and fallback.` | PR120, PR122; PR114-PR116 (indirect workflow/versioning support) | Rule pile with no priority or trigger |
@@ -199,7 +199,7 @@ Do not use this heavy structure for simple explanation tasks. Use it when the an
 - PR039 — OpenAI student use-case pack
 - PR040 — Student-voted prompt roundup
 - PR106 — Anti-hallucination / clarity prompt
-- PR111 — RAG / retrieval quality discussion
+- PR109 — RAG / retrieval quality discussion
 
 ---
 
@@ -234,8 +234,8 @@ Do not force strict JSON when the user needs judgment, nuance, or explanation. U
 **Related source entries**
 
 - PR061 — Anthropic Prompt Library
-- PR062 — OpenAI Cookbook
-- PR064 — Learn Prompting
+- PR062 — Anthropic Prompt Engineering Overview
+- PR064 — OpenAI Prompt Examples / Cookbook
 - PR106 — Prompt for Seeking Clarity and Avoiding Hallucinating
 
 ---
@@ -276,10 +276,10 @@ Do not create a giant scoring grid when the decision only needs one clear weakne
 
 **Related source entries**
 
-- PR108 — Prompt evaluation rubric discussion
-- PR109 — Prompt testing / evaluation discussion
-- PR110 — Prompt versioning discussion
-- PR118 — Prompt management / PromptOps discussion
+- PR108 — Prompt Breaks AI Pattern-Matching in Real Time
+- PR109 — RAG / hallucination-control claim
+- PR110 — How to Evaluate the Quality of a Prompt
+- PR118 — Tools for Prompt Management and Testing
 
 ---
 

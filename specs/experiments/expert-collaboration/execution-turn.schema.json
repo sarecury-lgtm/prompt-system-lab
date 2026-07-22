@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["action", "questions", "final_output"],
+  "properties": {
+    "action": {"type": "string", "enum": ["questions", "final"]},
+    "questions": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "final_output": {"type": ["string", "null"]}
+  }
+}

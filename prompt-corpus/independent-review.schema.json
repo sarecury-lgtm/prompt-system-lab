@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Independent corpus evidence review",
+  "type": "object",
+  "required": ["batch_id", "reviews"],
+  "additionalProperties": false,
+  "properties": {
+    "batch_id": {"type": "string"},
+    "reviews": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/review"}
+    }
+  },
+  "$defs": {
+    "review": {
+      "type": "object",
+      "required": [
+        "source_id",
+        "verdict",
+        "source_checked",
+        "checked_at",
+        "evidence_relation",
+        "supported_patterns",
+        "reusable_move_supported",
+        "claims_match_source",
+        "evidence_note_adequate",
+        "issues",
+        "rationale"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {"type": "string", "pattern": "^PR[0-9]{3}$"},
+        "verdict": {"enum": ["PASS", "FAIL"]},
+        "source_checked": {"type": "boolean"},
+        "checked_at": {"type": ["string", "null"]},
+        "evidence_relation": {
+          "enum": ["direct", "partial", "adjacent", "synthesized", "unverified"]
+        },
+        "supported_patterns": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "reusable_move_supported": {"type": "boolean"},
+        "claims_match_source": {"type": "boolean"},
+        "evidence_note_adequate": {"type": "boolean"},
+        "issues": {"type": "array", "items": {"type": "string"}},
+        "rationale": {"type": "string"}
+      }
+    }
+  }
+}

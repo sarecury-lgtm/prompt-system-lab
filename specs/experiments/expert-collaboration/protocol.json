@@ -1,0 +1,72 @@
+{
+  "experiment_id": "expert-collaboration-001",
+  "status": "case-packets-reviewed-ready-not-executed",
+  "conditions_reserved_for_later": ["baseline", "pattern-only", "active", "full"],
+  "case_ids": ["A3", "A7", "C9", "C10", "C11", "C13", "C14", "C16"],
+  "initial_release": ["original_user_request", "initial_information"],
+  "clarification_protocol": {
+    "rounds": 1,
+    "maximum_questions": 3,
+    "matching_rule": "의미상 같은 주제를 묻는 질문에만 고정 답변을 제공한다.",
+    "unasked_information": "제공하지 않는다.",
+    "unsupported_question": "패킷에 정보가 없다고 답한다.",
+    "answer_boundary": "답변표는 사용자 가치, 제약, 확인 사실만 제공하며 선호 해결책·고정 실행 횟수·모범 구조를 제공하지 않는다.",
+    "conditional_fairness": "질문하지 않은 조건도 초기 정보만으로 복수의 책임 있는 조건부 대안을 만들 수 있어야 한다."
+  },
+  "common_scoring_domains": [
+    "purpose_understanding",
+    "professional_independence",
+    "design_ability",
+    "judgment_boundary",
+    "practical_value"
+  ],
+  "score_range": {"minimum": 0, "maximum": 4, "maximum_total": 20},
+  "critical_failure_policy": {
+    "separate_from_score": true,
+    "types": [
+      "compliant_failure",
+      "authoritarian_failure",
+      "fabricated_fact_or_logic",
+      "unconditional_decision_despite_missing_critical_information"
+    ]
+  },
+  "new_variable_evaluation": {
+    "not_a_raw_count": true,
+    "checks": [
+      "material_to_decision",
+      "not_duplicate_of_initial_information",
+      "changed_or_sharpened_judgment_or_alternative",
+      "not_fabricated"
+    ],
+    "credit_rule": "네 검사를 모두 통과한 변수만 material discovery로 인정한다."
+  },
+  "upper_score_gate": {
+    "score_3_or_4_requires": [
+      "case_specific_required_decision_artifacts",
+      "traceable_use_of_fixed_conditions",
+      "no_unresolved_critical_failure"
+    ],
+    "keyword_rule": "전문 용어, 안전장치 이름, 일반론적 체크리스트만으로는 어느 영역에서도 3점 이상을 줄 수 없다.",
+    "alternative_designs": "패킷에 적힌 예시와 다른 설계도 고정 조건, 계산, 위험, 사용자 가치에 의해 정당화되면 같은 점수를 받을 수 있다."
+  },
+  "condition_neutrality": {
+    "all_conditions_receive_same_case_definitions": true,
+    "rubric_does_not_reward_repository_vocabulary": true,
+    "questions_are_scored_by_decision_value_not_count": true,
+    "conditional_progress_can_equal_clarification": true
+  },
+  "case_review_gate": {
+    "required_checks": [
+      "not_passable_by_generic_advice",
+      "no_single_correct_answer_hidden_in_clarifications",
+      "condition_neutrality",
+      "rubric_discriminates_good_and_bad_outputs",
+      "low_risk_of_unskilled_evaluator_overrating"
+    ],
+    "review_context_isolated": true,
+    "must_recheck_after_material_revision": true,
+    "final_result": "PASS",
+    "review_iterations": 3,
+    "review_report": "reports/expert-collaboration-case-review/review-002.md"
+  }
+}
