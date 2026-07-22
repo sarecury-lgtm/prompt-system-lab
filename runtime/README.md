@@ -25,3 +25,12 @@ build. Paste `CUSTOM_GPT_INSTRUCTIONS.md` into the GPT Instructions field and
 
 Do not call this runtime complete until the published GitHub assets have been
 used successfully from the real Custom GPT interface.
+
+## Action approval behavior
+
+ChatGPT asks the user to allow the read-only `raw.githubusercontent.com` Action
+in a new conversation. If the user rejects that approval, ChatGPT ends that
+response before the model can emit the built-in fallback. Start a new chat and
+allow the request. This platform-level approval abort is distinct from a card
+fetch or card-application failure returned to the model, for which the prompt
+instructions still require active -> pattern-only -> baseline fallback.

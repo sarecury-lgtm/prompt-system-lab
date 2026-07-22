@@ -1,87 +1,54 @@
-# Prompt Compiler Quickstart
-
-## 가장 쉬운 사용법: ChatGPT Project
-
-AI가 요청을 이해하고 요청별 프롬프트를 새로 작성하게 하려면 `chatgpt-project/README.md`를 먼저 사용하세요.
-
-1. ChatGPT에서 `Prompt Compiler` Project를 만듭니다.
-2. `chatgpt-project/PROMPT_COMPILER_INSTRUCTIONS.md`를 Project instructions에 넣습니다.
-3. 안내된 패턴·workflow·active 정책 파일 3개를 Project sources로 추가합니다.
-4. 평범한 말로 하고 싶은 일을 입력하고, 생성된 프롬프트를 다른 AI에서 사용합니다.
-
-ChatGPT에서 프롬프트를 생성해도 Git 파일은 자동으로 변경되지 않습니다. 공식 변경은 별도의 `수정 → 테스트 → commit → push → PR` 과정으로 관리합니다.
-
-## 로컬 안전망: Prompt Runtime v0.1
-
-아래 Python 명령은 AI 작성기가 아니라 결정적인 template fallback입니다. ChatGPT를 사용할 수 없거나 라우팅·저장 동작만 확인할 때 사용합니다.
+# Prompt Compiler 빠른 시작
 
 ## 준비 사항
 
-- Python 3.11 이상
-- 저장소 루트에서 명령 실행
-- 문맥 파일을 넣을 경우 UTF-8 텍스트 파일 사용
+- ChatGPT에 로그인되어 있어야 합니다.
+- 별도의 OpenAI API 키나 API 요금은 필요하지 않습니다.
+- 처음 GitHub 자료를 읽을 때 `raw.githubusercontent.com` 연결 승인이 나타납니다.
 
-## 가장 간단한 실행 명령
+## 가장 간단한 실행 방법
 
-```powershell
-python scripts/prompt_runtime.py "요청을 여기에 입력하세요"
-```
+1. [Prompt Compiler](https://chatgpt.com/g/g-6a606afd43308191baea14153489e228-prompt-compiler)를 엽니다.
+2. 평소 말하듯 원하는 작업을 입력합니다.
+3. GitHub 연결 창이 나타나면 `이번만 허용`을 누릅니다.
+4. `바로 쓸 프롬프트`를 복사해 원하는 다른 AI에서 사용합니다.
 
-## 요청 문자열을 넣는 예시
+## 요청 문자열 예시
 
-```powershell
-python scripts/prompt_runtime.py "세 가지 서비스의 가격과 위험을 표로 비교해 주세요."
+```text
+노트북 세 모델을 가격, 무게, 배터리, 수리 가능성으로 비교하고 상황별 추천을 내리게 하는 프롬프트를 만들어줘. 확인 안 된 값은 추정하지 마.
 ```
 
 ## 파일을 같이 넣는 예시
 
-```powershell
-python scripts/prompt_runtime.py "이 문맥을 바탕으로 실행 계획을 작성해 주세요." --context .\notes.txt
-```
+채팅 입력창의 파일 추가 버튼으로 파일을 첨부한 뒤 다음처럼 입력합니다.
 
-여러 파일은 `--context`를 반복해서 넣습니다. 대상 모델이 실제 파일·명령 도구를 사용할 수 있는 요청이라면 `--tools-allowed`도 추가합니다.
+```text
+첨부한 회의록에서 결정 사항, 담당자, 기한을 JSON으로 추출하게 하는 프롬프트를 만들어줘. 없는 값은 null로 표시하게 해줘.
+```
 
 ## 최종 결과 위치
 
-경로를 생략하면 다음 두 파일이 생성됩니다.
-
-- `runtime-results/<실행시각>/prompt.txt`: 바로 사용할 최종 프롬프트
-- `runtime-results/<실행시각>/routing.json`: 모드, 이유, 패턴, active source, fallback과 오류 상세
-
-원하는 프롬프트 경로를 지정할 수도 있습니다.
-
-```powershell
-python scripts/prompt_runtime.py "회의록에서 결정 사항을 JSON으로 추출해 주세요." --output .\out\meeting-prompt.txt
-```
-
-이 경우 상세 기록은 `out/meeting-prompt.routing.json`에 저장됩니다.
+결과는 같은 ChatGPT 대화의 `바로 쓸 프롬프트`에 표시됩니다. 아래 `선택 기록`에는 모드, 선택 이유, 사용 패턴, active source, fallback 여부가 표시됩니다.
 
 ## 오류가 발생했을 때 확인할 것
 
-1. 명령을 저장소 루트에서 실행했는지 확인합니다.
-2. `python --version`이 3.11 이상인지 확인합니다.
-3. `--context` 파일이 존재하고 UTF-8인지 확인합니다. 문맥 파일 하나를 못 읽어도 나머지 입력으로 프롬프트는 생성됩니다.
-4. 화면의 `fallback 이유`와 `routing.json`의 `errors`를 확인합니다.
-5. 저장 오류가 나면 화면에 출력된 최종 프롬프트를 사용하고 출력 폴더 권한을 확인합니다.
+1. GitHub 연결 창에서 `이번만 허용`을 눌렀는지 확인합니다.
+2. 승인 직후 ChatGPT가 일시 오류를 보이면 새 채팅에서 같은 요청을 한 번 다시 보냅니다.
+3. 연결을 거절하면 현재 ChatGPT 동작상 그 응답이 중단되므로 새 채팅을 열어 다시 요청합니다.
+4. GitHub 장애가 의심되면 잠시 뒤 다시 시도합니다.
 
-## 입력과 화면 출력
+## 작동 원리
 
-입력은 사용자 요청 문자열, 선택적 `--context`, 선택적 `--output`입니다. 화면에는 선택 모드와 짧은 이유, 사용 패턴, active source, fallback 여부, 결과 파일 위치만 표시합니다. 프롬프트 전문은 `prompt.txt`, 상세 판단은 `routing.json`에서 확인합니다.
+Prompt Compiler의 AI가 사용자 요청을 이해하고, GitHub에 게시된 catalog에서 필요한 패턴을 고른 뒤 해당 상세 card를 읽어 요청별 프롬프트를 새로 작성합니다. GitHub는 자료 저장소이고, 실제 이해와 작성은 ChatGPT 구독 안의 AI가 담당합니다.
 
-## 내부 동작
+정책은 baseline-first, pattern-only 우선, active 허용 목록 7개, 요청당 active 최대 1개, 고유 기여가 없으면 fallback, full corpus 자동 검색 비활성화를 유지합니다. `global-response-v3.1`은 별도 작업 패턴이 아니라 최종 목적 보존 검사로 사용합니다.
 
-실행판은 `scripts/prompt_mode_compare.py`의 기존 baseline-first 라우팅과 `active-source-policies.json`을 그대로 사용합니다.
-
-1. baseline 프롬프트를 먼저 만듭니다.
-2. 라우터가 필요하다고 판단하면 기존 9개 패턴으로 pattern-only 프롬프트를 만듭니다.
-3. 기존 허용 목록 7개 중 직접 관련성 게이트를 통과한 자료가 하나 있을 때만 active를 만듭니다.
-4. active의 고유 행동과 필수 변화가 실제로 추가됐을 때만 active를 유지합니다.
-5. active 실패는 pattern-only로, pattern-only 실패는 baseline으로 돌아갑니다.
-
-full corpus 자동 검색은 실행하지 않으며, active source는 요청당 최대 1개입니다. 이 명령은 최종 프롬프트만 만들고 그 프롬프트가 요청하는 작업 자체는 실행하지 않습니다.
-
-## 개발자 검증
+## 개발자용 검증
 
 ```powershell
+python scripts/build_chatgpt_action_runtime.py --check
 python -m unittest discover -s tests -v
 ```
+
+로컬의 기존 명령형 runtime은 [RESULT_INBOX/V0_1_RUNTIME_RESULT.md](RESULT_INBOX/V0_1_RUNTIME_RESULT.md)에 보존되어 있습니다. 현재 일반 사용자용 권장 진입점은 위 Custom GPT입니다.
