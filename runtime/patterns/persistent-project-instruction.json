@@ -1,0 +1,12 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "pattern-card",
+  "id": "persistent-project-instruction",
+  "name": "Persistent project instruction",
+  "use_when": "The prompt should control ongoing assistant behavior",
+  "reusable_move": "Define trigger, default behavior, boundaries, routing, and fallback.",
+  "source_entries": "PR120, PR122; PR114-PR116 (indirect workflow/versioning support)",
+  "main_risk": "Rule pile with no priority or trigger",
+  "detail_markdown": "**Best for**\n\n- ChatGPT Projects\n- Custom GPT instructions\n- Claude Project instructions\n- assistant-wide behavior rules\n- recurring user preferences\n- repo-level Codex operating instructions\n\n**Core move**\n\n```text\n# Purpose\nThis instruction applies when [trigger/context].\n\n# Behavior\n- Prioritize [priority].\n- Do [default behavior].\n- Avoid [bad behavior].\n\n# Routing\n- If input is [type A], do [workflow A].\n- If input is [type B], do [workflow B].\n\n# Output\nReturn [fields/style].\n\n# Boundaries\nIf information is missing, [fallback].\n```\n\n**Why it works**\n\nPersistent instructions need triggers and priority more than one-off prompts do. Without them, they become a pile of preferences that may not activate at the right time.\n\n**Do not overuse**\n\nDo not put temporary task requirements into project instructions. Keep persistent rules stable and reusable.\n\n**Related source entries**\n\n- PR120 — ChatGPT Project custom-instruction discussion\n- PR122 — System-prompt archive metadata\n- PR114 — Prompt workflow/versioning discussion (indirect)\n- PR115 — Complex prompt workflow discussion (indirect)\n- PR116 — Prompt versioning and management discussion (indirect)",
+  "instruction": "Use this card as a design constraint. Write a new task-specific prompt; do not paste the reusable move unchanged unless it is already specific."
+}

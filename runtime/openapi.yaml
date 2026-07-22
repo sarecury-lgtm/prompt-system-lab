@@ -1,0 +1,127 @@
+openapi: 3.1.0
+info:
+  title: Prompt System Lab GitHub Runtime
+  description: Read-only runtime assets for the Prompt Compiler Custom GPT.
+  version: 0.3.0-draft
+servers:
+  - url: https://raw.githubusercontent.com
+paths:
+  /sarecury-lgtm/prompt-system-lab/main/runtime/catalog.json:
+    get:
+      operationId: getRuntimeCatalog
+      summary: Read the approved pattern and active-source catalog
+      x-openai-isConsequential: false
+      responses:
+        '200':
+          description: Runtime catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeCatalog'
+  /sarecury-lgtm/prompt-system-lab/main/runtime/patterns/{pattern_id}.json:
+    get:
+      operationId: getPatternCard
+      summary: Read one approved pattern card after selecting it from the catalog
+      x-openai-isConsequential: false
+      parameters:
+        - name: pattern_id
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - role-task-frame
+              - interface-emulation
+              - prompt-improvement-loop
+              - defensive-jailbreak-analysis
+              - grounded-research
+              - structured-output-extraction
+              - evaluation-rubric
+              - persistent-project-instruction
+              - coding-agent-workflow
+      responses:
+        '200':
+          description: Approved pattern card
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatternCard'
+  /sarecury-lgtm/prompt-system-lab/main/runtime/active/{source_id}.json:
+    get:
+      operationId: getActiveSourceCard
+      summary: Read one allowed active-source card after strict catalog matching
+      x-openai-isConsequential: false
+      parameters:
+        - name: source_id
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [pr002, pr026, pr065, pr086, pr089, pr091, pr093]
+      responses:
+        '200':
+          description: Allowed active-source card
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runtime_version: {type: string}
+                  kind: {type: string}
+                  source: {type: object, additionalProperties: true}
+                  global_policy: {type: object, additionalProperties: true}
+                additionalProperties: true
+  /sarecury-lgtm/prompt-system-lab/main/runtime/protocols/global-response-v3.1.json:
+    get:
+      operationId: getGlobalResponseProtocol
+      summary: Read the shared goal-preservation and final comparison protocol
+      x-openai-isConsequential: false
+      responses:
+        '200':
+          description: Global response protocol reference
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: {type: string}
+                  version: {type: string}
+                  purpose: {type: string}
+                  sequence:
+                    type: array
+                    items: {type: object, additionalProperties: true}
+                  final_gate:
+                    type: array
+                    items: {type: string}
+                additionalProperties: true
+components:
+  schemas:
+    RuntimeCatalog:
+      type: object
+      properties:
+        runtime_version: {type: string}
+        kind: {type: string}
+        source_of_truth: {type: object, additionalProperties: true}
+        routing_policy: {type: object, additionalProperties: true}
+        patterns:
+          type: array
+          items: {type: object, additionalProperties: true}
+        active_sources:
+          type: array
+          items: {type: object, additionalProperties: true}
+        global_protocol: {type: object, additionalProperties: true}
+      additionalProperties: true
+    PatternCard:
+      type: object
+      properties:
+        runtime_version: {type: string}
+        kind: {type: string}
+        id: {type: string}
+        name: {type: string}
+        use_when: {type: string}
+        reusable_move: {type: string}
+        source_entries: {type: string}
+        main_risk: {type: string}
+        detail_markdown: {type: string}
+        instruction: {type: string}
+      additionalProperties: true

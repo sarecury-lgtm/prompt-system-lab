@@ -1,0 +1,12 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "pattern-card",
+  "id": "coding-agent-workflow",
+  "name": "Coding-agent workflow",
+  "use_when": "The model works inside files, repos, tools, or code tasks",
+  "reusable_move": "Inspect context → make smallest safe change → validate → summarize diff.",
+  "source_entries": "PR088, PR091; PR086, PR087, PR090, PR093 (partial); PR089, PR092 (indirect)",
+  "main_risk": "Tool-using agent edits too much or skips validation",
+  "detail_markdown": "**Best for**\n\n- repo editing\n- file refactoring\n- debugging\n- PR creation\n- Codex-style tasks\n- tool-using assistant workflows\n\n**Core move**\n\n```text\nInspect the relevant files first.\nMake the smallest safe change that solves the task.\nDo not make unrelated refactors.\nRun tests or checks if available.\nIf tests are unavailable, say what was checked instead.\nSummarize changed files and next action.\nAsk before destructive changes.\n```\n\n**Why it works**\n\nCoding agents fail by editing too much, skipping context, or claiming validation they did not run. This pattern constrains scope and forces a verifiable end state.\n\n**Do not overuse**\n\nDo not use a full repo-agent workflow for simple code snippets. Use it when files, tools, or project state matter.\n\n**Related source entries**\n\n- PR088 — Cline System Prompt Lineage\n- PR091 — Aider Coding Prompts\n- PR086 — Cursor Rules / `.cursorrules` Pattern (partial)\n- PR087 — Cursor Directory Rules (partial)\n- PR090 — Open Interpreter System Prompt Lineage (partial)\n- PR093 — GPT Engineer Prompt Lineage (partial)\n- PR089 — Roo Code / Roo-Code Agent Prompts (indirect)\n- PR092 — Continue.dev Prompt Templates (indirect)",
+  "instruction": "Use this card as a design constraint. Write a new task-specific prompt; do not paste the reusable move unchanged unless it is already specific."
+}

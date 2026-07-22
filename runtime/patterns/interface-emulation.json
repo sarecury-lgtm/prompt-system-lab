@@ -1,0 +1,12 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "pattern-card",
+  "id": "interface-emulation",
+  "name": "Interface emulation",
+  "use_when": "You want the model to simulate a tool or UI surface",
+  "reusable_move": "Return simulated [tool/interface] output only; do not claim real execution.",
+  "source_entries": "PR002",
+  "main_risk": "Fake execution results that look real",
+  "detail_markdown": "**Best for**\n\n- mock terminal examples\n- simulated console output\n- teaching command/result concepts\n- UI behavior sketches\n\n**Core move**\n\n```text\nSimulate [interface].\nReturn only the simulated output surface.\nDo not claim that commands, code, tools, or external systems actually ran.\n```\n\n**Why it works**\n\nThe prompt limits the assistant to one narrow response channel.\n\n**Do not overuse**\n\nNever treat simulated output as evidence. Real execution needs a real tool.\n\n**Related source entries**\n\n- PR002 — Act as Linux Terminal\n- PR005 — Act as JavaScript Console\n- PR006 — Act as Excel Sheet",
+  "instruction": "Use this card as a design constraint. Write a new task-specific prompt; do not paste the reusable move unchanged unless it is already specific."
+}

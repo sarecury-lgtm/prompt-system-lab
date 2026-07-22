@@ -1,0 +1,73 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "active-source-card",
+  "source": {
+    "source_id": "PR086",
+    "task_types": [
+      "Cursor 저장소의 범위별 지속 규칙 파일 설계"
+    ],
+    "required_request_signals": [
+      "Cursor용 프로젝트·저장소 규칙이 필요함",
+      "디렉터리·파일 유형·프레임워크별로 서로 다른 규칙을 적용해야 함"
+    ],
+    "do_not_apply": [
+      "Cursor가 아닌 도구의 일반 프로젝트 지침",
+      "한 번만 수행하는 단일 코딩 작업"
+    ],
+    "unique_behavior": "저장소 지침을 프로젝트 영역별 `.cursor/rules/*.mdc` 파일로 분리하고 각 파일의 적용 범위를 정의한다.",
+    "required_prompt_changes": [
+      "생성할 `.mdc` 파일 목록과 경로가 제시된다.",
+      "파일별 적용 디렉터리·파일 유형·프레임워크 범위가 제시된다.",
+      "전역 규칙과 영역별 규칙의 충돌 처리 방식이 포함된다."
+    ],
+    "fallback": "Cursor의 범위별 `.mdc` 산출물로 구체화되지 않으면 pattern-only로 복귀한다.",
+    "matching": {
+      "task_type_any": [
+        "Cursor project rules",
+        "Cursor repository rules",
+        "Cursor rules",
+        "Cursor 프로젝트 규칙",
+        "Cursor 저장소 규칙",
+        "커서 프로젝트 규칙"
+      ],
+      "required_all": [
+        {
+          "id": "persistent_configuration",
+          "any": [
+            "project rules",
+            "repository rules",
+            "persistent instruction",
+            "프로젝트 규칙",
+            "저장소 규칙",
+            "지속 지침"
+          ]
+        },
+        {
+          "id": "scope_variance",
+          "any": [
+            "different directories",
+            "file type",
+            "framework",
+            "monorepo",
+            "디렉터리별",
+            "파일 유형별",
+            "프레임워크별",
+            "모노레포"
+          ]
+        }
+      ],
+      "exclude_any": [
+        "one-off",
+        "single task",
+        "일회성",
+        "한 번만"
+      ],
+      "requires_runtime_tools": false
+    }
+  },
+  "global_policy": {
+    "max_active_sources_per_request": 1,
+    "full_corpus_auto_search": false,
+    "fallback": "Discard this card and use pattern-only unless every matching condition is satisfied and its unique behavior appears in the final prompt."
+  }
+}

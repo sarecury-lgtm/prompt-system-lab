@@ -1,0 +1,80 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "active-source-card",
+  "source": {
+    "source_id": "PR026",
+    "task_types": [
+      "탈옥·적대적 프롬프트·안전 사고의 방어적 분류와 회귀 시험 설계"
+    ],
+    "required_request_signals": [
+      "공격 또는 안전 사고 기록을 분류·체계화하려는 목적",
+      "공격 문구를 복원하거나 개선하지 않는 방어적·비운영적 경계"
+    ],
+    "do_not_apply": [
+      "탈옥 문구를 강화·복원·우회하는 요청",
+      "안전 사고 분류나 거절 품질 검증과 무관한 일반 보안 작업"
+    ],
+    "unique_behavior": "모델군, 공격 의도, 지시 압박 방식, 요청된 정책 우회를 별도 비운영적 필드로 기록한다.",
+    "required_prompt_changes": [
+      "세분화된 안전 분류 필드가 산출물에 추가된다.",
+      "원문 공격 문구 보존·복원 금지가 명시된다.",
+      "분류 결과가 안전한 거절 품질 시험과 연결된다."
+    ],
+    "fallback": "세분화된 분류 필드가 없거나 공격 문구를 운영 가능한 형태로 보존하면 pattern-only로 복귀한다.",
+    "matching": {
+      "task_type_any": [
+        "jailbreak incident",
+        "adversarial prompt",
+        "safety incident",
+        "refusal quality",
+        "탈옥 사고",
+        "적대적 프롬프트",
+        "안전 사고",
+        "거절 품질"
+      ],
+      "required_all": [
+        {
+          "id": "defensive_analysis",
+          "any": [
+            "classify",
+            "taxonomy",
+            "triage",
+            "regression test",
+            "분류",
+            "체계화",
+            "회귀 시험",
+            "안전 평가"
+          ]
+        },
+        {
+          "id": "non_operational",
+          "any": [
+            "do not reproduce",
+            "non-operational",
+            "redacted",
+            "masked",
+            "복원하지",
+            "비운영적",
+            "마스킹",
+            "재현 금지"
+          ]
+        }
+      ],
+      "exclude_any": [
+        "make the jailbreak stronger",
+        "improve the jailbreak",
+        "bypass safety",
+        "탈옥 강화",
+        "더 강한 탈옥",
+        "우회 방법",
+        "안전 규칙을 우회"
+      ],
+      "requires_runtime_tools": false
+    }
+  },
+  "global_policy": {
+    "max_active_sources_per_request": 1,
+    "full_corpus_auto_search": false,
+    "fallback": "Discard this card and use pattern-only unless every matching condition is satisfied and its unique behavior appears in the final prompt."
+  }
+}

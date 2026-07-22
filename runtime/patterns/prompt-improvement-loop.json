@@ -1,0 +1,12 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "pattern-card",
+  "id": "prompt-improvement-loop",
+  "name": "Prompt improvement loop",
+  "use_when": "You want to improve a weak prompt before using it",
+  "reusable_move": "Diagnose missing control points → rewrite the prompt → name what changed.",
+  "source_entries": "PR011; PR036, PR106, PR111 (partial/adjacent)",
+  "main_risk": "Polished but overcomplicated prompt that drifts from the real goal",
+  "detail_markdown": "**Best for**\n\n- rewriting messy prompts\n- turning long research prompts into compact prompts\n- converting one-off prompts into project instructions or skill-lite workflows\n\n**Core move**\n\n```text\nFirst diagnose what the prompt is missing.\nThen rewrite it.\nThen list only the important changes.\nDo not add assumptions that change the user's goal.\n```\n\n**Why it works**\n\nIt makes the model inspect the instruction surface before trying to solve the task.\n\n**Do not overuse**\n\nDo not add heavy structure unless the task needs it. Some prompts only need one clear sentence and an output format.\n\n**Related source entries**\n\n- PR011 — Act as Prompt Enhancer\n- PR036 — Absurdly Useful Micro-Prompts (partial; lightweight improvement add-ons)\n- PR106 — Prompt for Seeking Clarity and Avoiding Hallucinating (adjacent; clarification before answering)\n- PR111 — Prompt evaluator meta-prompt (partial; evaluator/improver structure)",
+  "instruction": "Use this card as a design constraint. Write a new task-specific prompt; do not paste the reusable move unchanged unless it is already specific."
+}

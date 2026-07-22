@@ -1,0 +1,85 @@
+{
+  "runtime_version": "0.3-draft",
+  "kind": "active-source-card",
+  "source": {
+    "source_id": "PR091",
+    "task_types": [
+      "승인된 파일만 대상으로 후속 자동 적용기가 처리할 결정적 코드 패치 프롬프트 설계"
+    ],
+    "required_request_signals": [
+      "참고용 읽기 전용 파일과 편집 승인 파일이 구분됨",
+      "모델의 수정안을 후속 도구가 자동 적용함",
+      "비슷한 코드 조각 때문에 잘못된 위치가 수정될 위험이 있음"
+    ],
+    "do_not_apply": [
+      "현재 에이전트가 파일을 직접 편집하는 일반 저장소 작업",
+      "자동 적용기나 정확 일치 패치 계약이 필요 없는 코드 리뷰"
+    ],
+    "unique_behavior": "편집 승인 파일에만 정확한 old/new 텍스트와 고유 문맥을 가진 결정적 패치를 내고 생략 기호와 placeholder를 금지한다.",
+    "required_prompt_changes": [
+      "읽기 전용 맥락과 편집 승인 목록의 권한 차이가 명시된다.",
+      "정확히 한 위치와 일치하는 교체 원문이 요구된다.",
+      "생략 기호·placeholder·모호한 패치가 금지된다."
+    ],
+    "fallback": "정확 일치 패치 문법이 없거나 일반 diff만 요구하면 pattern-only로 복귀한다.",
+    "matching": {
+      "task_type_any": [
+        "automatic patch applier",
+        "machine-applied patch",
+        "patch protocol",
+        "자동 적용기",
+        "기계 적용 패치",
+        "패치 프로토콜"
+      ],
+      "required_all": [
+        {
+          "id": "edit_boundary",
+          "any": [
+            "approved files",
+            "editable files",
+            "read-only context",
+            "승인 파일",
+            "편집 허용",
+            "읽기 전용"
+          ]
+        },
+        {
+          "id": "wrong_target_risk",
+          "any": [
+            "wrong location",
+            "similar code",
+            "exact match",
+            "deterministic",
+            "엉뚱한 위치",
+            "비슷한 코드",
+            "정확 일치",
+            "결정적"
+          ]
+        },
+        {
+          "id": "downstream_application",
+          "any": [
+            "automatic applier",
+            "machine apply",
+            "downstream tool",
+            "자동 적용기",
+            "기계 적용",
+            "후속 도구"
+          ]
+        }
+      ],
+      "exclude_any": [
+        "edit the files directly",
+        "apply the change yourself",
+        "직접 파일 수정",
+        "바로 구현"
+      ],
+      "requires_runtime_tools": false
+    }
+  },
+  "global_policy": {
+    "max_active_sources_per_request": 1,
+    "full_corpus_auto_search": false,
+    "fallback": "Discard this card and use pattern-only unless every matching condition is satisfied and its unique behavior appears in the final prompt."
+  }
+}
