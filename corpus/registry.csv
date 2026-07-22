@@ -1,131 +1,131 @@
-entry_id,source_file,provisional_status,status_basis,evidence_grade,notes
-PR001,prompt-corpus/famous-prompts.md,raw,"README identifies representative upgraded entry",E0,"Existing Pattern lesson format; verify against status policy"
-PR002,prompt-corpus/famous-prompts.md,raw,"README identifies representative upgraded entry",E0,"Existing Pattern lesson format; verify against status policy"
-PR003,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR004,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR005,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR006,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR007,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR008,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR009,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR010,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR011,prompt-corpus/famous-prompts.md,raw,"README identifies representative upgraded entry",E0,"Existing Pattern lesson format; verify against status policy"
-PR012,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR013,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR014,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR015,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR016,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR017,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR018,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR019,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR020,prompt-corpus/famous-prompts.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR021,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR022,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR023,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR024,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR025,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"README identifies representative upgraded entry",E0,"Existing Pattern lesson format; verify against status policy"
-PR026,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR027,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR028,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR029,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR030,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR031,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR032,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR033,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR034,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR035,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR036,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR037,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR038,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR039,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR040,prompt-corpus/famous-prompts-pr021-pr040.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR041,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR042,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR043,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR044,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR045,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR046,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR047,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR048,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR049,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR050,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR051,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR052,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR053,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR054,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR055,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR056,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR057,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR058,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR059,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR060,prompt-corpus/famous-prompts-pr041-pr060.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR061,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR062,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR063,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR064,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR065,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR066,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR067,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR068,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR069,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR070,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR071,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR072,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR073,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR074,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR075,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR076,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR077,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR078,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR079,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR080,prompt-corpus/famous-prompts-pr061-pr080.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR081,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR082,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR083,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR084,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR085,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR086,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR087,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR088,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR089,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR090,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR091,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR092,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR093,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR094,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR095,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR096,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR097,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR098,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR099,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR100,prompt-corpus/famous-prompts-pr081-pr100.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR101,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR102,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR103,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR104,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR105,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR106,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR107,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR108,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR109,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR110,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR111,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR112,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR113,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR114,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR115,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR116,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR117,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR118,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR119,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR120,prompt-corpus/famous-prompts-pr101-pr120.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR121,prompt-corpus/famous-prompts-pr121-pr130.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR122,prompt-corpus/famous-prompts-pr121-pr130.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR123,prompt-corpus/famous-prompts-pr121-pr130.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR124,prompt-corpus/famous-prompts-pr121-pr130.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR125,prompt-corpus/famous-prompts-pr121-pr130.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR126,prompt-corpus/famous-prompts-pr121-pr130.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR127,prompt-corpus/famous-prompts-pr121-pr130.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR128,prompt-corpus/famous-prompts-pr121-pr130.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR129,prompt-corpus/famous-prompts-pr121-pr130.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
-PR130,prompt-corpus/famous-prompts-pr121-pr130.md,raw,"Repository inventory only",E0,"Seed corpus entry; requires entry-level review"
+entry_id,source_file,status,content_level,source_url_status,runtime_role,review_ref,notes
+PR001,prompt-corpus/famous-prompts.md,reviewed,structured-review,present,pattern-source,restoration-audit-2026-07-22,Structured local entry reviewed; no controlled comparison yet.
+PR002,prompt-corpus/famous-prompts.md,reviewed,structured-review,present,active+pattern-source,restoration-audit-2026-07-22,Local corpus entry plus active card reviewed; upstream effectiveness unverified.
+PR003,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR004,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR005,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR006,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR007,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR008,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR009,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR010,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR011,prompt-corpus/famous-prompts.md,reviewed,structured-review,present,pattern-source,restoration-audit-2026-07-22,Structured local entry reviewed; no controlled comparison yet.
+PR012,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR013,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR014,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR015,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR016,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR017,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR018,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR019,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR020,prompt-corpus/famous-prompts.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR021,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR022,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR023,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR024,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR025,prompt-corpus/famous-prompts-pr021-pr040.md,reviewed,structured-review,present,pattern-source,restoration-audit-2026-07-22,Structured local entry reviewed; no controlled comparison yet.
+PR026,prompt-corpus/famous-prompts-pr021-pr040.md,reviewed,excerpt-or-paraphrase,present,active+pattern-source,restoration-audit-2026-07-22,Local corpus entry plus active card reviewed; upstream effectiveness unverified.
+PR027,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR028,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR029,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR030,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR031,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR032,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR033,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR034,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR035,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR036,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR037,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR038,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR039,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR040,prompt-corpus/famous-prompts-pr021-pr040.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR041,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR042,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR043,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR044,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR045,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR046,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR047,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR048,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR049,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR050,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR051,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR052,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR053,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR054,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR055,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR056,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR057,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR058,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR059,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR060,prompt-corpus/famous-prompts-pr041-pr060.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR061,prompt-corpus/famous-prompts-pr061-pr080.md,recovered,evidence-note,present,pattern-source,local-evidence-note,Local evidence note and safety boundary present; upstream source not reverified.
+PR062,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR063,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR064,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR065,prompt-corpus/famous-prompts-pr061-pr080.md,reviewed,excerpt-or-paraphrase,present,active-source,restoration-audit-2026-07-22,Local corpus entry plus active card reviewed; upstream effectiveness unverified.
+PR066,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR067,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR068,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR069,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR070,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR071,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR072,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR073,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR074,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR075,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR076,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR077,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR078,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR079,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR080,prompt-corpus/famous-prompts-pr061-pr080.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR081,prompt-corpus/famous-prompts-pr081-pr100.md,recovered,evidence-note,present,none,local-evidence-note,Local evidence note and safety boundary present; upstream source not reverified.
+PR082,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR083,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR084,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR085,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR086,prompt-corpus/famous-prompts-pr081-pr100.md,reviewed,excerpt-or-paraphrase,present,active+pattern-source,restoration-audit-2026-07-22,Local corpus entry plus active card reviewed; upstream effectiveness unverified.
+PR087,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR088,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR089,prompt-corpus/famous-prompts-pr081-pr100.md,reviewed,excerpt-or-paraphrase,present,active+pattern-source,restoration-audit-2026-07-22,Local corpus entry plus active card reviewed; upstream effectiveness unverified.
+PR090,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR091,prompt-corpus/famous-prompts-pr081-pr100.md,reviewed,excerpt-or-paraphrase,present,active+pattern-source,restoration-audit-2026-07-22,Local corpus entry plus active card reviewed; upstream effectiveness unverified.
+PR092,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR093,prompt-corpus/famous-prompts-pr081-pr100.md,reviewed,excerpt-or-paraphrase,present,active+pattern-source,restoration-audit-2026-07-22,Local corpus entry plus active card reviewed; upstream effectiveness unverified.
+PR094,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR095,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR096,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR097,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR098,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR099,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR100,prompt-corpus/famous-prompts-pr081-pr100.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR101,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR102,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR103,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR104,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR105,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR106,prompt-corpus/famous-prompts-pr101-pr120.md,recovered,evidence-note,present,pattern-source,local-evidence-note,Local evidence note and safety boundary present; upstream source not reverified.
+PR107,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR108,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR109,prompt-corpus/famous-prompts-pr101-pr120.md,recovered,evidence-note,present,pattern-source,local-evidence-note,Local evidence note and safety boundary present; upstream source not reverified.
+PR110,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR111,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR112,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR113,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR114,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR115,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR116,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR117,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR118,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR119,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR120,prompt-corpus/famous-prompts-pr101-pr120.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR121,prompt-corpus/famous-prompts-pr121-pr130.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR122,prompt-corpus/famous-prompts-pr121-pr130.md,raw,excerpt-or-paraphrase,present,pattern-source,,Runtime-cited summary; source-specific review pending.
+PR123,prompt-corpus/famous-prompts-pr121-pr130.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR124,prompt-corpus/famous-prompts-pr121-pr130.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR125,prompt-corpus/famous-prompts-pr121-pr130.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR126,prompt-corpus/famous-prompts-pr121-pr130.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR127,prompt-corpus/famous-prompts-pr121-pr130.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR128,prompt-corpus/famous-prompts-pr121-pr130.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR129,prompt-corpus/famous-prompts-pr121-pr130.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
+PR130,prompt-corpus/famous-prompts-pr121-pr130.md,raw,excerpt-or-paraphrase,present,none,,Discovery candidate; entry-level review pending.
