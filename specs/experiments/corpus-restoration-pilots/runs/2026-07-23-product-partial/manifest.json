@@ -1,0 +1,9 @@
+{
+  "run_id": "2026-07-23-product-partial",
+  "family": "product-comparison",
+  "cases": ["PROD-AMBIG-02", "PROD-POOR-03", "PROD-CONFLICT-04"],
+  "variants": ["A", "B", "C", "D"],
+  "execution": "same-session unblinded exploratory",
+  "scope_note": "Cases requiring live SKU research (PROD-NORMAL-01 and PROD-LONG-05) are intentionally excluded until source-backed web execution is captured.",
+  "promotion_eligible": false
+}
