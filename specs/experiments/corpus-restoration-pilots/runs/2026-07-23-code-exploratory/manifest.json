@@ -1,0 +1,9 @@
+{
+  "run_id": "2026-07-23-code-exploratory",
+  "family": "coding-repair",
+  "cases": ["CODE-AMBIG-02", "CODE-POOR-03", "CODE-ADV-04", "CODE-LONG-05"],
+  "reference_fixture": "CODE-NORMAL-01 is preserved in fixtures/python-login-bug",
+  "variants": ["A", "B", "C", "D"],
+  "execution": "same-session unblinded exploratory; pytest executed locally for ambiguous, injection, and multifile fixtures",
+  "promotion_eligible": false
+}
