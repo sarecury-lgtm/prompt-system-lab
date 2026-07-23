@@ -1,0 +1,10 @@
+{
+  "run_id": "2026-07-23-product-source-backed",
+  "family": "product-comparison",
+  "cases": ["PROD-NORMAL-01", "PROD-LONG-05"],
+  "variants": ["A", "B", "C", "D"],
+  "execution": "same-session unblinded exploratory with web evidence",
+  "checked_at": "2026-07-23",
+  "promotion_eligible": false,
+  "important_limit": "The run evaluates evidence handling under conflicting and incomplete sources; it is not a definitive buying guide."
+}
