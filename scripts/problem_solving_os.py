@@ -432,23 +432,66 @@ def backup_workspace_files(
 ) -> Path:
     workspace = workspace.resolve()
     backup_dir = backup_dir.resolve()
-    files_dir = backup_dir / "files"
-    files_dir.mkdir(parents=True, exist_ok=False)
+    backup_dir.mkdir(parents=True, exist_ok=False)
+    blobs_dir = backup_dir / "blobs"
+    blobs_dir.mkdir()
+    files_manifest: dict[str, dict[str, Any]] = {}
+    blobs_manifest: dict[str, dict[str, Any]] = {}
+    logical_bytes = 0
+    stored_bytes = 0
     for relative in sorted(snapshot):
         source = (workspace / relative).resolve()
         if not path_is_within(source, workspace) or not source.is_file():
             raise ProblemSolvingError(
                 f"cannot back up workspace file: {relative}"
             )
-        destination = files_dir / relative
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, destination)
+        expected = snapshot[relative]
+        actual = file_fingerprint(source)
+        if actual != expected:
+            raise ProblemSolvingError(
+                f"workspace file changed before backup completed: {relative}"
+            )
+        sha256 = expected["sha256"]
+        size = expected["size"]
+        logical_bytes += size
+        blob_relative = Path("blobs") / sha256[:2] / sha256
+        blob_path = backup_dir / blob_relative
+        if sha256 not in blobs_manifest:
+            blob_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, blob_path)
+            stored = file_fingerprint(blob_path)
+            if stored != expected:
+                raise ProblemSolvingError(
+                    f"content-addressed backup verification failed: {relative}"
+                )
+            blobs_manifest[sha256] = {
+                "path": blob_relative.as_posix(),
+                "size": size,
+            }
+            stored_bytes += size
+        elif blobs_manifest[sha256]["size"] != size:
+            raise ProblemSolvingError(
+                f"content-addressed backup size conflict: {relative}"
+            )
+        files_manifest[relative] = {
+            **expected,
+            "blob": blob_relative.as_posix(),
+        }
     write_json(
         backup_dir / "manifest.json",
         {
-            "version": 1,
+            "version": 2,
+            "strategy": "content_addressed_per_run",
             "workspace": str(workspace),
-            "files": snapshot,
+            "files": files_manifest,
+            "blobs": blobs_manifest,
+            "stats": {
+                "source_file_count": len(files_manifest),
+                "unique_blob_count": len(blobs_manifest),
+                "logical_bytes": logical_bytes,
+                "stored_bytes": stored_bytes,
+                "deduplicated_bytes": logical_bytes - stored_bytes,
+            },
         },
     )
     return backup_dir
@@ -461,9 +504,29 @@ def restore_workspace(
     backup_dir: Path,
 ) -> dict[str, Any]:
     workspace = workspace.resolve()
-    files_dir = backup_dir.resolve() / "files"
+    backup_root = backup_dir.resolve()
+    files_dir = backup_root / "files"
     changes = workspace_changes(before, after)
     issues: list[str] = []
+    manifest: dict[str, Any] | None = None
+    manifest_version = 1
+    manifest_strategy = "path_copy_legacy"
+    manifest_path = backup_root / "manifest.json"
+    if manifest_path.is_file():
+        try:
+            loaded = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if not isinstance(loaded, dict):
+                raise ValueError("manifest root is not an object")
+            manifest = loaded
+            manifest_version = int(manifest.get("version", 1))
+            manifest_strategy = str(
+                manifest.get("strategy", manifest_strategy)
+            )
+            if manifest.get("workspace") not in {None, str(workspace)}:
+                issues.append("backup manifest workspace does not match.")
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            issues.append(f"failed to read backup manifest: {exc}")
+
     for relative in changes["created"]:
         target = workspace / relative
         try:
@@ -474,11 +537,35 @@ def restore_workspace(
     for relative in sorted(
         set(changes["modified"]) | set(changes["deleted"])
     ):
-        source = files_dir / relative
         target = workspace / relative
         try:
+            expected = before[relative]
+            if manifest_version >= 2:
+                if manifest is None:
+                    raise OSError("content-addressed backup manifest is missing")
+                entries = manifest.get("files")
+                if not isinstance(entries, dict):
+                    raise OSError("content-addressed file map is missing")
+                entry = entries.get(relative)
+                if not isinstance(entry, dict):
+                    raise OSError("content-addressed file entry is missing")
+                if {
+                    "sha256": entry.get("sha256"),
+                    "size": entry.get("size"),
+                } != expected:
+                    raise OSError("backup manifest fingerprint does not match")
+                raw_blob = entry.get("blob")
+                if not isinstance(raw_blob, str) or not raw_blob:
+                    raise OSError("content-addressed blob path is missing")
+                source = (backup_root / raw_blob).resolve()
+                if not path_is_within(source, backup_root):
+                    raise OSError("content-addressed blob escapes backup")
+            else:
+                source = files_dir / relative
             if not source.is_file():
                 raise OSError("backup file is missing")
+            if file_fingerprint(source) != expected:
+                raise OSError("backup file fingerprint does not match")
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
         except OSError as exc:
@@ -500,9 +587,11 @@ def restore_workspace(
     if restored_snapshot != before:
         issues.append("restored workspace does not match the pre-execution snapshot.")
     return {
-        "version": 1,
+        "version": 2,
         "workspace": str(workspace),
         "restored": not issues,
+        "backup_version": manifest_version,
+        "backup_strategy": manifest_strategy,
         "empty_directories_not_tracked": True,
         "reverted_changes": changes,
         "issues": issues,

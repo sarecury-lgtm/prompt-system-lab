@@ -1,6 +1,6 @@
 ---
 document_id: psos-system-blueprint
-version: 3
+version: 4
 status: normative-guide
 audience:
   - ai-coding-agent
@@ -498,8 +498,22 @@ Before model execution:
 
 - snapshot tracked, untracked, and Git-ignored files;
 - exclude `.git` and the active run evidence directory;
-- copy snapshotted files into `<stage>-workspace-backup/files`;
-- write a backup manifest.
+- verify that each source fingerprint still matches the snapshot before copying;
+- store each unique SHA-256 content value once under
+  `<stage>-workspace-backup/blobs/<prefix>/<sha256>`;
+- map every original path to its content-addressed blob in `manifest.json`;
+- record source file count, unique blob count, logical bytes, stored bytes, and deduplicated bytes;
+- verify each stored blob fingerprint before accepting the backup.
+
+Backup manifest v2 uses strategy `content_addressed_per_run`. Deduplication is scoped to one
+execution backup: separate runs do not yet share a blob store.
+
+Restore MUST:
+
+- resolve a path only through the manifest's path-to-blob entry;
+- reject a blob path that escapes the backup directory;
+- compare manifest and blob fingerprints with the pre-execution snapshot;
+- support legacy v1 `<stage>-workspace-backup/files/<original-path>` backups.
 
 ### 9.3 Commit condition
 
@@ -797,7 +811,7 @@ Safe extension order:
 
 Potential future work:
 
-- incremental/content-addressed workspace backups for large repositories;
+- cross-run incremental reuse of verified content-addressed blobs;
 - empty-directory tracking;
 - durable job/approval recovery across server restarts;
 - a UI for the reviewed policy lifecycle;

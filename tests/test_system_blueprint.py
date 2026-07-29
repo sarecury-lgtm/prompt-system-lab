@@ -45,6 +45,8 @@ class SystemBlueprintTests(unittest.TestCase):
             "Policy cannot approve or apply itself.",
             "--write-scope",
             "cli-write-approval.json",
+            "content_addressed_per_run",
+            "legacy v1",
         ):
             with self.subTest(contract=required_contract):
                 self.assertIn(required_contract, text)

@@ -72,5 +72,6 @@ Overall judgment: strong for the local read-and-scoped-write MVP. No must-pass d
 - Jobs live in server memory. A server restart, unlike a page reload, loses the active job handle;
   completed run artifacts and approval evidence still remain under `runs/`.
 - Rollback verifies the complete pre-execution file snapshot but does not track empty directories.
-- The current backup copies every snapshotted file, including Git-ignored files, before an approved
-  write; very large repositories will need a more incremental backup strategy.
+- Backup v2 stores one verified content-addressed blob per unique file value inside each run,
+  including Git-ignored inputs. It still hashes the full snapshot and does not reuse blobs across
+  runs, so very large repositories will need a cross-run incremental store.
