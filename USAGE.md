@@ -1,5 +1,8 @@
 # Usage
 
+For the system architecture, authority boundaries, durable records, and AI change protocol, read
+[`specs/PSOS_SYSTEM_BLUEPRINT.md`](specs/PSOS_SYSTEM_BLUEPRINT.md) first.
+
 This repo separates work into four layers:
 
 1. corpus evidence
