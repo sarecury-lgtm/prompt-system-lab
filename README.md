@@ -17,6 +17,7 @@ If you want to actually use this repo, start with these files:
 
 | Need | Use this file |
 |---|---|
+| Understand the complete PSOS purpose, built system, architecture, and current state | `PSOS_MASTER.md` |
 | Understand how the Personal Problem-Solving OS works | `specs/PSOS_SYSTEM_BLUEPRINT.md` |
 | Have ChatGPT turn an ordinary request into a ready-to-use prompt | `chatgpt-project/README.md` |
 | Learn how to use the repo | `USAGE.md` |
@@ -44,6 +45,7 @@ If you want to actually use this repo, start with these files:
 
 | File | Purpose |
 |---|---|
+| `PSOS_MASTER.md` | Master entrypoint covering why PSOS exists, what was built, how it works, current state, and next priorities |
 | `specs/PSOS_SYSTEM_BLUEPRINT.md` | AI-readable architecture, trust boundaries, evidence lifecycle, and safe change protocol |
 | `project-instructions/main.md` | Main operating rules for this project |
 | `chatgpt-project/PROMPT_COMPILER_INSTRUCTIONS.md` | AI writing contract for the user-facing ChatGPT Project |

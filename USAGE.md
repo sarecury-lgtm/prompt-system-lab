@@ -1,7 +1,9 @@
 # Usage
 
-For the system architecture, authority boundaries, durable records, and AI change protocol, read
-[`specs/PSOS_SYSTEM_BLUEPRINT.md`](specs/PSOS_SYSTEM_BLUEPRINT.md) first.
+For the complete purpose, built system, architecture, current state, and reading order, start with
+[`PSOS_MASTER.md`](PSOS_MASTER.md). For normative authority boundaries, durable records, and the AI
+change protocol, continue to
+[`specs/PSOS_SYSTEM_BLUEPRINT.md`](specs/PSOS_SYSTEM_BLUEPRINT.md).
 
 This repo separates work into four layers:
 

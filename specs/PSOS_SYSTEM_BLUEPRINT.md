@@ -10,11 +10,15 @@ system: Personal Problem-Solving OS
 canonical_entrypoint: scripts/problem_solving_os.py
 safe_user_entrypoint: scripts/problem_solving_web.py
 active_model_policy: problem-solving-project/model-policy.json
+master_entrypoint: PSOS_MASTER.md
 ---
 
 # Personal Problem-Solving OS — AI-readable system blueprint
 
 ## 0. How an AI should use this file
+
+When entering the repository without prior context, read `PSOS_MASTER.md` first. Then use this file
+for the normative architecture, trust boundaries, and change contract.
 
 This file is the repository map and design contract for PSOS. It explains why the system exists,
 which component owns each decision, which records are evidence, and which invariants must survive a
