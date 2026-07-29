@@ -9,6 +9,26 @@ This repo separates work into four layers:
 
 Most public references cover only one layer. Use [`references/external-projects.md`](references/external-projects.md) to see which adjacent projects inform which layer.
 
+## 0. Solving an ordinary request
+
+Run the Personal Problem-Solving OS from the repository root:
+
+```powershell
+python scripts/problem_solving_os.py --request "내 요청"
+```
+
+Add UTF-8 context when needed:
+
+```powershell
+python scripts/problem_solving_os.py --request "이 문맥을 반영해 해결해 줘" --context-file path/to/context.md
+```
+
+The runtime reuses the installed, ChatGPT-subscription-authenticated Codex CLI. It does not require
+`OPENAI_API_KEY`. Each run saves `request.txt`, `goal_ledger.json`, `route.json`, and `result.md`
+under `runs/<run-id>/`. Live research is used only when the CLI exposes web search. Workspace
+changes are read-only unless `--allow-workspace-write` is explicitly supplied together with the
+intended `--workspace`.
+
 ## 1. Designing a new prompt
 
 - Easiest user-facing path: [`chatgpt-project/README.md`](chatgpt-project/README.md)

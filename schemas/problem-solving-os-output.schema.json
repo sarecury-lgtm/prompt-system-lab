@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["goal_ledger", "route", "execution"],
+  "properties": {
+    "goal_ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parent_goal",
+        "current_goal_hypothesis",
+        "fixed_constraints",
+        "current_position",
+        "selected_route",
+        "secondary_route",
+        "route_reason",
+        "current_step",
+        "why_this_step_matters",
+        "completion_condition",
+        "important_uncertainties"
+      ],
+      "properties": {
+        "parent_goal": {"type": "string", "minLength": 1},
+        "current_goal_hypothesis": {"type": "string", "minLength": 1},
+        "fixed_constraints": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "current_position": {"type": "string", "minLength": 1},
+        "selected_route": {
+          "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", "HYBRID"]
+        },
+        "secondary_route": {
+          "type": ["string", "null"],
+          "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", null]
+        },
+        "route_reason": {"type": "string", "minLength": 1},
+        "current_step": {"type": "string", "minLength": 1},
+        "why_this_step_matters": {"type": "string", "minLength": 1},
+        "completion_condition": {"type": "string", "minLength": 1},
+        "important_uncertainties": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selected_route", "primary_route", "secondary_route", "route_reason"],
+      "properties": {
+        "selected_route": {
+          "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", "HYBRID"]
+        },
+        "primary_route": {
+          "type": ["string", "null"],
+          "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", null]
+        },
+        "secondary_route": {
+          "type": ["string", "null"],
+          "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", null]
+        },
+        "route_reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "summary",
+        "result_markdown",
+        "capabilities_used",
+        "needed_capability",
+        "handoff",
+        "artifacts",
+        "evidence",
+        "limitations"
+      ],
+      "properties": {
+        "status": {
+          "enum": ["completed", "partial", "blocked_by_capability", "handoff"]
+        },
+        "summary": {"type": "string", "minLength": 1},
+        "result_markdown": {"type": "string", "minLength": 1},
+        "capabilities_used": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "needed_capability": {"type": ["string", "null"]},
+        "handoff": {"type": ["string", "null"]},
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "action", "verification"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "action": {
+                "enum": ["inspected", "generated_in_result", "created", "modified", "proposed"]
+              },
+              "verification": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["source", "finding", "kind"],
+            "properties": {
+              "source": {"type": "string", "minLength": 1},
+              "finding": {"type": "string", "minLength": 1},
+              "kind": {"enum": ["local", "web", "provided_context", "command_output"]}
+            }
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
