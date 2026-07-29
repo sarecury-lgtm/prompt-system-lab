@@ -35,6 +35,11 @@ workspace before and after the Codex invocation. It saves
 artifact did not actually change, an unreported file changed, a file was deleted, or a claimed
 path escapes the approved workspace.
 
+For a completed `REUSE` stage, the runtime requires at least one exact local asset path. It verifies
+that each cited or inspected asset exists inside the approved workspace, fingerprints files and
+bounded directories, and saves `<stage>-reuse-receipt.json`. Missing, external, symlinked, or overly
+broad directory claims are rejected instead of being presented as inspected assets.
+
 Model and tool selection is explicit in
 [`problem-solving-project/model-policy.json`](problem-solving-project/model-policy.json):
 
