@@ -53,17 +53,33 @@ Add UTF-8 context when needed:
 python scripts/problem_solving_os.py --request "이 문맥을 반영해 해결해 줘" --context-file path/to/context.md
 ```
 
+Allow a `CODE` or `PROJECT` run to change only explicit repository-relative paths:
+
+```powershell
+python scripts/problem_solving_os.py `
+  --request "USAGE.md와 관련 테스트만 고쳐 줘" `
+  --allow-workspace-write `
+  --write-scope USAGE.md `
+  --write-scope tests/
+```
+
+`--allow-workspace-write` and `--write-scope` must be supplied together. Repeat
+`--write-scope` for each file or directory boundary. The whole workspace, `.git`, `runs`, absolute
+paths, and parent-directory traversal are rejected before the engine starts.
+
 The runtime reuses the installed, ChatGPT-subscription-authenticated Codex CLI. It does not require
 `OPENAI_API_KEY`. Each run saves `request.txt`, `goal_ledger.json`, `route.json`, and `result.md`
 under `runs/<run-id>/`. Live research is used only when the CLI exposes web search. Workspace
-changes are read-only unless `--allow-workspace-write` is explicitly supplied together with the
-intended `--workspace`.
+changes are read-only unless scoped write permission is explicitly supplied. CLI approval is bound
+to the request hash, resolved workspace, and normalized paths, then saved as
+`cli-write-approval.json` when a write stage runs.
 
 When a `CODE` or `PROJECT` stage receives workspace-write, the runtime snapshots the approved
 workspace before and after the Codex invocation. It saves
 `<stage>-workspace-receipt.json` and rejects completion when a claimed `created`/`modified`
 artifact did not actually change, an unreported file changed, a file was deleted, or a claimed
-path escapes the approved workspace.
+path escapes the approved scopes. A failed process or receipt triggers the same verified automatic
+rollback used by the local web UI.
 
 For a completed `REUSE` stage, the runtime requires at least one exact local asset path. It verifies
 that each cited or inspected asset exists inside the approved workspace, fingerprints files and

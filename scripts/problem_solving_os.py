@@ -384,6 +384,47 @@ def path_in_write_scopes(path: str, scopes: list[str]) -> bool:
     )
 
 
+def build_cli_write_approval(
+    workspace: Path,
+    request: str,
+    scopes: list[str] | tuple[str, ...],
+) -> tuple[list[str], dict[str, Any]]:
+    """Build explicit CLI approval evidence for normalized write scopes."""
+
+    normalized = normalize_write_scopes(workspace, scopes)
+    approved_at = utc_now().isoformat()
+    identity = {
+        "workspace": str(workspace.expanduser().resolve()),
+        "request_sha256": hashlib.sha256(
+            request.strip().encode("utf-8")
+        ).hexdigest(),
+        "allowed_write_paths": normalized,
+        "approved_at": approved_at,
+    }
+    approval_id = "cli-approval-" + hashlib.sha256(
+        json.dumps(
+            identity,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()[:20]
+    return normalized, {
+        "version": 1,
+        "approval_id": approval_id,
+        "status": "approved",
+        **identity,
+        "requested_at": approved_at,
+        "expires_at": None,
+        "approval_method": "cli_explicit_flags",
+        "constraints": {
+            "deletions_allowed": False,
+            "outside_scope_action": "rollback",
+            "unreported_change_action": "rollback",
+        },
+    }
+
+
 def backup_workspace_files(
     workspace: Path,
     snapshot: dict[str, dict[str, Any]],
@@ -859,7 +900,13 @@ class CodexEngine:
             )
             record["workspace_backup"] = str(backup_dir)
             if self.write_approval is not None:
-                approval_path = run_dir / "web-write-approval.json"
+                approval_filename = (
+                    "cli-write-approval.json"
+                    if self.write_approval.get("approval_method")
+                    == "cli_explicit_flags"
+                    else "web-write-approval.json"
+                )
+                approval_path = run_dir / approval_filename
                 write_json(approval_path, self.write_approval)
                 record["write_approval"] = str(approval_path)
 
@@ -1811,7 +1858,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--allow-workspace-write",
         action="store_true",
-        help="CODE/PROJECT 실행에서 workspace-write를 명시적으로 요청",
+        help="CODE/PROJECT 쓰기 허용(--write-scope가 하나 이상 필요)",
+    )
+    parser.add_argument(
+        "--write-scope",
+        action="append",
+        default=[],
+        metavar="RELATIVE_PATH",
+        help=(
+            "변경을 승인할 저장소 상대 경로(여러 번 사용 가능, "
+            "--allow-workspace-write와 함께 사용)"
+        ),
     )
     parser.add_argument(
         "--no-search",
@@ -1832,10 +1889,38 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     args = build_parser().parse_args(argv)
+    if args.allow_workspace_write and not args.write_scope:
+        print(
+            "ERROR: --allow-workspace-write에는 --write-scope가 하나 이상 필요합니다.",
+            file=sys.stderr,
+        )
+        return 1
+    if args.write_scope and not args.allow_workspace_write:
+        print(
+            "ERROR: --write-scope는 --allow-workspace-write와 함께 사용해야 합니다.",
+            file=sys.stderr,
+        )
+        return 1
+    allowed_write_paths: list[str] | None = None
+    write_approval: dict[str, Any] | None = None
+    if args.allow_workspace_write:
+        try:
+            allowed_write_paths, write_approval = build_cli_write_approval(
+                args.workspace,
+                args.request,
+                args.write_scope,
+            )
+        except ProblemSolvingError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
     engine = CodexEngine(
         args.workspace,
         allow_workspace_write=args.allow_workspace_write,
+        allowed_write_paths=allowed_write_paths,
+        write_approval=write_approval,
         enable_search=not args.no_search,
     )
     try:

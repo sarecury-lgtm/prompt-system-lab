@@ -75,6 +75,8 @@ class PsosMasterTests(unittest.TestCase):
             "모델은 경로·결과·파일 변경·정책 변경을 제안할 수 있지만",
             "untrusted claim",
             "scoped approval",
+            "--write-scope",
+            "cli-write-approval.json",
             "paired evaluation",
             "atomic apply/rollback",
             "사용자의 목적을 중심으로 판단·실행·검증·복구·학습을 연결한",
