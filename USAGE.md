@@ -56,6 +56,23 @@ deduplicates identical events, anchors them to the Goal Ledger and result hashes
 the default model or route policy. Weak reactions such as `좋아`, `ㅇㅇ`, `계속`, or `ㄱㄱ` are not
 accepted as success evidence.
 
+Review one candidate only after a person checks the supporting artifacts:
+
+```powershell
+python scripts/problem_solving_review.py `
+  --run-id psos-... `
+  --event-id feedback-... `
+  --decision promote `
+  --reviewer "owner" `
+  --reason "The receipt and produced artifact support this outcome." `
+  --evidence "manually inspected the receipt and output artifact"
+```
+
+The review is saved separately as `learning_review.json`, so the original observation remains
+immutable. Both `promote` and `reject` require a reviewer, a concrete reason, and review evidence.
+A promoted candidate becomes eligible only for a future policy proposal; this command never edits
+the current model or route policy. A recorded decision cannot be overwritten by a later opinion.
+
 Model and tool selection is explicit in
 [`problem-solving-project/model-policy.json`](problem-solving-project/model-policy.json):
 
