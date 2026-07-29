@@ -73,6 +73,24 @@ immutable. Both `promote` and `reject` require a reviewer, a concrete reason, an
 A promoted candidate becomes eligible only for a future policy proposal; this command never edits
 the current model or route policy. A recorded decision cannot be overwritten by a later opinion.
 
+Build a draft policy proposal only after at least two independent runs have promoted evidence:
+
+```powershell
+python scripts/problem_solving_policy_proposal.py `
+  --title "Increase reviewed REUSE reasoning effort" `
+  --target routes.REUSE.primary.reasoning_effort `
+  --proposed-value high `
+  --rationale "Two independent reviewed executions support evaluation." `
+  --candidate psos-first:feedback-first `
+  --candidate psos-second:feedback-second
+```
+
+The generator requires distinct run IDs and distinct Goal Ledger/result fingerprints, verifies every
+candidate against its immutable review, and checks that route-specific evidence matches the target
+route. It writes a `draft` JSON proposal anchored to the current policy hash. The proposal cannot
+apply itself: evaluation and separate human approval remain mandatory, and the active policy file
+is never edited.
+
 Model and tool selection is explicit in
 [`problem-solving-project/model-policy.json`](problem-solving-project/model-policy.json):
 
