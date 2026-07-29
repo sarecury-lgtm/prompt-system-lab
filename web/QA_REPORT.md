@@ -71,7 +71,8 @@ Overall judgment: strong for the local read-and-scoped-write MVP. No must-pass d
   was interactively checked only at 1280×720.
 - Jobs live in server memory. A server restart, unlike a page reload, loses the active job handle;
   completed run artifacts and approval evidence still remain under `runs/`.
-- Rollback verifies the complete pre-execution file snapshot but does not track empty directories.
+- Rollback verifies both file fingerprints and the complete real-directory list, including empty
+  directories and file/directory type replacements.
 - Backup v3 reuses verified content-addressed blobs across runs in a workspace-specific store
   outside the model-writable workspace. It still hashes the complete non-`runs` workspace, and the
   shared store does not yet have retention, size limits, or garbage collection.

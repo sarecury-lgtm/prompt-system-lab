@@ -37,14 +37,15 @@ each unique SHA-256 value once across runs in a workspace-specific directory und
 system's user-data root, outside the model-writable workspace. The manifest records which shared
 blobs were new, reused, or repaired and how many bytes were actually written. A corrupt shared blob
 is atomically replaced from the verified source and is never treated as valid rollback material.
-Completion is rejected if a file is deleted, changed outside the approved paths, or changed without
-being reported. It then restores the pre-execution file state automatically and records both the
-failed receipt and rollback result. The safety snapshot includes Git-ignored files as well as
-tracked and untracked files, but excludes the complete `runs` evidence root to prevent recursive
-backups. Restore verifies each shared blob fingerprint and remains compatible with v2 per-run blobs
-and legacy v1 path-copy backups. File contents are verified after restoration; empty directories
-are not tracked. Web search is disabled unless the user selects it for the request. Stop the server
-with `Ctrl+C`.
+Manifest v4 adds the complete real-directory list. Completion is rejected if a file or directory is
+deleted, changed outside the approved paths, or changed without being reported. It then restores
+created, modified, and deleted files and directories automatically and records both the failed
+receipt and rollback result. The safety snapshot includes Git-ignored files and empty directories,
+but excludes the complete `runs` evidence root to prevent recursive backups. Restore verifies each
+shared blob fingerprint and the final directory list, while remaining compatible with v3 file-only
+shared backups, v2 per-run blobs, and legacy v1 path-copy backups. File-to-directory and
+directory-to-file replacements are restored to their original type. Web search is disabled unless
+the user selects it for the request. Stop the server with `Ctrl+C`.
 
 ### Command line
 
@@ -84,11 +85,12 @@ to the request hash, resolved workspace, and normalized paths, then saved as
 When a `CODE` or `PROJECT` stage receives workspace-write, the runtime snapshots the approved
 workspace before and after the Codex invocation. It saves
 `<stage>-workspace-receipt.json` and rejects completion when a claimed `created`/`modified`
-artifact did not actually change, an unreported file changed, a file was deleted, or a claimed
-path escapes the approved scopes. A failed process or receipt triggers the same verified automatic
-rollback used by the local web UI. The cross-run content-addressed store avoids writing an already
-verified value again and reports new, reused, and repaired blobs in each backup manifest. Set
-`PSOS_BACKUP_STORE_ROOT` before starting the runtime only when the default OS user-data location
+artifact did not actually change, an unreported file or directory changed, a file or directory was
+deleted, or a claimed path escapes the approved scopes. A failed process or receipt triggers the
+same verified automatic rollback used by the local web UI. Reported empty-directory creation is
+allowed only inside the approved scopes. The cross-run content-addressed store avoids writing an
+already verified value again and reports new, reused, and repaired blobs in each backup manifest.
+Set `PSOS_BACKUP_STORE_ROOT` before starting the runtime only when the default OS user-data location
 must be overridden.
 
 For a completed `REUSE` stage, the runtime requires at least one exact local asset path. It verifies

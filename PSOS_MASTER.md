@@ -1,6 +1,6 @@
 ---
 document_id: psos-master
-version: 4
+version: 5
 status: master-entrypoint
 language: ko
 audience:
@@ -244,7 +244,7 @@ PSOS에서 모델 출력은 기본적으로 `untrusted claim`이다.
   → 저장소 상대 경로 입력
   → 정확한 요청·작업 공간·경로를 다시 표시
   → 한 번만 유효한 명시 승인
-  → tracked·untracked·Git-ignored 파일 snapshot
+  → tracked·untracked·Git-ignored 파일과 디렉터리 snapshot
   → 실행 간 공유 content-addressed backup
   → 모델 실행
   → 실제 파일 변화 검증
@@ -262,14 +262,15 @@ PSOS에서 모델 출력은 기본적으로 `untrusted claim`이다.
 실패 조건:
 
 - 승인 범위 밖 파일 변화
-- 결과에 보고되지 않은 변화
-- 파일 삭제
+- 결과에 보고되지 않은 파일·디렉터리 변화
+- 파일·디렉터리 삭제
 - 모델 프로세스 실패
 - 구조화 출력 누락 또는 오류
 - receipt 불일치
 
-실패하면 생성 파일을 제거하고 수정·삭제 파일을 백업에서 복원한 뒤, 전체 파일 snapshot이
-실행 전과 같은지 다시 검사한다. rollback까지 검증되지 않으면 복구됐다고 주장하지 않는다.
+실패하면 생성 파일·디렉터리를 제거하고 수정·삭제 파일을 백업에서 복원하며 삭제된 빈
+디렉터리를 다시 만든다. 이후 전체 파일 hash와 디렉터리 목록이 실행 전과 같은지 검사한다.
+rollback까지 검증되지 않으면 복구됐다고 주장하지 않는다.
 
 백업 v3는 SHA-256이 같은 내용을 실행 간 공용 저장소에 한 번만 기록한다. 공용 저장소는
 모델이 쓰는 작업 공간 밖의 OS 데이터 영역에 workspace별 ID로 분리한다. 각 실행 manifest는
@@ -289,6 +290,11 @@ manifest에는 새로 저장·재사용·수리한 공용 blob 수, 논리 용�
 공용 blob이 손상됐으면 원본 snapshot과 대조해 원자적으로 교체한다. 손상된 blob은 복구
 성공으로 오인하지 않는다. 기존 v2 실행별 content-addressed 백업과 기존 v1 경로 복사 백업도
 계속 복구할 수 있다.
+
+백업 manifest v4는 파일 blob 계약에 작업 전 전체 디렉터리 목록을 추가한다. receipt는
+보고되지 않았거나 승인 범위를 벗어난 빈 디렉터리 생성도 실패로 판정한다. rollback은
+생성된 디렉터리를 깊은 경로부터 제거하고, 삭제된 디렉터리를 얕은 경로부터 복원한다.
+파일이 디렉터리로 바뀌거나 디렉터리가 파일로 바뀐 경우도 원래 형식으로 되돌린다.
 
 CLI에서는 다음 두 조건이 반드시 함께 있어야 한다.
 
@@ -404,10 +410,11 @@ AND backup과 hash가 있는 원자적 적용
 - 웹 UI의 범위별 파일 변경 승인과 자동 rollback 지원
 - CLI의 반복 가능한 `--write-scope` 승인과 `cli-write-approval.json` 증거 지원
 - 실행 간 content-addressed 백업 v3와 기존 v2·v1 복구 호환성 지원
+- 디렉터리 snapshot이 포함된 백업 manifest v4와 빈 디렉터리 receipt·rollback 지원
 - 실제 feedback과 수동 review 지원
 - 정책 proposal·paired evaluation·approval·apply·rollback 지원
 - 전체 상태 audit와 로컬 UI 지원
-- 165개 자동 테스트 통과
+- 169개 자동 테스트 통과
 - 6개 route smoke test 통과
 - 저장된 실행 18/18 무결성 정상
 
@@ -426,7 +433,6 @@ python -B scripts/problem_solving_status.py
 - 공용 blob 저장소는 아직 자동 보존 기간·용량 제한·garbage collection을 제공하지 않는다.
 - v3 실행 manifest는 외부 공용 저장소에 의존하므로 해당 저장소를 수동 삭제하면 그 실행의
   rollback 원본도 사라진다.
-- rollback은 파일 내용을 검증하지만 빈 디렉터리는 추적하지 않는다.
 - 웹 job과 pending approval은 서버 메모리에 있어 서버 재시작 후 실행 핸들은 사라진다.
 - 정책 생명주기 전체를 조작하는 사용자 UI는 아직 없다.
 - 브라우저 QA에서 실제 모델 파일 변경은 승인하지 않았고 transaction 테스트로 검증했다.
@@ -477,6 +483,7 @@ python -B scripts/problem_solving_status.py
 - 허용 변화
 - 범위 밖 생성
 - 수정·삭제 rollback
+- 빈 디렉터리 생성·삭제와 파일↔디렉터리 형식 변경
 - Git-ignored 파일
 - 승인·receipt·rollback 증거
 
@@ -509,10 +516,10 @@ AND 한계와 미실행 부분이 숨겨지지 않음
 
 ## 19. 다음 우선순위
 
-1. 빈 디렉터리 rollback 추적
-2. 공용 backup blob의 보존 기간·용량 제한·garbage collection
-3. 서버 재시작 후 job·approval 복구
-4. 검토된 정책 생명주기 관리 UI
+1. 공용 backup blob의 보존 기간·용량 제한·garbage collection
+2. 서버 재시작 후 job·approval 복구
+3. 검토된 정책 생명주기 관리 UI
+4. 대형 저장소용 snapshot hash 증분화
 
 우선순위는 기능 수를 늘리는 순서가 아니다. 현재 신뢰 경계를 다른 진입점에도 동일하게
 적용하는 순서다.
