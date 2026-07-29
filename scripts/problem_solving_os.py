@@ -254,6 +254,17 @@ def is_git_worktree(workspace: Path) -> bool:
     return completed.returncode == 0 and completed.stdout.strip() == "true"
 
 
+def file_fingerprint(path: Path) -> dict[str, Any]:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return {
+        "sha256": digest.hexdigest(),
+        "size": path.stat().st_size,
+    }
+
+
 def workspace_snapshot(
     workspace: Path,
     *,
@@ -299,15 +310,8 @@ def workspace_snapshot(
             continue
         if excluded is not None and path_is_within(candidate, excluded):
             continue
-        digest = hashlib.sha256()
         try:
-            with candidate.open("rb") as stream:
-                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-                    digest.update(chunk)
-            snapshot[relative_path.as_posix()] = {
-                "sha256": digest.hexdigest(),
-                "size": candidate.stat().st_size,
-            }
+            snapshot[relative_path.as_posix()] = file_fingerprint(candidate)
         except OSError as exc:
             raise ProblemSolvingError(
                 f"작업공간 snapshot에서 파일을 읽을 수 없습니다: {candidate}: {exc}"
@@ -397,6 +401,136 @@ def build_workspace_receipt(
         "claims": claims,
         "actual_changes": changes,
         "issues": issues,
+    }
+
+
+def asset_fingerprint(
+    path: Path,
+    *,
+    excluded_root: Path | None = None,
+    max_directory_files: int = 500,
+) -> dict[str, Any]:
+    if path.is_symlink():
+        raise ProblemSolvingError(f"심볼릭 링크 자산은 검증하지 않습니다: {path}")
+    if path.is_file():
+        return {"kind": "file", **file_fingerprint(path)}
+    if not path.is_dir():
+        raise ProblemSolvingError(f"자산 경로가 파일이나 디렉터리가 아닙니다: {path}")
+
+    excluded = excluded_root.resolve() if excluded_root is not None else None
+    files: list[Path] = []
+    for candidate in sorted(path.rglob("*")):
+        if not candidate.is_file() or candidate.is_symlink():
+            continue
+        resolved = candidate.resolve()
+        if ".git" in candidate.relative_to(path).parts:
+            continue
+        if excluded is not None and path_is_within(resolved, excluded):
+            continue
+        files.append(candidate)
+        if len(files) > max_directory_files:
+            raise ProblemSolvingError(
+                f"REUSE 디렉터리 자산은 {max_directory_files}개 파일 이하여야 합니다: {path}"
+            )
+
+    digest = hashlib.sha256()
+    total_size = 0
+    for candidate in files:
+        fingerprint = file_fingerprint(candidate)
+        relative = candidate.relative_to(path).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(fingerprint["sha256"].encode("ascii"))
+        digest.update(b"\0")
+        total_size += fingerprint["size"]
+    return {
+        "kind": "directory",
+        "sha256": digest.hexdigest(),
+        "size": total_size,
+        "file_count": len(files),
+    }
+
+
+def build_reuse_receipt(
+    workspace: Path,
+    evidence: Any,
+    artifacts: Any,
+    *,
+    excluded_root: Path | None = None,
+) -> dict[str, Any]:
+    workspace = workspace.resolve()
+    candidates: dict[str, dict[str, Any]] = {}
+    issues: list[str] = []
+    local_evidence_count = 0
+
+    def add_candidate(raw_path: Any, source_type: str, detail: Any) -> None:
+        if not isinstance(raw_path, str) or not raw_path.strip():
+            issues.append(f"{source_type} 자산 경로가 비어 있습니다.")
+            return
+        lexical = Path(raw_path).expanduser()
+        if not lexical.is_absolute():
+            lexical = workspace / lexical
+        if lexical.is_symlink():
+            issues.append(f"심볼릭 링크 자산은 검증하지 않습니다: {raw_path}")
+            return
+        candidate = lexical.resolve()
+        if not path_is_within(candidate, workspace):
+            issues.append(f"작업공간 밖의 REUSE 자산을 거부했습니다: {raw_path}")
+            return
+        if not candidate.exists():
+            issues.append(f"REUSE 자산이 실제로 존재하지 않습니다: {raw_path}")
+            return
+        relative = candidate.relative_to(workspace).as_posix()
+        entry = candidates.setdefault(
+            relative,
+            {
+                "path": relative,
+                "evidence_findings": [],
+                "artifact_verifications": [],
+            },
+        )
+        target = (
+            "evidence_findings"
+            if source_type == "evidence"
+            else "artifact_verifications"
+        )
+        if isinstance(detail, str) and detail.strip() and detail not in entry[target]:
+            entry[target].append(detail)
+
+    for item in evidence if isinstance(evidence, list) else []:
+        if not isinstance(item, dict) or item.get("kind") != "local":
+            continue
+        local_evidence_count += 1
+        add_candidate(item.get("source"), "evidence", item.get("finding"))
+    for item in artifacts if isinstance(artifacts, list) else []:
+        if not isinstance(item, dict) or item.get("action") != "inspected":
+            continue
+        add_candidate(item.get("path"), "artifact", item.get("verification"))
+
+    if local_evidence_count == 0:
+        issues.append("완료된 REUSE에는 정확한 로컬 자산 경로 evidence가 필요합니다.")
+
+    verified_assets: list[dict[str, Any]] = []
+    for relative, entry in sorted(candidates.items()):
+        candidate = workspace / relative
+        try:
+            fingerprint = asset_fingerprint(
+                candidate,
+                excluded_root=excluded_root,
+            )
+        except (OSError, ProblemSolvingError) as exc:
+            issues.append(str(exc))
+            continue
+        verified_assets.append({**entry, **fingerprint})
+
+    if not verified_assets:
+        issues.append("검증된 REUSE 자산이 없습니다.")
+    return {
+        "version": 1,
+        "workspace": str(workspace),
+        "verified": not issues,
+        "assets": verified_assets,
+        "issues": list(dict.fromkeys(issues)),
     }
 
 
@@ -572,6 +706,27 @@ class CodexEngine:
             raise ProblemSolvingError(
                 f"{invocation.name} 결과 JSON을 읽을 수 없습니다: {exc}"
             ) from exc
+        if invocation.route == "REUSE":
+            execution = payload.get("execution", {}) if isinstance(payload, dict) else {}
+            reuse_receipt = build_reuse_receipt(
+                self.workspace,
+                execution.get("evidence", []),
+                execution.get("artifacts", []),
+                excluded_root=run_dir,
+            )
+            reuse_receipt_path = run_dir / f"{invocation.name}-reuse-receipt.json"
+            write_json(reuse_receipt_path, reuse_receipt)
+            record["reuse_receipt"] = str(reuse_receipt_path)
+            record["reuse_receipt_verified"] = reuse_receipt["verified"]
+            if (
+                execution.get("status") == "completed"
+                and not reuse_receipt["verified"]
+            ):
+                record["status"] = "reuse_receipt_failed"
+                raise ProblemSolvingError(
+                    "REUSE 자산 검증에 실패했습니다: "
+                    + "; ".join(reuse_receipt["issues"])
+                )
         if receipt_enabled and before_snapshot is not None:
             after_snapshot = workspace_snapshot(
                 self.workspace,
@@ -665,7 +820,9 @@ ROUTE_EXECUTION_RULES = {
     ),
     "REUSE": (
         "승인된 작업공간에서 기존 자산을 실제로 읽고 어떤 실패를 막는지 확인한다. "
-        "이름만 추천하지 말고 evidence에 확인 위치와 발견 내용을 남긴다."
+        "이름만 추천하지 말고 evidence.kind를 local로, evidence.source를 작업공간 기준의 "
+        "정확한 파일 또는 디렉터리 경로로 기록한다. 줄 번호나 설명을 source에 붙이지 않는다. "
+        "finding에는 이 자산이 막는 실패와 현재 요청에 적용되는 조건을 남긴다."
     ),
     "PROMPT": (
         "기존 Prompt Compiler baseline을 출발점으로 삼아 다른 AI가 반복 실행할 최종 프롬프트 하나를 "
@@ -867,8 +1024,10 @@ def validate_execution_output(
         if not any(item["kind"] == "web" for item in execution["evidence"]):
             raise ProblemSolvingError("완료된 RESEARCH 결과에 실제 웹 근거가 없습니다.")
     if route == "REUSE" and execution["status"] == "completed":
-        if not execution["evidence"]:
-            raise ProblemSolvingError("완료된 REUSE 결과에 실제 자산 확인 근거가 없습니다.")
+        if not any(item["kind"] == "local" for item in execution["evidence"]):
+            raise ProblemSolvingError(
+                "완료된 REUSE 결과에 정확한 로컬 자산 경로 근거가 없습니다."
+            )
     if route == "DIRECT" and execution["status"] == "completed":
         meta_markers = (
             "외곽 실행",

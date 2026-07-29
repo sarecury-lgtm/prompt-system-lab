@@ -501,6 +501,176 @@ class ProblemSolvingOSTests(unittest.TestCase):
             any("작업공간 밖" in issue for issue in receipt["issues"])
         )
 
+    def test_reuse_receipt_fingerprints_existing_file_and_directory(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            (workspace / "template.md").write_text("template", encoding="utf-8")
+            guide_dir = workspace / "guides"
+            guide_dir.mkdir()
+            (guide_dir / "guide.md").write_text("guide", encoding="utf-8")
+
+            receipt = OS.build_reuse_receipt(
+                workspace,
+                [
+                    {
+                        "source": "template.md",
+                        "finding": "중복 구조 작성을 막음",
+                        "kind": "local",
+                    }
+                ],
+                [
+                    {
+                        "path": "guides",
+                        "action": "inspected",
+                        "verification": "가이드 구조 확인",
+                    }
+                ],
+            )
+
+        self.assertTrue(receipt["verified"])
+        self.assertEqual(["guides", "template.md"], [
+            asset["path"] for asset in receipt["assets"]
+        ])
+        self.assertEqual("directory", receipt["assets"][0]["kind"])
+        self.assertEqual(1, receipt["assets"][0]["file_count"])
+        self.assertEqual("file", receipt["assets"][1]["kind"])
+
+    def test_reuse_receipt_rejects_missing_and_external_assets(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            receipt = OS.build_reuse_receipt(
+                workspace,
+                [
+                    {
+                        "source": "missing.md",
+                        "finding": "존재한다고 주장",
+                        "kind": "local",
+                    },
+                    {
+                        "source": str(workspace.parent / "outside.md"),
+                        "finding": "외부 자산 주장",
+                        "kind": "local",
+                    },
+                ],
+                [],
+            )
+
+        self.assertFalse(receipt["verified"])
+        self.assertTrue(any("존재하지 않습니다" in item for item in receipt["issues"]))
+        self.assertTrue(any("작업공간 밖" in item for item in receipt["issues"]))
+        self.assertTrue(any("검증된 REUSE 자산" in item for item in receipt["issues"]))
+
+    def test_reuse_directory_fingerprint_rejects_overly_broad_asset(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            (directory / "one.md").write_text("1", encoding="utf-8")
+            (directory / "two.md").write_text("2", encoding="utf-8")
+
+            with self.assertRaises(OS.ProblemSolvingError):
+                OS.asset_fingerprint(directory, max_directory_files=1)
+
+    def test_codex_engine_saves_verified_reuse_receipt(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            (workspace / "template.md").write_text("verified", encoding="utf-8")
+            run_dir = workspace / "runs" / "reuse-fixture"
+            run_dir.mkdir(parents=True)
+            engine = OS.CodexEngine(workspace)
+            engine._executable = "codex"
+            engine._capabilities = OS.EngineCapabilities(
+                True, False, True, False, "fixture"
+            )
+            invocation = OS.InvocationSpec(
+                name="primary-reuse",
+                phase="executor",
+                route="REUSE",
+                profile=OS.ModelProfile(
+                    "gpt-5.6-terra", "medium", False, "read-only"
+                ),
+                schema_path=OS.EXECUTION_SCHEMA_PATH,
+            )
+            output_path = run_dir / "primary-reuse-output.json"
+            model_payload = execution_result(
+                evidence=[
+                    {
+                        "source": "template.md",
+                        "finding": "기존 구조를 재사용",
+                        "kind": "local",
+                    }
+                ]
+            )
+
+            def fake_codex_run(*args, **kwargs):
+                output_path.write_text(
+                    json.dumps(model_payload, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                return mock.Mock(returncode=0, stdout="")
+
+            with mock.patch.object(OS.subprocess, "run", side_effect=fake_codex_run):
+                payload = engine.execute("inspect asset", run_dir, invocation)
+
+            receipt = json.loads(
+                (run_dir / "primary-reuse-reuse-receipt.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        self.assertEqual(model_payload, payload)
+        self.assertTrue(receipt["verified"])
+        self.assertEqual("template.md", receipt["assets"][0]["path"])
+        self.assertTrue(engine.trace()[0]["reuse_receipt_verified"])
+
+    def test_codex_engine_rejects_completed_reuse_with_missing_asset(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            run_dir = workspace / "runs" / "missing-reuse"
+            run_dir.mkdir(parents=True)
+            engine = OS.CodexEngine(workspace)
+            engine._executable = "codex"
+            engine._capabilities = OS.EngineCapabilities(
+                True, False, True, False, "fixture"
+            )
+            invocation = OS.InvocationSpec(
+                name="primary-reuse",
+                phase="executor",
+                route="REUSE",
+                profile=OS.ModelProfile(
+                    "gpt-5.6-terra", "medium", False, "read-only"
+                ),
+                schema_path=OS.EXECUTION_SCHEMA_PATH,
+            )
+            output_path = run_dir / "primary-reuse-output.json"
+            model_payload = execution_result(
+                evidence=[
+                    {
+                        "source": "missing.md",
+                        "finding": "없는 자산 주장",
+                        "kind": "local",
+                    }
+                ]
+            )
+
+            def fake_codex_run(*args, **kwargs):
+                output_path.write_text(
+                    json.dumps(model_payload, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                return mock.Mock(returncode=0, stdout="")
+
+            with mock.patch.object(OS.subprocess, "run", side_effect=fake_codex_run):
+                with self.assertRaises(OS.ProblemSolvingError):
+                    engine.execute("inspect missing asset", run_dir, invocation)
+
+            receipt = json.loads(
+                (run_dir / "primary-reuse-reuse-receipt.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        self.assertFalse(receipt["verified"])
+        self.assertEqual("reuse_receipt_failed", engine.trace()[0]["status"])
+
     def test_codex_engine_saves_verified_workspace_receipt(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
