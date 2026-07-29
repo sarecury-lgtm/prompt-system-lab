@@ -49,6 +49,8 @@ class SystemBlueprintTests(unittest.TestCase):
             "content_addressed_cross_run",
             "outside the model-writable",
             "verified_shared_store",
+            "directory_snapshot.version: 1",
+            "every actual changed file or directory",
             "legacy v1",
         ):
             with self.subTest(contract=required_contract):

@@ -1,6 +1,6 @@
 ---
 document_id: psos-system-blueprint
-version: 5
+version: 6
 status: normative-guide
 audience:
   - ai-coding-agent
@@ -496,7 +496,7 @@ request
 
 Before model execution:
 
-- snapshot tracked, untracked, and Git-ignored files;
+- snapshot tracked, untracked, and Git-ignored files plus every real directory;
 - exclude `.git` and the complete run evidence root;
 - verify that each source fingerprint still matches the snapshot before copying;
 - derive a workspace-specific store ID and keep the shared store outside the model-writable
@@ -516,11 +516,20 @@ restoration and the next backup atomically repairs it from the matching source s
 The manifest declares `run_backup_dependency: verified_shared_store`; operators must retain the
 shared store for as long as its v3 run manifests need to remain restorable.
 
+Manifest v4 extends v3 with `directory_snapshot.version: 1`, a sorted canonical path list, and its
+count. The runtime re-reads the directory tree before accepting the backup so a directory race
+cannot silently invalidate rollback evidence.
+
 Restore MUST:
 
 - resolve a path only through the manifest's path-to-blob entry;
 - reject a blob path that escapes the backup directory;
 - compare manifest and blob fingerprints with the pre-execution snapshot;
+- remove created directories deepest-first after removing created files;
+- recreate deleted directories shallowest-first after restoring files;
+- verify that both file fingerprints and the complete directory list match the pre-execution state;
+- restore file-to-directory and directory-to-file type replacements;
+- support manifest v3 `content_addressed_cross_run` backups without directory tracking;
 - support manifest v2 `content_addressed_per_run` backups;
 - support legacy v1 `<stage>-workspace-backup/files/<original-path>` backups.
 
@@ -531,9 +540,9 @@ A write execution may be presented as successful only when:
 ```text
 model process succeeded
 AND structured output is valid
-AND every actual changed file is reported
-AND every actual changed file is inside an approved scope
-AND no file was deleted
+AND every actual changed file or directory is reported
+AND every actual changed file or directory is inside an approved scope
+AND no file or directory was deleted
 AND workspace receipt is verified
 ```
 
@@ -543,14 +552,14 @@ Rollback runs when the model process fails, structured output is missing/invalid
 receipt fails. It:
 
 - removes files created by the failed execution;
+- removes directories created by the failed execution, deepest-first;
 - restores modified or deleted files from backup;
-- re-snapshots the workspace;
-- compares it with the pre-execution snapshot;
+- recreates deleted directories, shallowest-first;
+- re-snapshots files and directories;
+- compares both with the pre-execution snapshots;
 - saves `<stage>-workspace-rollback.json`.
 
 The system MUST report a stronger failure if rollback cannot verify restoration.
-
-Current limitation: file state is verified, but empty directories are not tracked.
 
 ### 9.5 Web UI versus low-level CLI
 
@@ -820,7 +829,6 @@ Safe extension order:
 
 Potential future work:
 
-- empty-directory tracking;
 - retention, size limits, and garbage collection for the shared blob store;
 - durable job/approval recovery across server restarts;
 - a UI for the reviewed policy lifecycle;

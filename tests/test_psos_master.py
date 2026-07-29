@@ -79,6 +79,8 @@ class PsosMasterTests(unittest.TestCase):
             "cli-write-approval.json",
             "content-addressed backup",
             "실행 간 content-addressed 백업 v3",
+            "백업 manifest v4",
+            "빈 디렉터리 receipt·rollback",
             "기존 v2·v1 복구 호환성",
             "기존 v1 경로 복사 백업",
             "paired evaluation",

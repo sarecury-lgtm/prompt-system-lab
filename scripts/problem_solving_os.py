@@ -324,6 +324,48 @@ def workspace_snapshot(
     return snapshot
 
 
+def workspace_directory_snapshot(
+    workspace: Path,
+    *,
+    excluded_root: Path | None = None,
+) -> list[str]:
+    """Return every real workspace directory except protected evidence roots."""
+
+    workspace = workspace.resolve()
+    excluded = excluded_root.resolve() if excluded_root is not None else None
+    directories: list[str] = []
+
+    def fail_walk(error: OSError) -> None:
+        raise ProblemSolvingError(
+            f"작업공간 snapshot에서 디렉터리를 읽을 수 없습니다: {error}"
+        ) from error
+
+    for current, names, _files in os.walk(
+        workspace,
+        topdown=True,
+        onerror=fail_walk,
+        followlinks=False,
+    ):
+        current_path = Path(current)
+        kept: list[str] = []
+        for name in sorted(names):
+            candidate = current_path / name
+            relative_path = candidate.relative_to(workspace)
+            if ".git" in relative_path.parts:
+                continue
+            if candidate.is_symlink() or not candidate.is_dir():
+                continue
+            resolved = candidate.resolve()
+            if not path_is_within(resolved, workspace):
+                continue
+            if excluded is not None and path_is_within(resolved, excluded):
+                continue
+            directories.append(relative_path.as_posix())
+            kept.append(name)
+        names[:] = kept
+    return sorted(directories)
+
+
 def workspace_changes(
     before: dict[str, dict[str, Any]],
     after: dict[str, dict[str, Any]],
@@ -337,6 +379,18 @@ def workspace_changes(
             for path in before_paths & after_paths
             if before[path]["sha256"] != after[path]["sha256"]
         ),
+        "deleted": sorted(before_paths - after_paths),
+    }
+
+
+def workspace_directory_changes(
+    before: list[str] | tuple[str, ...],
+    after: list[str] | tuple[str, ...],
+) -> dict[str, list[str]]:
+    before_paths = set(before)
+    after_paths = set(after)
+    return {
+        "created": sorted(after_paths - before_paths),
         "deleted": sorted(before_paths - after_paths),
     }
 
@@ -381,6 +435,13 @@ def normalize_write_scopes(workspace: Path, scopes: Any) -> list[str]:
 def path_in_write_scopes(path: str, scopes: list[str]) -> bool:
     return any(
         path == scope or path.startswith(scope.rstrip("/") + "/")
+        for scope in scopes
+    )
+
+
+def directory_in_write_scopes(path: str, scopes: list[str]) -> bool:
+    return path_in_write_scopes(path, scopes) or any(
+        scope.startswith(path.rstrip("/") + "/")
         for scope in scopes
     )
 
@@ -461,6 +522,8 @@ def backup_workspace_files(
     backup_dir: Path,
     *,
     shared_blob_store: Path | None = None,
+    directory_snapshot: list[str] | None = None,
+    excluded_root: Path | None = None,
 ) -> Path:
     workspace = workspace.resolve()
     backup_dir = backup_dir.resolve()
@@ -483,6 +546,24 @@ def backup_workspace_files(
         raise ProblemSolvingError(
             "shared backup store and run backup must not contain each other"
         )
+    if directory_snapshot is not None:
+        if shared_store is None:
+            raise ProblemSolvingError(
+                "directory-aware backups require the shared blob store"
+            )
+        normalized_directories = sorted(set(directory_snapshot))
+        if normalized_directories != directory_snapshot:
+            raise ProblemSolvingError(
+                "workspace directory snapshot is not sorted and unique"
+            )
+        current_directories = workspace_directory_snapshot(
+            workspace,
+            excluded_root=excluded_root,
+        )
+        if current_directories != normalized_directories:
+            raise ProblemSolvingError(
+                "workspace directories changed before backup completed"
+            )
     backup_dir.mkdir(parents=True, exist_ok=False)
     blobs_dir = backup_dir / "blobs"
     if shared_store is None:
@@ -614,7 +695,11 @@ def backup_workspace_files(
             "blob": blob_relative.as_posix(),
         }
     manifest: dict[str, Any] = {
-        "version": 3 if shared_store is not None else 2,
+        "version": (
+            4
+            if directory_snapshot is not None
+            else (3 if shared_store is not None else 2)
+        ),
         "strategy": (
             "content_addressed_cross_run"
             if shared_store is not None
@@ -659,6 +744,19 @@ def backup_workspace_files(
                 "reused_shared_bytes": reused_shared_bytes,
             }
         )
+    if directory_snapshot is not None:
+        manifest["directory_snapshot"] = {
+            "version": 1,
+            "paths": directory_snapshot,
+            "count": len(directory_snapshot),
+        }
+        if workspace_directory_snapshot(
+            workspace,
+            excluded_root=excluded_root,
+        ) != directory_snapshot:
+            raise ProblemSolvingError(
+                "workspace directories changed while backup was created"
+            )
     write_json(backup_dir / "manifest.json", manifest)
     return backup_dir
 
@@ -681,6 +779,8 @@ def restore_workspace(
     manifest_version = 1
     manifest_strategy = "path_copy_legacy"
     manifest_shared_store: Path | None = None
+    tracked_directories: list[str] | None = None
+    directory_changes = {"created": [], "deleted": []}
     manifest_path = backup_root / "manifest.json"
     if manifest_path.is_file():
         try:
@@ -699,8 +799,67 @@ def restore_workspace(
                 manifest_shared_store = Path(raw_store["path"]).resolve()
             if manifest.get("workspace") not in {None, str(workspace)}:
                 issues.append("backup manifest workspace does not match.")
+            if manifest_version >= 4:
+                raw_directory_snapshot = manifest.get(
+                    "directory_snapshot"
+                )
+                if not isinstance(raw_directory_snapshot, dict):
+                    raise ValueError("directory snapshot is missing")
+                raw_paths = raw_directory_snapshot.get("paths")
+                if not isinstance(raw_paths, list) or not all(
+                    isinstance(path, str) and path
+                    for path in raw_paths
+                ):
+                    raise ValueError("directory snapshot paths are invalid")
+                normalized_paths: list[str] = []
+                for raw_path in raw_paths:
+                    candidate = (workspace / raw_path).resolve()
+                    if not path_is_within(candidate, workspace):
+                        raise ValueError(
+                            "directory snapshot path escapes workspace"
+                        )
+                    normalized = candidate.relative_to(workspace).as_posix()
+                    if normalized != raw_path:
+                        raise ValueError(
+                            "directory snapshot path is not canonical"
+                        )
+                    normalized_paths.append(normalized)
+                if normalized_paths != sorted(set(normalized_paths)):
+                    raise ValueError(
+                        "directory snapshot paths are not sorted and unique"
+                    )
+                if raw_directory_snapshot.get("count") != len(
+                    normalized_paths
+                ):
+                    raise ValueError("directory snapshot count is invalid")
+                tracked_directories = normalized_paths
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             issues.append(f"failed to read backup manifest: {exc}")
+
+    snapshot_excluded_root = (
+        excluded_root.resolve()
+        if excluded_root is not None
+        else (
+            backup_dir.parent
+            if path_is_within(backup_dir, workspace)
+            else None
+        )
+    )
+    if tracked_directories is not None:
+        try:
+            current_directories = workspace_directory_snapshot(
+                workspace,
+                excluded_root=snapshot_excluded_root,
+            )
+            directory_changes = workspace_directory_changes(
+                tracked_directories,
+                current_directories,
+            )
+        except ProblemSolvingError as exc:
+            tracked_directories = None
+            issues.append(
+                f"failed to inspect workspace directories: {exc}"
+            )
 
     for relative in changes["created"]:
         target = workspace / relative
@@ -709,6 +868,22 @@ def restore_workspace(
                 target.unlink()
         except OSError as exc:
             issues.append(f"failed to remove created file {relative}: {exc}")
+    if tracked_directories is not None:
+        for relative in sorted(
+            directory_changes["created"],
+            key=lambda path: len(Path(path).parts),
+            reverse=True,
+        ):
+            target = workspace / relative
+            try:
+                if target.is_symlink():
+                    raise OSError("created directory path is a symlink")
+                if target.exists():
+                    target.rmdir()
+            except OSError as exc:
+                issues.append(
+                    f"failed to remove created directory {relative}: {exc}"
+                )
     for relative in sorted(
         set(changes["modified"]) | set(changes["deleted"])
     ):
@@ -761,34 +936,59 @@ def restore_workspace(
             shutil.copy2(source, target)
         except OSError as exc:
             issues.append(f"failed to restore {relative}: {exc}")
+    if tracked_directories is not None:
+        for relative in sorted(
+            directory_changes["deleted"],
+            key=lambda path: len(Path(path).parts),
+        ):
+            target = workspace / relative
+            try:
+                if target.is_symlink():
+                    raise OSError("deleted directory path is a symlink")
+                target.mkdir(parents=True, exist_ok=True)
+                if not target.is_dir():
+                    raise OSError("restored path is not a directory")
+            except OSError as exc:
+                issues.append(
+                    f"failed to restore directory {relative}: {exc}"
+                )
     try:
-        snapshot_excluded_root = (
-            excluded_root.resolve()
-            if excluded_root is not None
-            else (
-                backup_dir.parent
-                if path_is_within(backup_dir, workspace)
-                else None
-            )
-        )
         restored_snapshot = workspace_snapshot(
             workspace,
             excluded_root=snapshot_excluded_root,
             include_ignored=True,
         )
+        restored_directories = (
+            workspace_directory_snapshot(
+                workspace,
+                excluded_root=snapshot_excluded_root,
+            )
+            if tracked_directories is not None
+            else None
+        )
     except ProblemSolvingError as exc:
         restored_snapshot = {}
+        restored_directories = None
         issues.append(f"failed to verify restored workspace: {exc}")
     if restored_snapshot != before:
         issues.append("restored workspace does not match the pre-execution snapshot.")
+    if (
+        tracked_directories is not None
+        and restored_directories != tracked_directories
+    ):
+        issues.append(
+            "restored workspace directories do not match the "
+            "pre-execution snapshot."
+        )
     return {
-        "version": 2,
+        "version": 3,
         "workspace": str(workspace),
         "restored": not issues,
         "backup_version": manifest_version,
         "backup_strategy": manifest_strategy,
-        "empty_directories_not_tracked": True,
+        "empty_directories_tracked": tracked_directories is not None,
         "reverted_changes": changes,
+        "reverted_directory_changes": directory_changes,
         "issues": issues,
     }
 
@@ -800,9 +1000,22 @@ def build_workspace_receipt(
     artifacts: Any,
     *,
     allowed_write_paths: list[str] | None = None,
+    before_directories: list[str] | None = None,
+    after_directories: list[str] | None = None,
 ) -> dict[str, Any]:
     workspace = workspace.resolve()
     changes = workspace_changes(before, after)
+    directories_tracked = (
+        before_directories is not None and after_directories is not None
+    )
+    directory_changes = (
+        workspace_directory_changes(
+            before_directories,
+            after_directories,
+        )
+        if directories_tracked
+        else {"created": [], "deleted": []}
+    )
     claims: list[dict[str, str]] = []
     issues: list[str] = []
 
@@ -826,7 +1039,9 @@ def build_workspace_receipt(
         relative = candidate.relative_to(workspace).as_posix()
         action = artifact["action"]
         claims.append({"path": relative, "action": action})
-        actual_paths = changes[action]
+        actual_paths = list(changes[action])
+        if action == "created":
+            actual_paths.extend(directory_changes["created"])
         if not any(
             path == relative or path.startswith(relative.rstrip("/") + "/")
             for path in actual_paths
@@ -837,15 +1052,23 @@ def build_workspace_receipt(
 
     covered_paths: set[str] = set()
     for claim in claims:
+        actual_paths = list(changes[claim["action"]])
+        if claim["action"] == "created":
+            actual_paths.extend(directory_changes["created"])
         covered_paths.update(
             path
-            for path in changes[claim["action"]]
+            for path in actual_paths
             if path == claim["path"]
             or path.startswith(claim["path"].rstrip("/") + "/")
+            or (
+                claim["action"] == "created"
+                and claim["path"].startswith(path.rstrip("/") + "/")
+            )
         )
-    changed_paths = set(changes["created"]) | set(changes["modified"])
+    changed_file_paths = set(changes["created"]) | set(changes["modified"])
+    changed_directory_paths = set(directory_changes["created"])
     if allowed_write_paths is not None:
-        outside_scope = sorted(
+        outside_scope_files = {
             path
             for path in (
                 set(changes["created"])
@@ -853,28 +1076,60 @@ def build_workspace_receipt(
                 | set(changes["deleted"])
             )
             if not path_in_write_scopes(path, allowed_write_paths)
+        }
+        outside_scope_directories = {
+            path
+            for path in (
+                set(directory_changes["created"])
+                | set(directory_changes["deleted"])
+            )
+            if not directory_in_write_scopes(
+                path,
+                allowed_write_paths,
+            )
+        }
+        outside_scope = sorted(
+            outside_scope_files | outside_scope_directories
         )
         if outside_scope:
             issues.append(
                 "workspace changes exceeded the approved write paths: "
                 + ", ".join(outside_scope)
             )
-    unclaimed = sorted(changed_paths - covered_paths)
-    if unclaimed:
-        issues.append("결과에 기록되지 않은 파일 변화가 있습니다: " + ", ".join(unclaimed))
+    unclaimed_files = sorted(changed_file_paths - covered_paths)
+    if unclaimed_files:
+        issues.append(
+            "결과에 기록되지 않은 파일 변화가 있습니다: "
+            + ", ".join(unclaimed_files)
+        )
+    unclaimed_directories = sorted(
+        changed_directory_paths - covered_paths
+    )
+    if unclaimed_directories:
+        issues.append(
+            "결과에 기록되지 않은 디렉터리 변화가 있습니다: "
+            + ", ".join(unclaimed_directories)
+        )
     if changes["deleted"]:
         issues.append(
             "현재 artifact 계약으로 설명되지 않은 파일 삭제가 있습니다: "
             + ", ".join(changes["deleted"])
         )
+    if directory_changes["deleted"]:
+        issues.append(
+            "현재 artifact 계약으로 설명되지 않은 디렉터리 삭제가 있습니다: "
+            + ", ".join(directory_changes["deleted"])
+        )
 
     return {
-        "version": 1,
+        "version": 2 if directories_tracked else 1,
         "workspace": str(workspace),
         "verified": not issues,
         "approved_write_paths": allowed_write_paths,
         "claims": claims,
         "actual_changes": changes,
+        "actual_directory_changes": directory_changes,
+        "directories_tracked": directories_tracked,
         "issues": issues,
     }
 
@@ -1145,6 +1400,7 @@ class CodexEngine:
             and effective_sandbox == "workspace-write"
         )
         before_snapshot: dict[str, dict[str, Any]] | None = None
+        before_directory_snapshot: list[str] | None = None
         backup_dir: Path | None = None
         backup_store = (
             self.backup_store or default_shared_blob_store(self.workspace)
@@ -1197,11 +1453,17 @@ class CodexEngine:
                 excluded_root=run_dir.parent,
                 include_ignored=True,
             )
+            before_directory_snapshot = workspace_directory_snapshot(
+                self.workspace,
+                excluded_root=run_dir.parent,
+            )
             backup_dir = backup_workspace_files(
                 self.workspace,
                 before_snapshot,
                 run_dir / f"{invocation.name}-workspace-backup",
                 shared_blob_store=backup_store,
+                directory_snapshot=before_directory_snapshot,
+                excluded_root=run_dir.parent,
             )
             record["workspace_backup"] = str(backup_dir)
             record["workspace_backup_store"] = str(backup_store)
@@ -1307,11 +1569,19 @@ class CodexEngine:
                     "REUSE 자산 검증에 실패했습니다: "
                     + "; ".join(reuse_receipt["issues"])
                 )
-        if receipt_enabled and before_snapshot is not None:
+        if (
+            receipt_enabled
+            and before_snapshot is not None
+            and before_directory_snapshot is not None
+        ):
             after_snapshot = workspace_snapshot(
                 self.workspace,
                 excluded_root=run_dir.parent,
                 include_ignored=True,
+            )
+            after_directory_snapshot = workspace_directory_snapshot(
+                self.workspace,
+                excluded_root=run_dir.parent,
             )
             artifacts = (
                 payload.get("execution", {}).get("artifacts", [])
@@ -1324,6 +1594,8 @@ class CodexEngine:
                 after_snapshot,
                 artifacts,
                 allowed_write_paths=self.allowed_write_paths,
+                before_directories=before_directory_snapshot,
+                after_directories=after_directory_snapshot,
             )
             receipt_path = run_dir / f"{invocation.name}-workspace-receipt.json"
             write_json(receipt_path, receipt)

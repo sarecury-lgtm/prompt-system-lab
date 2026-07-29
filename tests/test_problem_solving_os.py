@@ -469,6 +469,56 @@ class ProblemSolvingOSTests(unittest.TestCase):
         )
         self.assertTrue(any("파일 삭제" in issue for issue in receipt["issues"]))
 
+    def test_workspace_receipt_verifies_reported_empty_directory(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            receipt = OS.build_workspace_receipt(
+                workspace,
+                {},
+                {},
+                [
+                    {
+                        "path": "docs/empty",
+                        "action": "created",
+                        "verification": "fixture",
+                    }
+                ],
+                allowed_write_paths=["docs/empty"],
+                before_directories=[],
+                after_directories=["docs", "docs/empty"],
+            )
+
+        self.assertTrue(receipt["verified"])
+        self.assertTrue(receipt["directories_tracked"])
+        self.assertEqual(
+            ["docs", "docs/empty"],
+            receipt["actual_directory_changes"]["created"],
+        )
+
+    def test_workspace_receipt_rejects_unreported_empty_directory(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            receipt = OS.build_workspace_receipt(
+                workspace,
+                {},
+                {},
+                [],
+                allowed_write_paths=["allowed"],
+                before_directories=[],
+                after_directories=["outside"],
+            )
+
+        self.assertFalse(receipt["verified"])
+        self.assertTrue(
+            any("approved write paths" in issue for issue in receipt["issues"])
+        )
+        self.assertTrue(
+            any(
+                "기록되지 않은 디렉터리 변화" in issue
+                for issue in receipt["issues"]
+            )
+        )
+
     def test_workspace_snapshot_excludes_run_evidence_root(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
@@ -655,6 +705,99 @@ class ProblemSolvingOSTests(unittest.TestCase):
         self.assertEqual("before", restored_existing)
         self.assertEqual("keep", restored_deleted)
         self.assertFalse(created_exists)
+
+    def test_directory_aware_backup_restores_empty_directories(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            original_empty = workspace / "original" / "nested"
+            original_empty.mkdir(parents=True)
+            before = OS.workspace_snapshot(workspace)
+            before_directories = OS.workspace_directory_snapshot(workspace)
+            shared_store = root / "backup-store"
+            backup = OS.backup_workspace_files(
+                workspace,
+                before,
+                root / "run" / "backup",
+                shared_blob_store=shared_store,
+                directory_snapshot=before_directories,
+            )
+            manifest = json.loads(
+                (backup / "manifest.json").read_text(encoding="utf-8")
+            )
+
+            original_empty.rmdir()
+            created_empty = workspace / "created" / "child"
+            created_empty.mkdir(parents=True)
+            after = OS.workspace_snapshot(workspace)
+            rollback = OS.restore_workspace(
+                workspace,
+                before,
+                after,
+                backup,
+                shared_blob_store=shared_store,
+            )
+            restored_directories = OS.workspace_directory_snapshot(workspace)
+
+        self.assertEqual(4, manifest["version"])
+        self.assertEqual(
+            before_directories,
+            manifest["directory_snapshot"]["paths"],
+        )
+        self.assertTrue(rollback["restored"])
+        self.assertTrue(rollback["empty_directories_tracked"])
+        self.assertEqual(
+            ["created", "created/child"],
+            rollback["reverted_directory_changes"]["created"],
+        )
+        self.assertEqual(
+            ["original/nested"],
+            rollback["reverted_directory_changes"]["deleted"],
+        )
+        self.assertEqual(before_directories, restored_directories)
+
+    def test_directory_aware_backup_restores_file_directory_type_changes(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            original_file = workspace / "file-node"
+            original_file.write_text("before", encoding="utf-8")
+            original_directory = workspace / "directory-node"
+            original_directory.mkdir()
+            before = OS.workspace_snapshot(workspace)
+            before_directories = OS.workspace_directory_snapshot(workspace)
+            shared_store = root / "backup-store"
+            backup = OS.backup_workspace_files(
+                workspace,
+                before,
+                root / "run" / "backup",
+                shared_blob_store=shared_store,
+                directory_snapshot=before_directories,
+            )
+
+            original_file.unlink()
+            original_file.mkdir()
+            original_directory.rmdir()
+            original_directory.write_text("replacement", encoding="utf-8")
+            after = OS.workspace_snapshot(workspace)
+            rollback = OS.restore_workspace(
+                workspace,
+                before,
+                after,
+                backup,
+                shared_blob_store=shared_store,
+            )
+            restored_file_content = original_file.read_text(encoding="utf-8")
+            restored_directory_is_empty = (
+                original_directory.is_dir()
+                and not any(original_directory.iterdir())
+            )
+
+        self.assertTrue(rollback["restored"])
+        self.assertEqual("before", restored_file_content)
+        self.assertTrue(restored_directory_is_empty)
 
     def test_content_addressed_backup_deduplicates_identical_files(self):
         with tempfile.TemporaryDirectory() as temp_dir:
