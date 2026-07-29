@@ -458,7 +458,8 @@ ROUTE_EXECUTION_RULES = {
     "PROMPT": (
         "기존 Prompt Compiler baseline을 출발점으로 삼아 다른 AI가 반복 실행할 최종 프롬프트 하나를 "
         "완성한다. baseline을 바꿀 때는 목적·제약·출력 계약을 보존하고, 주 경로의 조사 내용을 "
-        "프롬프트 밖에서 다시 장황하게 반복하지 않는다."
+        "프롬프트 밖에서 다시 장황하게 반복하지 않는다. 검증된 주 경로 결과를 다시 검색하지 않은 "
+        "사실은 한계가 아니며, limitations에는 최종 프롬프트에 실제로 남은 한계만 쓴다."
     ),
     "CODE": (
         "가장 작은 안전한 코드 변경과 검증을 수행한다. 쓰기가 실제로 허용되지 않으면 "
@@ -883,12 +884,16 @@ def merge_executions(
     if secondary["status"] == "completed":
         result = secondary["result_markdown"].strip()
         summary = secondary["summary"]
+        limitations = secondary["limitations"]
     else:
         result = (
             f"### {primary_route} 결과\n\n{primary['result_markdown'].strip()}\n\n"
             f"### {secondary_route} 결과\n\n{secondary['result_markdown'].strip()}"
         )
         summary = f"{primary['summary']} {secondary['summary']}"
+        limitations = list(
+            dict.fromkeys([*primary["limitations"], *secondary["limitations"]])
+        )
     return {
         "status": status,
         "summary": summary,
@@ -904,9 +909,7 @@ def merge_executions(
         "handoff": secondary["handoff"] or primary["handoff"],
         "artifacts": [*primary["artifacts"], *secondary["artifacts"]],
         "evidence": [*primary["evidence"], *secondary["evidence"]],
-        "limitations": list(
-            dict.fromkeys([*primary["limitations"], *secondary["limitations"]])
-        ),
+        "limitations": limitations,
     }
 
 

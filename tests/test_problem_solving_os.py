@@ -279,6 +279,7 @@ class ProblemSolvingOSTests(unittest.TestCase):
     def test_hybrid_runs_route_models_in_sequence_and_passes_primary_result(self):
         research = execution_result(
             result="공식 조사 결과",
+            limitations=["조사 단계의 기준일 한계"],
             evidence=[
                 {
                     "source": "https://example.test/official",
@@ -287,7 +288,10 @@ class ProblemSolvingOSTests(unittest.TestCase):
                 }
             ],
         )
-        prompt = execution_result(result="반복 프롬프트 후보")
+        prompt = execution_result(
+            result="반복 프롬프트 후보",
+            limitations=["최종 프롬프트에 남은 한계"],
+        )
         engine = FakeEngine(
             [
                 route_result("HYBRID", primary="RESEARCH", secondary="PROMPT"),
@@ -327,6 +331,10 @@ class ProblemSolvingOSTests(unittest.TestCase):
         self.assertIn("공식 조사 결과", engine.calls[2]["prompt"])
         self.assertIn("기존 Compiler 최종 결과", engine.calls[2]["prompt"])
         self.assertEqual("반복 프롬프트 후보", payload["execution"]["result_markdown"])
+        self.assertEqual(
+            ["최종 프롬프트에 남은 한계"],
+            payload["execution"]["limitations"],
+        )
         self.assertEqual(
             "baseline_before_prompt_model",
             payload["prompt_compiler"]["application"],
