@@ -106,6 +106,32 @@ the proposal's learning evidence. A passing gate requires every candidate run to
 gates are still saved for audit. Passing never applies the proposal; a separate human approval and
 application step is still required.
 
+Approve, apply, and roll back only a passed evaluation:
+
+```powershell
+python scripts/problem_solving_policy_change.py approve `
+  --proposal policy-proposals/proposal-....json `
+  --evaluation policy-evaluations/evaluation-....json `
+  --approver "owner" `
+  --reason "The held-out evaluation passed without regression." `
+  --evidence "reviewed all paired cases"
+
+python scripts/problem_solving_policy_change.py apply `
+  --approval policy-approvals/approval-....json `
+  --policy-path problem-solving-project/model-policy.json
+
+python scripts/problem_solving_policy_change.py rollback `
+  --receipt policy-changes/change-....json `
+  --policy-path problem-solving-project/model-policy.json
+```
+
+Approval revalidates the proposal, its promoted evidence, and the complete passed evaluation.
+Application requires the policy path again, refuses a stale policy hash, validates the candidate
+against the runtime's supported model-policy schema, saves an immutable backup and prepared
+receipt, atomically replaces the policy, then verifies the applied hash. Interrupted applications
+are recoverable by rerunning the same command. Rollback succeeds only when the active policy still
+matches the applied hash, never deletes the backup, and is itself idempotent.
+
 Model and tool selection is explicit in
 [`problem-solving-project/model-policy.json`](problem-solving-project/model-policy.json):
 
