@@ -657,6 +657,45 @@ def rollback_policy_change(
     *,
     runs_root: Path = RUNS_DIR,
 ) -> tuple[Path, dict[str, Any], bool]:
+    inspection = inspect_policy_change(
+        receipt_path,
+        runs_root=runs_root,
+    )
+    receipt_file = inspection["receipt_file"]
+    receipt = inspection["receipt"]
+    policy_file = expected_policy_path.expanduser().resolve()
+    if policy_file != inspection["policy_file"]:
+        raise PolicyChangeError(
+            "explicit policy path does not match the approved proposal."
+        )
+    backup_path = inspection["backup_path"]
+    active_state = inspection["active_state"]
+    if receipt["status"] == "rolled_back":
+        if active_state != "rolled_back":
+            raise PolicyChangeError("rolled-back policy changed unexpectedly.")
+        return receipt_file, receipt, False
+    if receipt["status"] != "applied":
+        raise PolicyChangeError("only an applied change can be rolled back.")
+    if active_state == "applied":
+        atomic_write_bytes(policy_file, backup_path.read_bytes())
+    elif active_state != "rollback_needs_finalization":
+        raise PolicyChangeError(
+            "active policy changed after application; refusing rollback."
+        )
+    if feedback.file_sha256(policy_file) != receipt["before_sha256"]:
+        raise PolicyChangeError("rollback write verification failed.")
+    rolled_back = dict(receipt)
+    rolled_back["status"] = "rolled_back"
+    rolled_back["rolled_back_at"] = feedback.utc_now()
+    atomic_write_json(receipt_file, rolled_back)
+    return receipt_file, rolled_back, True
+
+
+def inspect_policy_change(
+    receipt_path: Path,
+    *,
+    runs_root: Path = RUNS_DIR,
+) -> dict[str, Any]:
     receipt_file = receipt_path.expanduser().resolve()
     receipt = read_json(receipt_file, "change receipt")
     approval_reference = receipt.get("approval")
@@ -680,14 +719,9 @@ def rollback_policy_change(
         "approval_sha256": feedback.file_sha256(approval_file),
     }:
         raise PolicyChangeError("change approval reference no longer matches.")
-    policy_file = expected_policy_path.expanduser().resolve()
-    proposal_policy_file = resolve_stored_path(
+    policy_file = resolve_stored_path(
         proposal_record["target"]["policy_path"]
     )
-    if policy_file != proposal_policy_file:
-        raise PolicyChangeError(
-            "explicit policy path does not match the approved proposal."
-        )
     if not policy_file.is_file():
         raise PolicyChangeError(f"active policy file does not exist: {policy_file}")
     before_sha256 = proposal_record["target"]["policy_sha256"]
@@ -715,25 +749,27 @@ def rollback_policy_change(
     if feedback.file_sha256(backup_path) != receipt["before_sha256"]:
         raise PolicyChangeError("policy backup hash does not match receipt.")
     active_sha256 = feedback.file_sha256(policy_file)
-    if receipt["status"] == "rolled_back":
-        if active_sha256 != receipt["before_sha256"]:
-            raise PolicyChangeError("rolled-back policy changed unexpectedly.")
-        return receipt_file, receipt, False
-    if receipt["status"] != "applied":
-        raise PolicyChangeError("only an applied change can be rolled back.")
-    if active_sha256 == receipt["after_sha256"]:
-        atomic_write_bytes(policy_file, backup_path.read_bytes())
-    elif active_sha256 != receipt["before_sha256"]:
-        raise PolicyChangeError(
-            "active policy changed after application; refusing rollback."
-        )
-    if feedback.file_sha256(policy_file) != receipt["before_sha256"]:
-        raise PolicyChangeError("rollback write verification failed.")
-    rolled_back = dict(receipt)
-    rolled_back["status"] = "rolled_back"
-    rolled_back["rolled_back_at"] = feedback.utc_now()
-    atomic_write_json(receipt_file, rolled_back)
-    return receipt_file, rolled_back, True
+    state = receipt["status"]
+    if state == "prepared" and active_sha256 == receipt["before_sha256"]:
+        active_state = "ready_to_apply"
+    elif state == "prepared" and active_sha256 == receipt["after_sha256"]:
+        active_state = "application_needs_finalization"
+    elif state == "applied" and active_sha256 == receipt["after_sha256"]:
+        active_state = "applied"
+    elif state == "applied" and active_sha256 == receipt["before_sha256"]:
+        active_state = "rollback_needs_finalization"
+    elif state == "rolled_back" and active_sha256 == receipt["before_sha256"]:
+        active_state = "rolled_back"
+    else:
+        active_state = "drifted"
+    return {
+        "receipt_file": receipt_file,
+        "receipt": receipt,
+        "policy_file": policy_file,
+        "backup_path": backup_path,
+        "active_sha256": active_sha256,
+        "active_state": active_state,
+    }
 
 
 def build_parser() -> argparse.ArgumentParser:

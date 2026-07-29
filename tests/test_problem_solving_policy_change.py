@@ -287,6 +287,10 @@ class ProblemSolvingPolicyChangeTests(unittest.TestCase):
             backup_sha256 = (
                 FEEDBACK.file_sha256(backup) if backup_exists else None
             )
+            inspected = CHANGE.inspect_policy_change(
+                receipt_path,
+                runs_root=runs_root,
+            )
 
         self.assertTrue(changed)
         self.assertEqual("applied", receipt["status"])
@@ -298,6 +302,7 @@ class ProblemSolvingPolicyChangeTests(unittest.TestCase):
         self.assertEqual(before, after)
         self.assertTrue(backup_exists)
         self.assertEqual(receipt["before_sha256"], backup_sha256)
+        self.assertEqual("applied", inspected["active_state"])
 
     def test_apply_is_idempotent(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -442,12 +447,17 @@ class ProblemSolvingPolicyChangeTests(unittest.TestCase):
                 runs_root=runs_root,
             )
             restored = policy_path.read_bytes()
+            inspected = CHANGE.inspect_policy_change(
+                receipt_path,
+                runs_root=runs_root,
+            )
 
         self.assertTrue(first_changed)
         self.assertFalse(second_changed)
         self.assertEqual("rolled_back", first["status"])
         self.assertEqual(first, second)
         self.assertEqual(before, restored)
+        self.assertEqual("rolled_back", inspected["active_state"])
 
     def test_rollback_refuses_unrelated_post_apply_change(self):
         with tempfile.TemporaryDirectory() as temp_dir:
