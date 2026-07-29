@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { width: 320px; margin: 0; padding: 18px; font: 14px/1.45 system-ui, sans-serif; color: #181818; }
+    h1 { margin: 0 0 5px; font-size: 18px; }
+    p { color: #666; margin: 0 0 14px; }
+    label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
+    input { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid #ccc; border-radius: 9px; margin-bottom: 12px; }
+    button { width: 100%; border: 0; border-radius: 999px; padding: 10px 12px; margin-top: 8px; font-weight: 700; cursor: pointer; }
+    .primary { background: #171717; color: white; }
+    .secondary { background: #ecece8; color: #222; }
+    #status { margin-top: 13px; min-height: 40px; color: #555; white-space: pre-wrap; }
+    #status.error { color: #a3261e; }
+  </style>
+</head>
+<body>
+  <h1>PSOS Bridge</h1>
+  <p>현재 ChatGPT 탭과 로컬 수동 브리지를 연결합니다.</p>
+  <label for="server">브리지 주소</label>
+  <input id="server" value="http://127.0.0.1:8766">
+  <button class="primary" id="insert">대기 중 작업 가져오기</button>
+  <button class="secondary" id="return">마지막 답변 반환</button>
+  <div id="status">먼저 PSOS 수동 브리지에서 요청을 시작하세요.</div>
+  <script src="popup.js"></script>
+</body>
+</html>
