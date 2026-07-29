@@ -19,6 +19,7 @@ If you want to actually use this repo, start with these files:
 |---|---|
 | Understand the complete PSOS purpose, built system, architecture, and current state | `PSOS_MASTER.md` |
 | Understand how the Personal Problem-Solving OS works | `specs/PSOS_SYSTEM_BLUEPRINT.md` |
+| Continue PSOS work when Codex is unavailable | `docs/manual-chatgpt-bridge.md` |
 | Have ChatGPT turn an ordinary request into a ready-to-use prompt | `chatgpt-project/README.md` |
 | Learn how to use the repo | `USAGE.md` |
 | Find a reusable prompt-design pattern | `prompt-corpus/PATTERN_LESSONS_INDEX.md` |
@@ -47,6 +48,8 @@ If you want to actually use this repo, start with these files:
 |---|---|
 | `PSOS_MASTER.md` | Master entrypoint covering why PSOS exists, what was built, how it works, current state, and next priorities |
 | `specs/PSOS_SYSTEM_BLUEPRINT.md` | AI-readable architecture, trust boundaries, evidence lifecycle, and safe change protocol |
+| `scripts/problem_solving_manual.py` | Schema-validated paused/resume runtime for manual ChatGPT handoffs |
+| `scripts/problem_solving_manual_web.py` | Loopback-only local UI and extension API for the manual bridge |
 | `project-instructions/main.md` | Main operating rules for this project |
 | `chatgpt-project/PROMPT_COMPILER_INSTRUCTIONS.md` | AI writing contract for the user-facing ChatGPT Project |
 | `prompt-corpus/README.md` | Rules and navigation for the prompt corpus |
