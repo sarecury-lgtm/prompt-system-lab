@@ -217,6 +217,7 @@ def validate_proposal(
     payload: dict[str, Any],
     *,
     runs_root: Path = RUNS_DIR,
+    policy_snapshot: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], str | None]:
     expected_fields = {
         "version",
@@ -260,12 +261,17 @@ def validate_proposal(
     if not policy_path.is_absolute():
         policy_path = ROOT / policy_path
     policy_path = policy_path.expanduser().resolve()
-    try:
-        policy = feedback.read_json(policy_path)
-    except feedback.FeedbackError as exc:
-        raise ProposalError(str(exc)) from exc
-    if target.get("policy_sha256") != feedback.file_sha256(policy_path):
-        raise ProposalError("active policy hash no longer matches the proposal.")
+    if policy_snapshot is None:
+        try:
+            policy = feedback.read_json(policy_path)
+        except feedback.FeedbackError as exc:
+            raise ProposalError(str(exc)) from exc
+        if target.get("policy_sha256") != feedback.file_sha256(policy_path):
+            raise ProposalError("active policy hash no longer matches the proposal.")
+    else:
+        if not isinstance(policy_snapshot, dict):
+            raise ProposalError("proposal policy snapshot is invalid.")
+        policy = copy.deepcopy(policy_snapshot)
     target_path = target.get("json_path")
     if not isinstance(target_path, str):
         raise ProposalError("proposal target JSON path is invalid.")

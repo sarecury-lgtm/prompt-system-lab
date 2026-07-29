@@ -161,6 +161,168 @@ def evaluation_id(
     return "evaluation-" + review.canonical_sha256(payload)[:20]
 
 
+def validate_evaluation_record(
+    payload: dict[str, Any],
+    proposal_file: Path,
+    proposal_record: dict[str, Any],
+    baseline_policy: dict[str, Any],
+    candidate_policy: dict[str, Any],
+    route_scope: str | None,
+    *,
+    runs_root: Path = RUNS_DIR,
+) -> dict[str, Any]:
+    expected_fields = {
+        "version",
+        "evaluation_id",
+        "created_at",
+        "proposal",
+        "status",
+        "evaluator",
+        "cases",
+        "summary",
+        "gate",
+    }
+    if set(payload) != expected_fields or payload.get("version") != 1:
+        raise EvaluationError("evaluation record has an invalid format.")
+    if not isinstance(payload.get("created_at"), str):
+        raise EvaluationError("evaluation created_at is invalid.")
+    proposal_sha256 = feedback.file_sha256(proposal_file)
+    if payload.get("proposal") != {
+        "proposal_id": proposal_record["proposal_id"],
+        "proposal_sha256": proposal_sha256,
+    }:
+        raise EvaluationError("evaluation proposal reference does not match.")
+    stored_cases = payload.get("cases")
+    if not isinstance(stored_cases, list):
+        raise EvaluationError("evaluation cases must be an array.")
+    judgment_cases: list[dict[str, Any]] = []
+    for item in stored_cases:
+        if not isinstance(item, dict):
+            raise EvaluationError("evaluation case has an invalid format.")
+        judgment_cases.append(
+            {
+                key: item.get(key)
+                for key in (
+                    "case_id",
+                    "baseline_run_id",
+                    "candidate_run_id",
+                    "judgment",
+                    "evidence",
+                )
+            }
+        )
+    evaluator, validated_judgments = validate_judgments(
+        {
+            "version": 1,
+            "proposal_id": proposal_record["proposal_id"],
+            "evaluator": payload.get("evaluator"),
+            "cases": judgment_cases,
+        },
+        proposal_record["proposal_id"],
+    )
+
+    training_run_ids = {
+        item["run_id"] for item in proposal_record["candidates"]
+    }
+    used_run_ids: set[str] = set()
+    request_hashes: set[str] = set()
+    expected_cases: list[dict[str, Any]] = []
+    for item in validated_judgments:
+        baseline = load_evaluation_run(
+            item["baseline_run_id"],
+            runs_root=runs_root,
+            expected_policy=baseline_policy,
+        )
+        candidate = load_evaluation_run(
+            item["candidate_run_id"],
+            runs_root=runs_root,
+            expected_policy=candidate_policy,
+        )
+        pair_ids = {baseline["run_id"], candidate["run_id"]}
+        if pair_ids & training_run_ids:
+            raise EvaluationError(
+                "evaluation runs reuse proposal evidence runs."
+            )
+        if pair_ids & used_run_ids:
+            raise EvaluationError("evaluation run is reused across cases.")
+        used_run_ids.update(pair_ids)
+        if baseline["request_sha256"] != candidate["request_sha256"]:
+            raise EvaluationError("evaluation paired requests do not match.")
+        request_hash = baseline["request_sha256"]
+        if request_hash in request_hashes:
+            raise EvaluationError("evaluation request is reused across cases.")
+        request_hashes.add(request_hash)
+        if route_scope is not None and (
+            baseline["selected_route"] != route_scope
+            or candidate["selected_route"] != route_scope
+        ):
+            raise EvaluationError("evaluation route does not match proposal.")
+        if (
+            item["judgment"] == "candidate_better"
+            and baseline["result_sha256"] == candidate["result_sha256"]
+        ):
+            raise EvaluationError(
+                "candidate_better has an unchanged result hash."
+            )
+        expected_cases.append(
+            {
+                **item,
+                "request_sha256": request_hash,
+                "baseline": baseline,
+                "candidate": candidate,
+            }
+        )
+    if stored_cases != expected_cases:
+        raise EvaluationError("evaluation cases no longer match source runs.")
+
+    failures: list[str] = []
+    if len(expected_cases) < MINIMUM_EVALUATION_CASES:
+        failures.append(f"requires_at_least_{MINIMUM_EVALUATION_CASES}_cases")
+    for item in expected_cases:
+        if item["candidate"]["execution_status"] != "completed":
+            failures.append(f"candidate_not_completed:{item['case_id']}")
+        if item["judgment"] == "candidate_worse":
+            failures.append(f"quality_regression:{item['case_id']}")
+    if not any(
+        item["judgment"] == "candidate_better" for item in expected_cases
+    ):
+        failures.append("no_demonstrated_quality_improvement")
+    expected_status = "passed" if not failures else "failed"
+    if payload.get("status") != expected_status:
+        raise EvaluationError("evaluation status does not match gate results.")
+    expected_summary = {
+        "case_count": len(expected_cases),
+        "candidate_better": sum(
+            item["judgment"] == "candidate_better" for item in expected_cases
+        ),
+        "equivalent": sum(
+            item["judgment"] == "equivalent" for item in expected_cases
+        ),
+        "candidate_worse": sum(
+            item["judgment"] == "candidate_worse" for item in expected_cases
+        ),
+        "candidate_completed": sum(
+            item["candidate"]["execution_status"] == "completed"
+            for item in expected_cases
+        ),
+    }
+    if payload.get("summary") != expected_summary:
+        raise EvaluationError("evaluation summary does not match cases.")
+    expected_gate = {
+        "minimum_cases": MINIMUM_EVALUATION_CASES,
+        "failures": failures,
+        "requires_human_approval": True,
+        "automatic_application_allowed": False,
+        "policy_applied": False,
+    }
+    if payload.get("gate") != expected_gate:
+        raise EvaluationError("evaluation gate does not match cases.")
+    expected_id = evaluation_id(proposal_sha256, evaluator, expected_cases)
+    if payload.get("evaluation_id") != expected_id:
+        raise EvaluationError("evaluation ID does not match its content.")
+    return payload
+
+
 def evaluate_policy_proposal(
     proposal_path: Path,
     judgment_path: Path,
