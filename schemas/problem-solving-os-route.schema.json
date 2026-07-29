@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["goal_ledger", "route"],
+  "properties": {
+    "goal_ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parent_goal",
+        "current_goal_hypothesis",
+        "fixed_constraints",
+        "current_position",
+        "selected_route",
+        "secondary_route",
+        "route_reason",
+        "current_step",
+        "why_this_step_matters",
+        "completion_condition",
+        "important_uncertainties"
+      ],
+      "properties": {
+        "parent_goal": {"type": "string", "minLength": 1},
+        "current_goal_hypothesis": {"type": "string", "minLength": 1},
+        "fixed_constraints": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "current_position": {"type": "string", "minLength": 1},
+        "selected_route": {
+          "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", "HYBRID"]
+        },
+        "secondary_route": {
+          "type": ["string", "null"],
+          "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", null]
+        },
+        "route_reason": {"type": "string", "minLength": 1},
+        "current_step": {"type": "string", "minLength": 1},
+        "why_this_step_matters": {"type": "string", "minLength": 1},
+        "completion_condition": {"type": "string", "minLength": 1},
+        "important_uncertainties": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selected_route", "primary_route", "secondary_route", "route_reason"],
+      "properties": {
+        "selected_route": {
+          "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", "HYBRID"]
+        },
+        "primary_route": {
+          "type": ["string", "null"],
+          "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", null]
+        },
+        "secondary_route": {
+          "type": ["string", "null"],
+          "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", null]
+        },
+        "route_reason": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

@@ -9,6 +9,49 @@ This repo separates work into four layers:
 
 Most public references cover only one layer. Use [`references/external-projects.md`](references/external-projects.md) to see which adjacent projects inform which layer.
 
+## 0. Solving an ordinary request
+
+Run the Personal Problem-Solving OS from the repository root:
+
+```powershell
+python scripts/problem_solving_os.py --request "내 요청"
+```
+
+Add UTF-8 context when needed:
+
+```powershell
+python scripts/problem_solving_os.py --request "이 문맥을 반영해 해결해 줘" --context-file path/to/context.md
+```
+
+The runtime reuses the installed, ChatGPT-subscription-authenticated Codex CLI. It does not require
+`OPENAI_API_KEY`. Each run saves `request.txt`, `goal_ledger.json`, `route.json`, and `result.md`
+under `runs/<run-id>/`. Live research is used only when the CLI exposes web search. Workspace
+changes are read-only unless `--allow-workspace-write` is explicitly supplied together with the
+intended `--workspace`.
+
+Model and tool selection is explicit in
+[`problem-solving-project/model-policy.json`](problem-solving-project/model-policy.json):
+
+- Luna low routes the request without executing it.
+- Terra low/medium handles `DIRECT` and `REUSE`.
+- Sol medium handles `RESEARCH` and `PROMPT`.
+- Sol high handles `CODE` and `PROJECT`.
+- invalid Luna routing falls back once to Sol medium; invalid Terra execution falls back once to
+  Sol medium.
+- only `RESEARCH` receives live search, and only explicitly approved `CODE`/`PROJECT` runs request
+  workspace write.
+- `PROMPT` first builds a baseline with the existing Prompt Compiler, then gives that baseline and
+  any upstream research to Sol for one final ready-to-use prompt. HYBRID exposes only the downstream
+  final result while preserving upstream evidence in `route.json`.
+
+`route.json` records the planned and actual model, reasoning effort, search setting, sandbox, and
+fallback outcome for every model invocation. Override the policy only when testing a reviewed
+replacement:
+
+```powershell
+python scripts/problem_solving_os.py --request "..." --model-policy path/to/model-policy.json
+```
+
 ## 1. Designing a new prompt
 
 - Easiest user-facing path: [`chatgpt-project/README.md`](chatgpt-project/README.md)
