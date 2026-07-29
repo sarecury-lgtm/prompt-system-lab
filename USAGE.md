@@ -40,6 +40,22 @@ that each cited or inspected asset exists inside the approved workspace, fingerp
 bounded directories, and saves `<stage>-reuse-receipt.json`. Missing, external, symlinked, or overly
 broad directory claims are rejected instead of being presented as inspected assets.
 
+Record a concrete outcome only after real use, correction, rejection, or execution evidence:
+
+```powershell
+python scripts/problem_solving_feedback.py `
+  --run-id psos-... `
+  --signal execution_succeeded `
+  --note "The generated workflow completed in the target environment." `
+  --evidence "exit code 0 and expected output confirmed"
+```
+
+Supported signals are `adopted`, `corrected`, `rejected`, `execution_succeeded`,
+`execution_failed`, and `wrong_route`. The recorder saves `learning_record.json` inside the run,
+deduplicates identical events, anchors them to the Goal Ledger and result hashes, and never changes
+the default model or route policy. Weak reactions such as `좋아`, `ㅇㅇ`, `계속`, or `ㄱㄱ` are not
+accepted as success evidence.
+
 Model and tool selection is explicit in
 [`problem-solving-project/model-policy.json`](problem-solving-project/model-policy.json):
 
