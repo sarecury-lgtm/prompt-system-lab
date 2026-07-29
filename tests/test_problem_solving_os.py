@@ -1,4 +1,5 @@
 import importlib.util
+import io
 import json
 import subprocess
 import sys
@@ -548,6 +549,25 @@ class ProblemSolvingOSTests(unittest.TestCase):
 
         self.assertEqual(["web/app.js", "docs"], normalized)
 
+    def test_cli_write_approval_normalizes_scopes_and_binds_request(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            scopes, approval = OS.build_cli_write_approval(
+                workspace,
+                "파일을 고쳐 줘",
+                ["web/app.js", "tests/", "web/app.js"],
+            )
+
+        self.assertEqual(["web/app.js", "tests"], scopes)
+        self.assertEqual("approved", approval["status"])
+        self.assertEqual("cli_explicit_flags", approval["approval_method"])
+        self.assertEqual(scopes, approval["allowed_write_paths"])
+        self.assertEqual(
+            OS.hashlib.sha256("파일을 고쳐 줘".encode("utf-8")).hexdigest(),
+            approval["request_sha256"],
+        )
+        self.assertFalse(approval["constraints"]["deletions_allowed"])
+
     def test_workspace_receipt_rejects_change_outside_approved_scope(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
@@ -791,7 +811,17 @@ class ProblemSolvingOSTests(unittest.TestCase):
             workspace = Path(temp_dir)
             run_dir = workspace / "runs" / "fixture"
             run_dir.mkdir(parents=True)
-            engine = OS.CodexEngine(workspace, allow_workspace_write=True)
+            approval = {
+                "approval_id": "cli-approval-fixture",
+                "approval_method": "cli_explicit_flags",
+                "allowed_write_paths": ["created.txt"],
+            }
+            engine = OS.CodexEngine(
+                workspace,
+                allow_workspace_write=True,
+                allowed_write_paths=["created.txt"],
+                write_approval=approval,
+            )
             engine._executable = "codex"
             engine._capabilities = OS.EngineCapabilities(
                 True, False, True, True, "fixture"
@@ -840,9 +870,16 @@ class ProblemSolvingOSTests(unittest.TestCase):
                     encoding="utf-8"
                 )
             )
+            saved_approval = json.loads(
+                (run_dir / "cli-write-approval.json").read_text(
+                    encoding="utf-8"
+                )
+            )
 
         self.assertEqual(model_payload, payload)
         self.assertTrue(receipt["verified"])
+        self.assertEqual(["created.txt"], receipt["approved_write_paths"])
+        self.assertEqual(approval, saved_approval)
         self.assertTrue(engine.trace()[0]["workspace_receipt_verified"])
         self.assertIn("--skip-git-repo-check", commands[-1])
 
@@ -947,6 +984,95 @@ class ProblemSolvingOSTests(unittest.TestCase):
         payload["goal_ledger"]["important_uncertainties"] = ["1", "2", "3", "4"]
         with self.assertRaises(OS.ProblemSolvingError):
             OS.validate_route_output(payload)
+
+    def test_cli_parser_collects_repeated_write_scopes(self):
+        args = OS.build_parser().parse_args(
+            [
+                "--request",
+                "파일을 고쳐 줘",
+                "--allow-workspace-write",
+                "--write-scope",
+                "web/app.js",
+                "--write-scope",
+                "tests/",
+            ]
+        )
+
+        self.assertTrue(args.allow_workspace_write)
+        self.assertEqual(["web/app.js", "tests/"], args.write_scope)
+
+    def test_cli_main_requires_write_permission_and_scope_together(self):
+        cases = (
+            (
+                ["--request", "파일을 고쳐 줘", "--allow-workspace-write"],
+                "--write-scope가 하나 이상 필요",
+            ),
+            (
+                ["--request", "파일을 고쳐 줘", "--write-scope", "USAGE.md"],
+                "--allow-workspace-write와 함께",
+            ),
+        )
+
+        for argv, expected_error in cases:
+            with self.subTest(argv=argv), mock.patch.object(
+                OS,
+                "run_request",
+            ) as run_request_mock, mock.patch.object(
+                OS.sys,
+                "stderr",
+                new_callable=io.StringIO,
+            ) as stderr:
+                status = OS.main(argv)
+
+            self.assertEqual(1, status)
+            self.assertIn(expected_error, stderr.getvalue())
+            run_request_mock.assert_not_called()
+
+    def test_cli_main_passes_scoped_approval_to_engine(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir) / "workspace"
+            workspace.mkdir()
+            run_dir = Path(temp_dir) / "runs" / "cli-scope"
+            run_dir.mkdir(parents=True)
+            (run_dir / "result.md").write_text("완료\n", encoding="utf-8")
+            payload = {"execution": {"status": "completed"}}
+
+            with mock.patch.object(OS, "CodexEngine") as engine_class, (
+                mock.patch.object(
+                    OS,
+                    "run_request",
+                    return_value=(run_dir, payload),
+                )
+            ), mock.patch.object(
+                OS.sys,
+                "stdout",
+                new_callable=io.StringIO,
+            ):
+                status = OS.main(
+                    [
+                        "--request",
+                        "USAGE.md를 고쳐 줘",
+                        "--workspace",
+                        str(workspace),
+                        "--allow-workspace-write",
+                        "--write-scope",
+                        "USAGE.md",
+                    ]
+                )
+
+            engine_kwargs = engine_class.call_args.kwargs
+
+        self.assertEqual(0, status)
+        self.assertTrue(engine_kwargs["allow_workspace_write"])
+        self.assertEqual(["USAGE.md"], engine_kwargs["allowed_write_paths"])
+        self.assertEqual(
+            "cli_explicit_flags",
+            engine_kwargs["write_approval"]["approval_method"],
+        )
+        self.assertEqual(
+            ["USAGE.md"],
+            engine_kwargs["write_approval"]["allowed_write_paths"],
+        )
 
 
 if __name__ == "__main__":

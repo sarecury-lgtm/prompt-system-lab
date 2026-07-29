@@ -1,6 +1,6 @@
 ---
 document_id: psos-system-blueprint
-version: 2
+version: 3
 status: normative-guide
 audience:
   - ai-coding-agent
@@ -531,12 +531,32 @@ Current limitation: file state is verified, but empty directories are not tracke
 
 ### 9.5 Web UI versus low-level CLI
 
-The local web UI enforces the scoped approval transaction.
+The local web UI and CLI both enforce explicit path scopes before enabling the workspace-write
+sandbox.
 
-`problem_solving_os.py --allow-workspace-write` is a lower-level operator switch. It enables the
-runtime sandbox and workspace receipt, but the CLI currently has no public flag for the web UI's
-path-list approval. It MUST NOT be exposed as an ordinary one-click user permission. Future CLI
-work SHOULD add explicit scope arguments before treating it as equivalent to the safe web flow.
+Web approval:
+
+- shows the exact request, workspace, and normalized paths;
+- requires a second explicit click;
+- is one-time and expires after ten minutes;
+- persists `web-write-approval.json`.
+
+CLI approval:
+
+```text
+--allow-workspace-write
+AND one or more --write-scope <repository-relative-path>
+```
+
+- either option without the other is rejected before engine construction;
+- repeated `--write-scope` values are normalized by the same validator used by the web UI;
+- the approval is bound to the request hash, resolved workspace, normalized paths, and approval
+  timestamp;
+- it persists `cli-write-approval.json`.
+
+Both entrypoints use the same snapshot, backup, receipt, deletion ban, outside-scope rejection, and
+verified rollback transaction. The CLI flags are explicit operator approval for that invocation;
+they are not a reusable or implicit permission.
 
 ## 10. Durable run layout
 
@@ -777,7 +797,6 @@ Safe extension order:
 
 Potential future work:
 
-- explicit scoped-write CLI arguments equivalent to the web approval path;
 - incremental/content-addressed workspace backups for large repositories;
 - empty-directory tracking;
 - durable job/approval recovery across server restarts;

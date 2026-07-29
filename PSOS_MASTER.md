@@ -1,6 +1,6 @@
 ---
 document_id: psos-master
-version: 1
+version: 2
 status: master-entrypoint
 language: ko
 audience:
@@ -237,7 +237,7 @@ PSOS에서 모델 출력은 기본적으로 `untrusted claim`이다.
 
 ## 10. 안전한 파일 변경 설계
 
-로컬 웹 UI의 파일 변경은 단순 권한 토글이 아니다.
+로컬 웹 UI와 CLI의 파일 변경은 단순 권한 토글이 아니다.
 
 ```text
 파일 변경 모드 선택
@@ -269,6 +269,17 @@ PSOS에서 모델 출력은 기본적으로 `untrusted claim`이다.
 
 실패하면 생성 파일을 제거하고 수정·삭제 파일을 백업에서 복원한 뒤, 전체 파일 snapshot이
 실행 전과 같은지 다시 검사한다. rollback까지 검증되지 않으면 복구됐다고 주장하지 않는다.
+
+CLI에서는 다음 두 조건이 반드시 함께 있어야 한다.
+
+```powershell
+--allow-workspace-write `
+--write-scope <저장소-상대-경로>
+```
+
+여러 범위는 `--write-scope`를 반복한다. CLI 승인은 요청 hash·작업 공간·정규화된 경로와
+결합되고, 실제 쓰기 단계가 실행되면 `cli-write-approval.json`으로 남는다. 웹과 CLI는 같은
+경로 validator, backup, receipt, 삭제 금지, 범위 밖 변경 거절, 자동 rollback을 사용한다.
 
 ## 11. 실행 증거와 저장 구조
 
@@ -370,10 +381,11 @@ AND backup과 hash가 있는 원자적 적용
 - REUSE asset receipt 지원
 - CODE·PROJECT workspace receipt 지원
 - 웹 UI의 범위별 파일 변경 승인과 자동 rollback 지원
+- CLI의 반복 가능한 `--write-scope` 승인과 `cli-write-approval.json` 증거 지원
 - 실제 feedback과 수동 review 지원
 - 정책 proposal·paired evaluation·approval·apply·rollback 지원
 - 전체 상태 audit와 로컬 UI 지원
-- 155개 자동 테스트 통과
+- 159개 자동 테스트 통과
 - 6개 route smoke test 통과
 - 저장된 실행 18/18 무결성 정상
 
@@ -387,7 +399,6 @@ python -B scripts/problem_solving_status.py
 
 ## 15. 현재 한계
 
-- 저수준 CLI의 `--allow-workspace-write`에는 웹 UI와 동일한 공개 경로별 승인 인자가 없다.
 - 안전 백업은 Git-ignored 파일까지 모두 복사하므로 매우 큰 저장소에서는 비용이 커질 수 있다.
 - rollback은 파일 내용을 검증하지만 빈 디렉터리는 추적하지 않는다.
 - 웹 job과 pending approval은 서버 메모리에 있어 서버 재시작 후 실행 핸들은 사라진다.
@@ -472,11 +483,10 @@ AND 한계와 미실행 부분이 숨겨지지 않음
 
 ## 19. 다음 우선순위
 
-1. CLI에도 웹 UI와 같은 명시적 `--write-scope` 계약 추가
-2. 대형 저장소용 증분 또는 content-addressed backup
-3. 빈 디렉터리 rollback 추적
-4. 서버 재시작 후 job·approval 복구
-5. 검토된 정책 생명주기 관리 UI
+1. 대형 저장소용 증분 또는 content-addressed backup
+2. 빈 디렉터리 rollback 추적
+3. 서버 재시작 후 job·approval 복구
+4. 검토된 정책 생명주기 관리 UI
 
 우선순위는 기능 수를 늘리는 순서가 아니다. 현재 신뢰 경계를 다른 진입점에도 동일하게
 적용하는 순서다.

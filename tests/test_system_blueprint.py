@@ -43,6 +43,8 @@ class SystemBlueprintTests(unittest.TestCase):
             "A model may propose a route, result, artifact, or policy change.",
             "A workspace change is not successful without a verified receipt.",
             "Policy cannot approve or apply itself.",
+            "--write-scope",
+            "cli-write-approval.json",
         ):
             with self.subTest(contract=required_contract):
                 self.assertIn(required_contract, text)
