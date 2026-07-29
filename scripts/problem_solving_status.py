@@ -78,8 +78,13 @@ def validate_base_run(
     return ledger, route
 
 
-def audit_runs(runs_root: Path) -> tuple[list[dict[str, Any]], dict[str, int]]:
+def audit_runs(
+    runs_root: Path,
+    *,
+    exclude_run_ids: set[str] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
     root = runs_root.expanduser().resolve()
+    excluded = exclude_run_ids or set()
     items: list[dict[str, Any]] = []
     counts = {
         "total": 0,
@@ -97,12 +102,15 @@ def audit_runs(runs_root: Path) -> tuple[list[dict[str, Any]], dict[str, int]]:
     if not root.is_dir():
         return items, counts
     for run_dir in sorted(path for path in root.iterdir() if path.is_dir()):
+        if run_dir.name in excluded:
+            continue
         counts["total"] += 1
         item: dict[str, Any] = {
             "run_id": run_dir.name,
             "path": display_path(run_dir),
             "valid": True,
             "execution_status": None,
+            "finished_at": None,
             "learning_events": 0,
             "reviewed_events": 0,
             "promoted": 0,
@@ -113,6 +121,11 @@ def audit_runs(runs_root: Path) -> tuple[list[dict[str, Any]], dict[str, int]]:
         try:
             _, route = validate_base_run(run_dir)
             item["execution_status"] = route["execution_status"]
+            run_record = route.get("run")
+            if isinstance(run_record, dict) and isinstance(
+                run_record.get("finished_at"), str
+            ):
+                item["finished_at"] = run_record["finished_at"]
             if route["execution_status"] == "completed":
                 counts["completed"] += 1
             else:
@@ -375,8 +388,12 @@ def build_status(
     evaluations_dir: Path = EVALUATIONS_DIR,
     approvals_dir: Path = APPROVALS_DIR,
     changes_dir: Path = CHANGES_DIR,
+    exclude_run_ids: set[str] | None = None,
 ) -> dict[str, Any]:
-    runs, run_counts = audit_runs(runs_root)
+    runs, run_counts = audit_runs(
+        runs_root,
+        exclude_run_ids=exclude_run_ids,
+    )
     approvals, approved_sources = audit_approvals(approvals_dir, runs_root)
     proposals = audit_proposals(
         proposals_dir,

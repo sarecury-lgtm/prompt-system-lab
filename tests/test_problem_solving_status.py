@@ -96,6 +96,7 @@ class ProblemSolvingStatusTests(unittest.TestCase):
         self.assertEqual("healthy", status["status"])
         self.assertEqual(1, status["summary"]["runs"]["valid"])
         self.assertEqual(1, status["summary"]["runs"]["not_completed"])
+        self.assertIsNone(status["items"]["runs"][0]["finished_at"])
 
     def test_completed_run_without_selected_route_needs_attention(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -113,6 +114,22 @@ class ProblemSolvingStatusTests(unittest.TestCase):
         self.assertEqual("attention", status["status"])
         self.assertEqual(1, status["summary"]["runs"]["invalid"])
         self.assertIn("inspect_invalid_records", status["next_actions"])
+
+    def test_active_run_can_be_excluded_from_snapshot(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            roots = self.roots(root)
+            active = roots["runs_root"] / "active-run"
+            active.mkdir(parents=True)
+            (active / "request.txt").write_text("running\n", encoding="utf-8")
+
+            status = STATUS.build_status(
+                **roots,
+                exclude_run_ids={"active-run"},
+            )
+
+        self.assertEqual("healthy", status["status"])
+        self.assertEqual(0, status["summary"]["runs"]["total"])
 
     def test_learning_and_review_counts_are_revalidated(self):
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Personal Problem-Solving OS local interface">
+    <title>PSOS 작업실</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#request">요청 입력으로 건너뛰기</a>
+    <header class="site-header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">P</span>
+        <div>
+          <p class="eyebrow">PERSONAL PROBLEM-SOLVING OS</p>
+          <h1>PSOS 작업실</h1>
+        </div>
+      </div>
+      <div class="system-state" id="header-status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>상태 확인 중</span>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="workspace" aria-labelledby="request-heading">
+        <div class="section-heading">
+          <div>
+            <p class="step-label">01 · 요청</p>
+            <h2 id="request-heading">무엇을 해결할까요?</h2>
+          </div>
+          <p class="section-note">모델과 해결 방식은 시스템이 자동으로 고릅니다.</p>
+        </div>
+
+        <form id="request-form" class="request-form">
+          <label class="sr-only" for="request">해결할 요청</label>
+          <textarea
+            id="request"
+            name="request"
+            rows="7"
+            maxlength="10000"
+            placeholder="예: 이 저장소의 사용법을 읽고, 지금 제가 해야 할 일만 쉽게 설명해 줘."
+            required
+          ></textarea>
+          <div class="request-actions">
+            <label class="check-control">
+              <input id="search-enabled" type="checkbox">
+              <span>최신 정보가 필요하면 웹 검색 허용</span>
+            </label>
+            <button id="submit-button" type="submit">
+              <span>해결 시작</span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+          <p class="safety-note">
+            현재 화면은 저장소를 읽을 수만 있습니다. 파일 수정이 필요한 요청은 안전하게 중단됩니다.
+          </p>
+        </form>
+
+        <section class="result-section" aria-labelledby="result-heading">
+          <div class="section-heading result-heading-row">
+            <div>
+              <p class="step-label">02 · 결과</p>
+              <h2 id="result-heading">실행 결과</h2>
+            </div>
+            <div class="result-meta" id="result-meta" hidden>
+              <span id="route-badge" class="badge"></span>
+              <span id="run-id"></span>
+            </div>
+          </div>
+
+          <div id="empty-result" class="empty-state">
+            <p>아직 실행한 요청이 없습니다.</p>
+            <span>위 입력창에 평소 말하듯 요청을 적어 주세요.</span>
+          </div>
+
+          <div id="running-result" class="running-state" hidden aria-live="polite">
+            <div class="progress-track"><span></span></div>
+            <div>
+              <strong id="running-title">요청을 분석하고 있습니다.</strong>
+              <p id="running-detail">해결 방식과 모델을 고른 뒤 근거를 남깁니다.</p>
+            </div>
+          </div>
+
+          <div id="completed-result" hidden>
+            <article id="result-content" class="result-content"></article>
+            <details id="evidence-panel" class="evidence-panel">
+              <summary>근거와 산출물 보기</summary>
+              <div class="evidence-grid">
+                <div>
+                  <h3>근거</h3>
+                  <ul id="evidence-list"></ul>
+                </div>
+                <div>
+                  <h3>확인한 파일</h3>
+                  <ul id="artifact-list"></ul>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <div id="error-result" class="error-state" hidden role="alert">
+            <strong>실행을 완료하지 못했습니다.</strong>
+            <p id="error-message"></p>
+          </div>
+        </section>
+      </section>
+
+      <aside class="status-rail" aria-labelledby="status-heading">
+        <div class="rail-heading">
+          <div>
+            <p class="step-label">03 · 상태</p>
+            <h2 id="status-heading">시스템 현황</h2>
+          </div>
+          <button id="refresh-status" class="icon-button" type="button" aria-label="상태 새로고침">↻</button>
+        </div>
+
+        <div class="health-summary">
+          <div>
+            <span class="metric-label">전체 상태</span>
+            <strong id="health-value">확인 중</strong>
+          </div>
+          <p id="health-description">기록의 무결성을 검사하고 있습니다.</p>
+        </div>
+
+        <dl class="metrics">
+          <div>
+            <dt>유효한 실행</dt>
+            <dd id="valid-runs">—</dd>
+          </div>
+          <div>
+            <dt>완료</dt>
+            <dd id="completed-runs">—</dd>
+          </div>
+          <div>
+            <dt>학습 후보</dt>
+            <dd id="learning-events">—</dd>
+          </div>
+          <div>
+            <dt>검토 필요</dt>
+            <dd id="unreviewed-events">—</dd>
+          </div>
+        </dl>
+
+        <div class="next-action">
+          <span class="metric-label">다음 할 일</span>
+          <strong id="next-action-value">확인 중</strong>
+          <p id="next-action-description"></p>
+        </div>
+
+        <div class="recent-runs">
+          <div class="subheading-row">
+            <h3>최근 실행</h3>
+            <span>선택해 다시 보기</span>
+          </div>
+          <div id="recent-run-list" class="run-list"></div>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <span>로컬 전용 · 127.0.0.1</span>
+      <span>구독 인증 Codex CLI 사용 · 별도 API 키 없음</span>
+    </footer>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
