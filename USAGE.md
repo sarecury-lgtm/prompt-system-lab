@@ -11,6 +11,22 @@ Most public references cover only one layer. Use [`references/external-projects.
 
 ## 0. Solving an ordinary request
 
+### Local browser screen
+
+Start the local interface without installing a web framework:
+
+```powershell
+python scripts/problem_solving_web.py --open-browser chrome
+```
+
+The server binds only to `127.0.0.1` and opens `http://127.0.0.1:8765/`. The screen accepts an
+ordinary-language request, shows execution progress and the final result, exposes verified evidence
+and artifacts, and summarizes lifecycle health and recent runs. It uses the repository as a
+read-only workspace; requests that require file changes stop safely. Web search is disabled unless
+the user selects it for the request. Stop the server with `Ctrl+C`.
+
+### Command line
+
 Run the Personal Problem-Solving OS from the repository root:
 
 ```powershell
