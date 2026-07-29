@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import sys
@@ -196,6 +197,151 @@ def validate_independence(candidates: list[dict[str, Any]]) -> None:
         raise ProposalError(
             "candidate runs do not have independent Goal Ledger and result hashes."
         )
+
+
+def set_policy_target(
+    policy: dict[str, Any],
+    target_path: str,
+    value: Any,
+) -> dict[str, Any]:
+    updated = copy.deepcopy(policy)
+    parts = target_path.split(".")
+    current: Any = updated
+    for part in parts[:-1]:
+        current = current[part]
+    current[parts[-1]] = value
+    return updated
+
+
+def validate_proposal(
+    payload: dict[str, Any],
+    *,
+    runs_root: Path = RUNS_DIR,
+) -> tuple[dict[str, Any], dict[str, Any], str | None]:
+    expected_fields = {
+        "version",
+        "proposal_id",
+        "created_at",
+        "status",
+        "title",
+        "target",
+        "rationale",
+        "candidates",
+        "evidence_summary",
+        "safeguards",
+    }
+    if set(payload) != expected_fields or payload.get("version") != 1:
+        raise ProposalError("policy proposal has an invalid format.")
+    if payload.get("status") != "draft":
+        raise ProposalError("only draft policy proposals can be evaluated.")
+    if not isinstance(payload.get("created_at"), str):
+        raise ProposalError("policy proposal created_at is invalid.")
+    title = payload.get("title")
+    rationale = payload.get("rationale")
+    if not isinstance(title, str) or not isinstance(rationale, str):
+        raise ProposalError("policy proposal title and rationale must be strings.")
+    meaningful(title, "proposal title")
+    meaningful(rationale, "proposal rationale")
+
+    target = payload.get("target")
+    target_fields = {
+        "policy_path",
+        "policy_sha256",
+        "json_path",
+        "current_value",
+        "proposed_value",
+    }
+    if not isinstance(target, dict) or set(target) != target_fields:
+        raise ProposalError("policy proposal target has an invalid format.")
+    stored_policy_path = target.get("policy_path")
+    if not isinstance(stored_policy_path, str):
+        raise ProposalError("policy proposal path is invalid.")
+    policy_path = Path(stored_policy_path)
+    if not policy_path.is_absolute():
+        policy_path = ROOT / policy_path
+    policy_path = policy_path.expanduser().resolve()
+    try:
+        policy = feedback.read_json(policy_path)
+    except feedback.FeedbackError as exc:
+        raise ProposalError(str(exc)) from exc
+    if target.get("policy_sha256") != feedback.file_sha256(policy_path):
+        raise ProposalError("active policy hash no longer matches the proposal.")
+    target_path = target.get("json_path")
+    if not isinstance(target_path, str):
+        raise ProposalError("proposal target JSON path is invalid.")
+    current_value, route_scope = policy_target(policy, target_path)
+    if target.get("current_value") != current_value:
+        raise ProposalError("proposal current value does not match active policy.")
+    proposed_value = target.get("proposed_value")
+    if type(current_value) is not type(proposed_value):
+        raise ProposalError("proposal value type does not match active policy.")
+    if current_value == proposed_value:
+        raise ProposalError("proposal does not change the target value.")
+
+    stored_candidates = payload.get("candidates")
+    if not isinstance(stored_candidates, list):
+        raise ProposalError("proposal candidates must be an array.")
+    candidates: list[dict[str, Any]] = []
+    for item in stored_candidates:
+        if not isinstance(item, dict):
+            raise ProposalError("proposal candidate has an invalid format.")
+        run_id = item.get("run_id")
+        event_id = item.get("event_id")
+        if not isinstance(run_id, str) or not isinstance(event_id, str):
+            raise ProposalError("proposal candidate identifiers are invalid.")
+        loaded = load_promoted_candidate(
+            run_id,
+            event_id,
+            runs_root=runs_root,
+        )
+        if loaded != item:
+            raise ProposalError("proposal candidate no longer matches its source.")
+        candidates.append(loaded)
+    if candidates != sorted(
+        candidates,
+        key=lambda item: (item["run_id"], item["event_id"]),
+    ):
+        raise ProposalError("proposal candidates are not in canonical order.")
+    validate_independence(candidates)
+    if route_scope is not None and any(
+        item["selected_route"] != route_scope for item in candidates
+    ):
+        raise ProposalError("proposal contains evidence from another route.")
+
+    expected_summary = {
+        "candidate_count": len(candidates),
+        "independent_run_count": len(
+            {item["run_id"] for item in candidates}
+        ),
+        "signals": sorted({item["signal"] for item in candidates}),
+        "routes": sorted({item["selected_route"] for item in candidates}),
+    }
+    if payload.get("evidence_summary") != expected_summary:
+        raise ProposalError("proposal evidence summary does not match candidates.")
+    expected_safeguards = {
+        "minimum_independent_runs": MINIMUM_INDEPENDENT_RUNS,
+        "automatic_application_allowed": False,
+        "requires_evaluation": True,
+        "requires_human_approval": True,
+        "default_policy_changed": False,
+    }
+    if payload.get("safeguards") != expected_safeguards:
+        raise ProposalError("proposal safeguards are invalid.")
+    expected_id = proposal_id(
+        target["policy_sha256"],
+        title,
+        target_path,
+        proposed_value,
+        rationale,
+        candidates,
+    )
+    if payload.get("proposal_id") != expected_id:
+        raise ProposalError("proposal ID does not match its content.")
+    return (
+        policy,
+        set_policy_target(policy, target_path, proposed_value),
+        route_scope,
+    )
 
 
 def build_proposal(

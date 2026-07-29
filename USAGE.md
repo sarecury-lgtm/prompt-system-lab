@@ -91,6 +91,21 @@ route. It writes a `draft` JSON proposal anchored to the current policy hash. Th
 apply itself: evaluation and separate human approval remain mandatory, and the active policy file
 is never edited.
 
+Evaluate a proposal with paired runs of the same fixed requests:
+
+```powershell
+python scripts/problem_solving_policy_evaluation.py `
+  --proposal policy-proposals/proposal-....json `
+  --judgments evaluation-judgments.json
+```
+
+The judgment file names an evaluator and pairs each baseline run with a candidate-policy run for
+the exact same request. At least three distinct requests are required. Evaluation runs cannot reuse
+the proposal's learning evidence. A passing gate requires every candidate run to complete, no
+`candidate_worse` judgment, and at least one evidence-backed `candidate_better` judgment. Failed
+gates are still saved for audit. Passing never applies the proposal; a separate human approval and
+application step is still required.
+
 Model and tool selection is explicit in
 [`problem-solving-project/model-policy.json`](problem-solving-project/model-policy.json):
 
