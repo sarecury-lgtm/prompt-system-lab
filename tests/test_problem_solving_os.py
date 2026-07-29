@@ -16,15 +16,7 @@ sys.modules[SPEC.name] = OS
 SPEC.loader.exec_module(OS)
 
 
-def engine_result(
-    route="DIRECT",
-    *,
-    primary=None,
-    secondary=None,
-    status="completed",
-    artifacts=None,
-    evidence=None,
-):
+def route_result(route="DIRECT", *, primary=None, secondary=None):
     reason = f"{route}가 가장 작은 충분 경로"
     return {
         "goal_ledger": {
@@ -46,24 +38,36 @@ def engine_result(
             "secondary_route": secondary,
             "route_reason": reason,
         },
+    }
+
+
+def execution_result(
+    *,
+    status="completed",
+    result="실제로 생성된 결과입니다.",
+    artifacts=None,
+    evidence=None,
+    limitations=None,
+):
+    return {
         "execution": {
             "status": status,
             "summary": "결과 생성",
-            "result_markdown": "실제로 생성된 결과입니다.",
+            "result_markdown": result,
             "capabilities_used": ["ai_reasoning"],
             "needed_capability": None,
             "handoff": None,
             "artifacts": artifacts or [],
             "evidence": evidence or [],
-            "limitations": [],
-        },
+            "limitations": limitations or [],
+        }
     }
 
 
 class FakeEngine:
-    def __init__(self, payload, capabilities=None):
-        self.payload = payload
-        self.prompt = ""
+    def __init__(self, responses, capabilities=None):
+        self.responses = list(responses)
+        self.calls = []
         self._capabilities = capabilities or OS.EngineCapabilities(
             ai_reasoning=True,
             web_search=True,
@@ -75,99 +79,224 @@ class FakeEngine:
     def capabilities(self):
         return self._capabilities
 
-    def execute(self, prompt, run_dir):
-        self.prompt = prompt
-        return json.loads(json.dumps(self.payload))
+    def execute(self, prompt, run_dir, invocation):
+        self.calls.append({"prompt": prompt, "invocation": invocation})
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return json.loads(json.dumps(response))
+
+    def trace(self):
+        return [
+            {
+                "name": call["invocation"].name,
+                "phase": call["invocation"].phase,
+                "route": call["invocation"].route,
+                "model": call["invocation"].profile.model,
+                "reasoning_effort": call["invocation"].profile.reasoning_effort,
+            }
+            for call in self.calls
+        ]
 
 
 class ProblemSolvingOSTests(unittest.TestCase):
-    def test_direct_run_creates_required_artifacts_and_compact_result(self):
+    def setUp(self):
+        self.policy = OS.load_model_policy()
+
+    def test_model_policy_assigns_explicit_models_and_tools(self):
+        self.assertEqual("gpt-5.6-luna", self.policy["router"].model)
+        self.assertEqual("low", self.policy["router"].reasoning_effort)
+        self.assertEqual(
+            "gpt-5.6-terra",
+            self.policy["routes"]["DIRECT"]["primary"].model,
+        )
+        self.assertEqual(
+            "gpt-5.6-sol",
+            self.policy["routes"]["CODE"]["primary"].model,
+        )
+        self.assertTrue(self.policy["routes"]["RESEARCH"]["primary"].web_search)
+        self.assertFalse(self.policy["routes"]["DIRECT"]["primary"].web_search)
+        self.assertEqual(
+            "workspace-write",
+            self.policy["routes"]["PROJECT"]["primary"].sandbox,
+        )
+
+    def test_direct_uses_luna_router_then_terra_executor_and_saves_trace(self):
+        engine = FakeEngine([route_result(), execution_result()])
         with tempfile.TemporaryDirectory() as temp_dir:
             run_dir, payload = OS.run_request(
                 "캐시가 무엇인지 설명해 줘.",
                 output_root=Path(temp_dir),
-                engine=FakeEngine(engine_result()),
+                engine=engine,
+                model_policy=self.policy,
                 run_id="direct",
             )
-            self.assertEqual("completed", payload["execution"]["status"])
             for name in ("request.txt", "goal_ledger.json", "route.json", "result.md"):
                 self.assertTrue((run_dir / name).is_file(), name)
-            result = (run_dir / "result.md").read_text(encoding="utf-8")
-            self.assertIn("현재 목표:", result)
-            self.assertIn("선택한 해결 방식: DIRECT", result)
-            self.assertNotIn("parent_goal", result)
+            route_record = json.loads(
+                (run_dir / "route.json").read_text(encoding="utf-8")
+            )
+        self.assertEqual(
+            ["gpt-5.6-luna", "gpt-5.6-terra"],
+            [call["invocation"].profile.model for call in engine.calls],
+        )
+        self.assertEqual("completed", payload["execution"]["status"])
+        self.assertEqual(2, len(route_record["run"]["engine_trace"]))
+        self.assertIn("model:gpt-5.6-terra", payload["execution"]["capabilities_used"])
 
-    def test_context_file_is_supplied_to_ai_engine(self):
+    def test_context_is_supplied_to_router_and_executor(self):
+        engine = FakeEngine([route_result(), execution_result()])
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             context = root / "context.md"
             context.write_text("고정 독자: 신규 입사자", encoding="utf-8")
-            engine = FakeEngine(engine_result())
             OS.run_request(
                 "안내문을 작성해 줘.",
                 context_path=context,
                 output_root=root / "runs",
                 engine=engine,
+                model_policy=self.policy,
                 run_id="context",
             )
-            self.assertIn("고정 독자: 신규 입사자", engine.prompt)
-            self.assertIn(str(context.resolve()), engine.prompt)
+        self.assertEqual(2, len(engine.calls))
+        for call in engine.calls:
+            self.assertIn("고정 독자: 신규 입사자", call["prompt"])
+            self.assertIn(str(context.resolve()), call["prompt"])
 
-    def test_research_without_search_is_honestly_blocked(self):
-        capabilities = OS.EngineCapabilities(
-            ai_reasoning=True,
-            web_search=False,
-            workspace_read=True,
-            workspace_write=False,
-            detail="search disabled",
+    def test_router_retries_with_sol_when_luna_output_is_invalid(self):
+        engine = FakeEngine([{}, route_result(), execution_result()])
+        with tempfile.TemporaryDirectory() as temp_dir:
+            _, payload = OS.run_request(
+                "요청",
+                output_root=Path(temp_dir),
+                engine=engine,
+                model_policy=self.policy,
+                run_id="router-fallback",
+            )
+        self.assertEqual(
+            ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"],
+            [call["invocation"].profile.model for call in engine.calls],
         )
+        self.assertEqual("rejected", payload["run"]["orchestration_trace"][0]["outcome"])
+        self.assertEqual("accepted", payload["run"]["orchestration_trace"][1]["outcome"])
+
+    def test_router_rejects_pipeline_rules_disguised_as_user_constraints(self):
+        contaminated = route_result()
+        contaminated["goal_ledger"]["fixed_constraints"].append(
+            "이 단계에서는 설명문 자체를 생성하지 않는다."
+        )
+        engine = FakeEngine([contaminated, route_result(), execution_result()])
+        with tempfile.TemporaryDirectory() as temp_dir:
+            _, payload = OS.run_request(
+                "캐시를 설명해 줘.",
+                output_root=Path(temp_dir),
+                engine=engine,
+                model_policy=self.policy,
+                run_id="contaminated-router",
+            )
+        self.assertEqual(
+            ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"],
+            [call["invocation"].profile.model for call in engine.calls],
+        )
+        self.assertEqual("completed", payload["execution"]["status"])
+
+    def test_direct_retries_with_sol_when_terra_output_is_invalid(self):
+        engine = FakeEngine([route_result(), {}, execution_result()])
+        with tempfile.TemporaryDirectory() as temp_dir:
+            _, payload = OS.run_request(
+                "설명해 줘.",
+                output_root=Path(temp_dir),
+                engine=engine,
+                model_policy=self.policy,
+                run_id="direct-fallback",
+            )
+        self.assertEqual(
+            ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"],
+            [call["invocation"].profile.model for call in engine.calls],
+        )
+        self.assertEqual("completed", payload["execution"]["status"])
+
+    def test_direct_meta_answer_escalates_to_sol(self):
+        deferred = execution_result(
+            result="DIRECT 경로가 적절합니다. 외곽 실행 단계에서 작성하면 됩니다."
+        )
+        engine = FakeEngine([route_result(), deferred, execution_result()])
+        with tempfile.TemporaryDirectory() as temp_dir:
+            _, payload = OS.run_request(
+                "설명해 줘.",
+                output_root=Path(temp_dir),
+                engine=engine,
+                model_policy=self.policy,
+                run_id="direct-meta-fallback",
+            )
+        self.assertEqual(
+            ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"],
+            [call["invocation"].profile.model for call in engine.calls],
+        )
+        self.assertEqual("실제로 생성된 결과입니다.", payload["execution"]["result_markdown"])
+
+    def test_research_without_search_blocks_before_executor(self):
+        capabilities = OS.EngineCapabilities(True, False, True, False, "disabled")
+        engine = FakeEngine([route_result("RESEARCH")], capabilities)
         with tempfile.TemporaryDirectory() as temp_dir:
             _, payload = OS.run_request(
                 "오늘 노트북 가격을 조사해 줘.",
                 output_root=Path(temp_dir),
-                engine=FakeEngine(engine_result("RESEARCH"), capabilities),
+                engine=engine,
+                model_policy=self.policy,
                 run_id="research-blocked",
             )
+        self.assertEqual(1, len(engine.calls))
         self.assertEqual("blocked_by_capability", payload["execution"]["status"])
         self.assertEqual("live web search", payload["execution"]["needed_capability"])
-        self.assertFalse(payload["execution"]["evidence"])
 
-    def test_hybrid_requires_exactly_one_primary_and_secondary_route(self):
-        payload = engine_result(
-            "HYBRID", primary="RESEARCH", secondary="PROMPT"
+    def test_reuse_requires_evidence_and_escalates_from_terra_to_sol(self):
+        no_evidence = execution_result()
+        with_evidence = execution_result(
+            evidence=[
+                {
+                    "source": "template.md",
+                    "finding": "기존 템플릿 확인",
+                    "kind": "local",
+                }
+            ]
         )
-        validated = OS.validate_engine_output(
-            payload,
-            OS.EngineCapabilities(True, True, True, False, "fixture"),
-        )
-        self.assertEqual("RESEARCH", validated["route"]["primary_route"])
-        payload["route"]["secondary_route"] = "RESEARCH"
-        payload["goal_ledger"]["secondary_route"] = "RESEARCH"
-        with self.assertRaises(OS.ProblemSolvingError):
-            OS.validate_engine_output(
-                payload,
-                OS.EngineCapabilities(True, True, True, False, "fixture"),
+        engine = FakeEngine([route_result("REUSE"), no_evidence, with_evidence])
+        with tempfile.TemporaryDirectory() as temp_dir:
+            _, payload = OS.run_request(
+                "기존 템플릿을 찾아 적용해 줘.",
+                output_root=Path(temp_dir),
+                engine=engine,
+                model_policy=self.policy,
+                run_id="reuse-fallback",
             )
-
-    def test_single_route_duplicate_primary_is_normalized(self):
-        payload = engine_result("DIRECT")
-        payload["route"]["primary_route"] = "DIRECT"
-        payload["route"]["route_reason"] = "더 구체적인 공개 이유"
-        validated = OS.validate_engine_output(
-            payload,
-            OS.EngineCapabilities(True, True, True, False, "fixture"),
-        )
-        self.assertIsNone(validated["route"]["primary_route"])
         self.assertEqual(
-            "더 구체적인 공개 이유",
-            validated["goal_ledger"]["route_reason"],
+            ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"],
+            [call["invocation"].profile.model for call in engine.calls],
         )
+        self.assertTrue(payload["execution"]["evidence"])
 
-    def test_prompt_route_reuses_existing_prompt_compiler(self):
-        payload = engine_result("PROMPT")
-        payload["execution"]["limitations"] = ["컴파일 전 임시 한계"]
+    def test_hybrid_runs_route_models_in_sequence_and_passes_primary_result(self):
+        research = execution_result(
+            result="공식 조사 결과",
+            evidence=[
+                {
+                    "source": "https://example.test/official",
+                    "finding": "최신 정보 확인",
+                    "kind": "web",
+                }
+            ],
+        )
+        prompt = execution_result(result="반복 프롬프트 후보")
+        engine = FakeEngine(
+            [
+                route_result("HYBRID", primary="RESEARCH", secondary="PROMPT"),
+                research,
+                prompt,
+            ]
+        )
         compiled = {
-            "final_prompt": "기존 Compiler 결과",
+            "final_prompt": "기존 Compiler 최종 결과",
             "selected_mode": "baseline",
             "selection_reason": "baseline-first",
             "used_patterns": [],
@@ -179,98 +308,105 @@ class ProblemSolvingOSTests(unittest.TestCase):
         runtime.create_prompt.return_value = compiled
         with tempfile.TemporaryDirectory() as temp_dir:
             with mock.patch.object(OS, "load_prompt_runtime", return_value=runtime):
-                run_dir, result = OS.run_request(
-                    "다른 AI에서 반복할 지침을 만들어 줘.",
+                run_dir, payload = OS.run_request(
+                    "조사 후 반복 프롬프트를 만들어 줘.",
                     output_root=Path(temp_dir),
-                    engine=FakeEngine(payload),
-                    run_id="prompt",
+                    engine=engine,
+                    model_policy=self.policy,
+                    run_id="hybrid",
                 )
-            self.assertIn(
-                "기존 Compiler 결과",
-                (run_dir / "result.md").read_text(encoding="utf-8"),
-            )
-            self.assertIn("prompt_compiler", result)
-            self.assertEqual([], result["execution"]["limitations"])
-            runtime.create_prompt.assert_called_once()
-
-    def test_hybrid_prompt_preserves_primary_result(self):
-        payload = engine_result(
-            "HYBRID",
-            primary="RESEARCH",
-            secondary="PROMPT",
-        )
-        compiled = {
-            "final_prompt": "기존 Compiler 결과",
-            "selected_mode": "baseline",
-            "selection_reason": "baseline-first",
-            "used_patterns": [],
-            "used_active_sources": [],
-            "fallback": False,
-            "fallback_reason": "",
-        }
-        runtime = mock.Mock()
-        runtime.create_prompt.return_value = compiled
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with mock.patch.object(OS, "load_prompt_runtime", return_value=runtime):
-                run_dir, result = OS.run_request(
-                    "조사 후 반복 지침을 만들어 줘.",
-                    output_root=Path(temp_dir),
-                    engine=FakeEngine(payload),
-                    run_id="hybrid-prompt",
-                )
-            self.assertIn("실제로 생성된 결과입니다.", result["execution"]["result_markdown"])
-            self.assertIn("기존 Compiler 결과", result["execution"]["result_markdown"])
             compiler_context = run_dir / "prompt-compiler-context.md"
-            self.assertTrue(compiler_context.is_file())
             self.assertIn(
-                "실제로 생성된 결과입니다.",
+                "공식 조사 결과",
                 compiler_context.read_text(encoding="utf-8"),
             )
-            compiler_paths = runtime.create_prompt.call_args.args[1]
-            self.assertIn(compiler_context, compiler_paths)
+        self.assertEqual(
+            ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-sol"],
+            [call["invocation"].profile.model for call in engine.calls],
+        )
+        self.assertIn("공식 조사 결과", engine.calls[2]["prompt"])
+        self.assertIn("기존 Compiler 최종 결과", engine.calls[2]["prompt"])
+        self.assertEqual("반복 프롬프트 후보", payload["execution"]["result_markdown"])
+        self.assertEqual(
+            "baseline_before_prompt_model",
+            payload["prompt_compiler"]["application"],
+        )
 
-    def test_write_claim_is_rejected_when_workspace_is_read_only(self):
-        payload = engine_result(
-            "CODE",
+    def test_single_prompt_uses_existing_compiler_baseline_then_sol(self):
+        engine = FakeEngine(
+            [route_result("PROMPT"), execution_result(result="전용 모델 후보")]
+        )
+        compiled = {
+            "final_prompt": "기존 Compiler 결과",
+            "selected_mode": "pattern-only",
+            "selection_reason": "구조화 필요",
+            "used_patterns": ["Structured Output / Extraction"],
+            "used_active_sources": [],
+            "fallback": False,
+            "fallback_reason": "",
+        }
+        runtime = mock.Mock()
+        runtime.create_prompt.return_value = compiled
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with mock.patch.object(OS, "load_prompt_runtime", return_value=runtime):
+                _, payload = OS.run_request(
+                    "반복 지침을 만들어 줘.",
+                    output_root=Path(temp_dir),
+                    engine=engine,
+                    model_policy=self.policy,
+                    run_id="prompt",
+                )
+        self.assertEqual("gpt-5.6-sol", engine.calls[1]["invocation"].profile.model)
+        self.assertIn("기존 Compiler 결과", engine.calls[1]["prompt"])
+        self.assertEqual("전용 모델 후보", payload["execution"]["result_markdown"])
+        runtime.create_prompt.assert_called_once()
+
+    def test_write_claim_is_rejected_when_workspace_write_is_not_allowed(self):
+        write_claim = execution_result(
             artifacts=[
                 {
                     "path": "example.py",
                     "action": "modified",
                     "verification": "claimed",
                 }
-            ],
+            ]
         )
+        engine = FakeEngine([route_result("CODE"), write_claim])
         with tempfile.TemporaryDirectory() as temp_dir:
-            _, result = OS.run_request(
-                "파일을 자동 처리해 줘.",
+            _, payload = OS.run_request(
+                "파일 자동화를 구현해 줘.",
                 output_root=Path(temp_dir),
-                engine=FakeEngine(payload),
+                engine=engine,
+                model_policy=self.policy,
                 run_id="write-claim",
             )
-        self.assertEqual("blocked_by_capability", result["execution"]["status"])
-        self.assertIn("쓰기 capability", result["execution"]["limitations"][0])
+        self.assertEqual("blocked_by_capability", payload["execution"]["status"])
+        self.assertIn("쓰기 capability", payload["execution"]["limitations"][0])
 
-    def test_missing_ai_engine_saves_blocked_run_without_guessing_route(self):
+    def test_missing_engine_saves_blocked_run_without_guessing_route(self):
         capabilities = OS.EngineCapabilities(False, False, False, False, "missing")
+        engine = FakeEngine([], capabilities)
         with tempfile.TemporaryDirectory() as temp_dir:
-            run_dir, result = OS.run_request(
+            run_dir, payload = OS.run_request(
                 "막연한 요청",
                 output_root=Path(temp_dir),
-                engine=FakeEngine(engine_result(), capabilities),
+                engine=engine,
+                model_policy=self.policy,
                 run_id="missing-engine",
             )
             route = json.loads((run_dir / "route.json").read_text(encoding="utf-8"))
-            self.assertIsNone(route["selected_route"])
-            self.assertEqual("blocked_by_capability", result["execution"]["status"])
+        self.assertIsNone(route["selected_route"])
+        self.assertEqual("blocked_by_capability", payload["execution"]["status"])
 
-    def test_goal_ledger_rejects_more_than_three_uncertainties(self):
-        payload = engine_result()
+    def test_route_validator_limits_uncertainties_and_normalizes_duplicate_primary(self):
+        payload = route_result()
+        payload["route"]["primary_route"] = "DIRECT"
+        validated = OS.validate_route_output(payload)
+        self.assertIsNone(validated["route"]["primary_route"])
+        payload = route_result()
         payload["goal_ledger"]["important_uncertainties"] = ["1", "2", "3", "4"]
         with self.assertRaises(OS.ProblemSolvingError):
-            OS.validate_engine_output(
-                payload,
-                OS.EngineCapabilities(True, True, True, False, "fixture"),
-            )
+            OS.validate_route_output(payload)
 
 
 if __name__ == "__main__":

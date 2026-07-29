@@ -29,6 +29,29 @@ under `runs/<run-id>/`. Live research is used only when the CLI exposes web sear
 changes are read-only unless `--allow-workspace-write` is explicitly supplied together with the
 intended `--workspace`.
 
+Model and tool selection is explicit in
+[`problem-solving-project/model-policy.json`](problem-solving-project/model-policy.json):
+
+- Luna low routes the request without executing it.
+- Terra low/medium handles `DIRECT` and `REUSE`.
+- Sol medium handles `RESEARCH` and `PROMPT`.
+- Sol high handles `CODE` and `PROJECT`.
+- invalid Luna routing falls back once to Sol medium; invalid Terra execution falls back once to
+  Sol medium.
+- only `RESEARCH` receives live search, and only explicitly approved `CODE`/`PROJECT` runs request
+  workspace write.
+- `PROMPT` first builds a baseline with the existing Prompt Compiler, then gives that baseline and
+  any upstream research to Sol for one final ready-to-use prompt. HYBRID exposes only the downstream
+  final result while preserving upstream evidence in `route.json`.
+
+`route.json` records the planned and actual model, reasoning effort, search setting, sandbox, and
+fallback outcome for every model invocation. Override the policy only when testing a reviewed
+replacement:
+
+```powershell
+python scripts/problem_solving_os.py --request "..." --model-policy path/to/model-policy.json
+```
+
 ## 1. Designing a new prompt
 
 - Easiest user-facing path: [`chatgpt-project/README.md`](chatgpt-project/README.md)

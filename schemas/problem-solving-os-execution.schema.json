@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["execution"],
+  "properties": {
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "summary",
+        "result_markdown",
+        "capabilities_used",
+        "needed_capability",
+        "handoff",
+        "artifacts",
+        "evidence",
+        "limitations"
+      ],
+      "properties": {
+        "status": {
+          "enum": ["completed", "partial", "blocked_by_capability", "handoff"]
+        },
+        "summary": {"type": "string", "minLength": 1},
+        "result_markdown": {"type": "string", "minLength": 1},
+        "capabilities_used": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "needed_capability": {"type": ["string", "null"]},
+        "handoff": {"type": ["string", "null"]},
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "action", "verification"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "action": {
+                "enum": ["inspected", "generated_in_result", "created", "modified", "proposed"]
+              },
+              "verification": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["source", "finding", "kind"],
+            "properties": {
+              "source": {"type": "string", "minLength": 1},
+              "finding": {"type": "string", "minLength": 1},
+              "kind": {"enum": ["local", "web", "provided_context", "command_output"]}
+            }
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

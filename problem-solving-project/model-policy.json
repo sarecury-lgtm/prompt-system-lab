@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "router": {
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "low",
+    "web_search": false,
+    "sandbox": "read-only"
+  },
+  "router_fallback": {
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "medium",
+    "web_search": false,
+    "sandbox": "read-only"
+  },
+  "routes": {
+    "DIRECT": {
+      "primary": {
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "low",
+        "web_search": false,
+        "sandbox": "read-only"
+      },
+      "fallback": {
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "medium",
+        "web_search": false,
+        "sandbox": "read-only"
+      }
+    },
+    "RESEARCH": {
+      "primary": {
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "medium",
+        "web_search": true,
+        "sandbox": "read-only"
+      },
+      "fallback": null
+    },
+    "REUSE": {
+      "primary": {
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "web_search": false,
+        "sandbox": "read-only"
+      },
+      "fallback": {
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "medium",
+        "web_search": false,
+        "sandbox": "read-only"
+      }
+    },
+    "PROMPT": {
+      "primary": {
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "medium",
+        "web_search": false,
+        "sandbox": "read-only"
+      },
+      "fallback": null
+    },
+    "CODE": {
+      "primary": {
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "web_search": false,
+        "sandbox": "workspace-write"
+      },
+      "fallback": null
+    },
+    "PROJECT": {
+      "primary": {
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "web_search": false,
+        "sandbox": "workspace-write"
+      },
+      "fallback": null
+    }
+  }
+}
