@@ -626,15 +626,127 @@ class ProblemSolvingOSTests(unittest.TestCase):
                 after,
                 backup,
             )
+            manifest = json.loads(
+                (backup / "manifest.json").read_text(encoding="utf-8")
+            )
 
             restored_existing = existing.read_text(encoding="utf-8")
             restored_deleted = deleted.read_text(encoding="utf-8")
             created_exists = created.exists()
 
         self.assertTrue(rollback["restored"])
+        self.assertEqual(2, manifest["version"])
+        self.assertEqual(
+            "content_addressed_per_run",
+            rollback["backup_strategy"],
+        )
         self.assertEqual("before", restored_existing)
         self.assertEqual("keep", restored_deleted)
         self.assertFalse(created_exists)
+
+    def test_content_addressed_backup_deduplicates_identical_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            (workspace / "one.txt").write_text("same", encoding="utf-8")
+            (workspace / "two.txt").write_text("same", encoding="utf-8")
+            (workspace / "unique.txt").write_text("unique", encoding="utf-8")
+            snapshot = OS.workspace_snapshot(workspace)
+
+            backup = OS.backup_workspace_files(
+                workspace,
+                snapshot,
+                root / "backup",
+            )
+            manifest = json.loads(
+                (backup / "manifest.json").read_text(encoding="utf-8")
+            )
+            blob_files = [
+                path
+                for path in (backup / "blobs").rglob("*")
+                if path.is_file()
+            ]
+
+        self.assertEqual(3, manifest["stats"]["source_file_count"])
+        self.assertEqual(2, manifest["stats"]["unique_blob_count"])
+        self.assertEqual(2, len(blob_files))
+        self.assertEqual(4, manifest["stats"]["deduplicated_bytes"])
+        self.assertEqual(
+            manifest["files"]["one.txt"]["blob"],
+            manifest["files"]["two.txt"]["blob"],
+        )
+
+    def test_restore_rejects_corrupted_content_addressed_blob(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            existing = workspace / "existing.txt"
+            existing.write_text("before", encoding="utf-8")
+            before = OS.workspace_snapshot(workspace)
+            backup = OS.backup_workspace_files(
+                workspace,
+                before,
+                root / "backup",
+            )
+            manifest = json.loads(
+                (backup / "manifest.json").read_text(encoding="utf-8")
+            )
+            blob = backup / manifest["files"]["existing.txt"]["blob"]
+            blob.write_text("broken", encoding="utf-8")
+            existing.write_text("after", encoding="utf-8")
+            after = OS.workspace_snapshot(workspace)
+
+            rollback = OS.restore_workspace(
+                workspace,
+                before,
+                after,
+                backup,
+            )
+            remaining = existing.read_text(encoding="utf-8")
+
+        self.assertFalse(rollback["restored"])
+        self.assertEqual("after", remaining)
+        self.assertTrue(
+            any("fingerprint" in issue for issue in rollback["issues"])
+        )
+
+    def test_restore_supports_legacy_path_copy_backup(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            existing = workspace / "existing.txt"
+            existing.write_text("before", encoding="utf-8")
+            before = OS.workspace_snapshot(workspace)
+            backup = root / "backup"
+            legacy_file = backup / "files" / "existing.txt"
+            legacy_file.parent.mkdir(parents=True)
+            legacy_file.write_text("before", encoding="utf-8")
+            OS.write_json(
+                backup / "manifest.json",
+                {
+                    "version": 1,
+                    "workspace": str(workspace.resolve()),
+                    "files": before,
+                },
+            )
+            existing.write_text("after", encoding="utf-8")
+            after = OS.workspace_snapshot(workspace)
+
+            rollback = OS.restore_workspace(
+                workspace,
+                before,
+                after,
+                backup,
+            )
+            restored = existing.read_text(encoding="utf-8")
+
+        self.assertTrue(rollback["restored"])
+        self.assertEqual(1, rollback["backup_version"])
+        self.assertEqual("path_copy_legacy", rollback["backup_strategy"])
+        self.assertEqual("before", restored)
 
     def test_reuse_receipt_fingerprints_existing_file_and_directory(self):
         with tempfile.TemporaryDirectory() as temp_dir:

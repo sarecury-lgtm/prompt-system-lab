@@ -32,12 +32,16 @@ exact request, workspace, and approved paths, and does not run until the user cl
 approval button. Each approval is one-time and expires after ten minutes. The whole repository,
 `.git`, `runs`, absolute paths, and parent-directory traversal cannot be approved.
 
-Before an approved write starts, the runtime snapshots and backs up the workspace. Completion is
-rejected if a file is deleted, changed outside the approved paths, or changed without being
-reported. It then restores the pre-execution file state automatically and records both the failed
-receipt and rollback result. The safety snapshot includes Git-ignored files as well as tracked and
-untracked files. File contents are verified after restoration; empty directories are not tracked.
-Web search is disabled unless the user selects it for the request. Stop the server with `Ctrl+C`.
+Before an approved write starts, the runtime snapshots and backs up the workspace. Backup v2 stores
+one content-addressed blob per unique SHA-256 value inside the run, so identical file contents are
+not copied repeatedly. Its manifest maps every source path to a verified blob and records source
+files, unique blobs, logical bytes, stored bytes, and deduplicated bytes. Completion is rejected if
+a file is deleted, changed outside the approved paths, or changed without being reported. It then
+restores the pre-execution file state automatically and records both the failed receipt and rollback
+result. The safety snapshot includes Git-ignored files as well as tracked and untracked files.
+Restore verifies each blob fingerprint and remains compatible with legacy v1 path-copy backups.
+File contents are verified after restoration; empty directories are not tracked. Web search is
+disabled unless the user selects it for the request. Stop the server with `Ctrl+C`.
 
 ### Command line
 
@@ -79,7 +83,8 @@ workspace before and after the Codex invocation. It saves
 `<stage>-workspace-receipt.json` and rejects completion when a claimed `created`/`modified`
 artifact did not actually change, an unreported file changed, a file was deleted, or a claimed
 path escapes the approved scopes. A failed process or receipt triggers the same verified automatic
-rollback used by the local web UI.
+rollback used by the local web UI. The per-run content-addressed layout removes duplicate content
+within one backup; it does not yet reuse blobs across separate runs.
 
 For a completed `REUSE` stage, the runtime requires at least one exact local asset path. It verifies
 that each cited or inspected asset exists inside the approved workspace, fingerprints files and
