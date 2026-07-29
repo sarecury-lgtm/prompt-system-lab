@@ -29,6 +29,12 @@ under `runs/<run-id>/`. Live research is used only when the CLI exposes web sear
 changes are read-only unless `--allow-workspace-write` is explicitly supplied together with the
 intended `--workspace`.
 
+When a `CODE` or `PROJECT` stage receives workspace-write, the runtime snapshots the approved
+workspace before and after the Codex invocation. It saves
+`<stage>-workspace-receipt.json` and rejects completion when a claimed `created`/`modified`
+artifact did not actually change, an unreported file changed, a file was deleted, or a claimed
+path escapes the approved workspace.
+
 Model and tool selection is explicit in
 [`problem-solving-project/model-policy.json`](problem-solving-project/model-policy.json):
 

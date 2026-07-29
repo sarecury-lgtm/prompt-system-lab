@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import importlib.util
 import json
 import os
@@ -228,6 +229,177 @@ def subprocess_command(executable: str, arguments: list[str]) -> list[str]:
     return [executable, *arguments]
 
 
+def path_is_within(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def is_git_worktree(workspace: Path) -> bool:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(workspace.resolve()), "rev-parse", "--is-inside-work-tree"],
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return completed.returncode == 0 and completed.stdout.strip() == "true"
+
+
+def workspace_snapshot(
+    workspace: Path,
+    *,
+    excluded_root: Path | None = None,
+) -> dict[str, dict[str, Any]]:
+    workspace = workspace.resolve()
+    excluded = excluded_root.resolve() if excluded_root is not None else None
+    try:
+        completed = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(workspace),
+                "ls-files",
+                "-co",
+                "--exclude-standard",
+                "-z",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        completed = None
+    if completed is not None and completed.returncode == 0:
+        relative_paths = [
+            Path(item.decode("utf-8", errors="surrogateescape"))
+            for item in completed.stdout.split(b"\0")
+            if item
+        ]
+    else:
+        relative_paths = [
+            path.relative_to(workspace)
+            for path in workspace.rglob("*")
+            if path.is_file() and ".git" not in path.relative_to(workspace).parts
+        ]
+
+    snapshot: dict[str, dict[str, Any]] = {}
+    for relative_path in relative_paths:
+        candidate = (workspace / relative_path).resolve()
+        if not path_is_within(candidate, workspace) or not candidate.is_file():
+            continue
+        if excluded is not None and path_is_within(candidate, excluded):
+            continue
+        digest = hashlib.sha256()
+        try:
+            with candidate.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            snapshot[relative_path.as_posix()] = {
+                "sha256": digest.hexdigest(),
+                "size": candidate.stat().st_size,
+            }
+        except OSError as exc:
+            raise ProblemSolvingError(
+                f"작업공간 snapshot에서 파일을 읽을 수 없습니다: {candidate}: {exc}"
+            ) from exc
+    return snapshot
+
+
+def workspace_changes(
+    before: dict[str, dict[str, Any]],
+    after: dict[str, dict[str, Any]],
+) -> dict[str, list[str]]:
+    before_paths = set(before)
+    after_paths = set(after)
+    return {
+        "created": sorted(after_paths - before_paths),
+        "modified": sorted(
+            path
+            for path in before_paths & after_paths
+            if before[path]["sha256"] != after[path]["sha256"]
+        ),
+        "deleted": sorted(before_paths - after_paths),
+    }
+
+
+def build_workspace_receipt(
+    workspace: Path,
+    before: dict[str, dict[str, Any]],
+    after: dict[str, dict[str, Any]],
+    artifacts: Any,
+) -> dict[str, Any]:
+    workspace = workspace.resolve()
+    changes = workspace_changes(before, after)
+    claims: list[dict[str, str]] = []
+    issues: list[str] = []
+
+    for artifact in artifacts if isinstance(artifacts, list) else []:
+        if not isinstance(artifact, dict) or artifact.get("action") not in {
+            "created",
+            "modified",
+        }:
+            continue
+        raw_path = artifact.get("path")
+        if not isinstance(raw_path, str) or not raw_path.strip():
+            issues.append("쓰기 artifact의 경로가 비어 있습니다.")
+            continue
+        candidate = Path(raw_path).expanduser()
+        if not candidate.is_absolute():
+            candidate = workspace / candidate
+        candidate = candidate.resolve()
+        if not path_is_within(candidate, workspace):
+            issues.append(f"작업공간 밖의 쓰기 주장을 거부했습니다: {raw_path}")
+            continue
+        relative = candidate.relative_to(workspace).as_posix()
+        action = artifact["action"]
+        claims.append({"path": relative, "action": action})
+        actual_paths = changes[action]
+        if not any(
+            path == relative or path.startswith(relative.rstrip("/") + "/")
+            for path in actual_paths
+        ):
+            issues.append(
+                f"{action} 주장과 실제 작업공간 변화가 일치하지 않습니다: {relative}"
+            )
+
+    covered_paths: set[str] = set()
+    for claim in claims:
+        covered_paths.update(
+            path
+            for path in changes[claim["action"]]
+            if path == claim["path"]
+            or path.startswith(claim["path"].rstrip("/") + "/")
+        )
+    changed_paths = set(changes["created"]) | set(changes["modified"])
+    unclaimed = sorted(changed_paths - covered_paths)
+    if unclaimed:
+        issues.append("결과에 기록되지 않은 파일 변화가 있습니다: " + ", ".join(unclaimed))
+    if changes["deleted"]:
+        issues.append(
+            "현재 artifact 계약으로 설명되지 않은 파일 삭제가 있습니다: "
+            + ", ".join(changes["deleted"])
+        )
+
+    return {
+        "version": 1,
+        "workspace": str(workspace),
+        "verified": not issues,
+        "claims": claims,
+        "actual_changes": changes,
+        "issues": issues,
+    }
+
+
 class CodexEngine:
     """Codex CLI adapter using explicit model, effort, tools, and sandbox per stage."""
 
@@ -318,19 +490,32 @@ class CodexEngine:
             "web_search": invocation.profile.web_search,
             "requested_sandbox": invocation.profile.sandbox,
             "effective_sandbox": effective_sandbox,
+            "workspace_git_repository": is_git_worktree(self.workspace),
             "schema": str(invocation.schema_path),
             "status": "running",
             "output": str(output_path),
             "log": str(log_path),
         }
         self._trace.append(record)
+        receipt_enabled = (
+            invocation.route in {"CODE", "PROJECT"}
+            and effective_sandbox == "workspace-write"
+        )
+        before_snapshot: dict[str, dict[str, Any]] | None = None
+        if receipt_enabled:
+            before_snapshot = workspace_snapshot(
+                self.workspace,
+                excluded_root=run_dir,
+            )
 
         arguments: list[str] = []
         if invocation.profile.web_search:
             arguments.append("--search")
+        arguments.append("exec")
+        if not record["workspace_git_repository"]:
+            arguments.append("--skip-git-repo-check")
         arguments.extend(
             [
-                "exec",
                 "--ephemeral",
                 "--ignore-user-config",
                 "-m",
@@ -387,6 +572,32 @@ class CodexEngine:
             raise ProblemSolvingError(
                 f"{invocation.name} 결과 JSON을 읽을 수 없습니다: {exc}"
             ) from exc
+        if receipt_enabled and before_snapshot is not None:
+            after_snapshot = workspace_snapshot(
+                self.workspace,
+                excluded_root=run_dir,
+            )
+            artifacts = (
+                payload.get("execution", {}).get("artifacts", [])
+                if isinstance(payload, dict)
+                else []
+            )
+            receipt = build_workspace_receipt(
+                self.workspace,
+                before_snapshot,
+                after_snapshot,
+                artifacts,
+            )
+            receipt_path = run_dir / f"{invocation.name}-workspace-receipt.json"
+            write_json(receipt_path, receipt)
+            record["workspace_receipt"] = str(receipt_path)
+            record["workspace_receipt_verified"] = receipt["verified"]
+            if not receipt["verified"]:
+                record["status"] = "workspace_receipt_failed"
+                raise ProblemSolvingError(
+                    "CODE/PROJECT의 파일 변경 주장 검증에 실패했습니다: "
+                    + "; ".join(receipt["issues"])
+                )
         record["status"] = "completed"
         return payload
 
@@ -413,11 +624,11 @@ def build_router_prompt(
 해결 경로만 선택한다. 이 단계에서는 답변·검색·프롬프트·코드 결과를 만들지 않는다.
 
 [경로]
-- DIRECT: 현재 지식과 제공 문맥으로 바로 답할 수 있음
+- DIRECT: 파일 시스템 변경 없이 현재 지식과 제공 문맥으로 바로 답할 수 있음
 - RESEARCH: 최신성·실재성·공식 출처가 결과를 바꿈
 - REUSE: 승인된 범위의 기존 자산·도구·템플릿을 실제로 확인해야 함
 - PROMPT: 다른 AI나 별도 환경에서 반복 사용할 지침 자체가 산출물
-- CODE: 반복·재현성·대량 처리 때문에 코드가 적합
+- CODE: 실제 파일 생성·수정 또는 반복·재현성·대량 처리 때문에 코드 실행이 필요
 - PROJECT: 여러 단계·파일·상태 유지가 정말 필요
 - HYBRID: 주 경로 하나와 보조 경로 하나가 모두 필요
 
@@ -432,6 +643,7 @@ def build_router_prompt(
    파이프라인 내부 규칙을 사용자 제약으로 기록하지 않는다.
 8. current_step과 completion_condition은 선택된 경로가 만들 실제 사용자 결과를 설명한다.
    라우팅 완료나 외곽 실행기로 전달하는 것을 완료 조건으로 쓰지 않는다.
+9. 실제 파일 생성·수정을 요구하면 작업 규모가 작아도 DIRECT가 아니라 CODE를 선택한다.
 
 [현재 capability]
 {capability_json}
