@@ -43,6 +43,32 @@
             placeholder="예: 이 저장소의 사용법을 읽고, 지금 제가 해야 할 일만 쉽게 설명해 줘."
             required
           ></textarea>
+          <fieldset class="mode-selector">
+            <legend>작업 방식</legend>
+            <label class="mode-option">
+              <input type="radio" name="work-mode" value="read" checked>
+              <span>
+                <strong>답변만</strong>
+                <small>파일을 읽을 수 있지만 변경하지 않습니다.</small>
+              </span>
+            </label>
+            <label class="mode-option">
+              <input type="radio" name="work-mode" value="write">
+              <span>
+                <strong>파일 변경</strong>
+                <small>범위를 확인하고 한 번 더 승인한 뒤 실행합니다.</small>
+              </span>
+            </label>
+          </fieldset>
+          <div id="write-scope-panel" class="write-scope-panel" hidden>
+            <label for="allowed-paths">변경을 허용할 파일 또는 폴더</label>
+            <textarea
+              id="allowed-paths"
+              rows="3"
+              placeholder="예:&#10;web/app.js&#10;tests/"
+            ></textarea>
+            <p>저장소 기준 상대 경로를 한 줄에 하나씩 입력하세요. 전체 저장소, <code>.git</code>, <code>runs</code>는 승인할 수 없습니다.</p>
+          </div>
           <div class="request-actions">
             <label class="check-control">
               <input id="search-enabled" type="checkbox">
@@ -53,7 +79,7 @@
               <span aria-hidden="true">→</span>
             </button>
           </div>
-          <p class="safety-note">
+          <p class="safety-note" id="safety-note">
             현재 화면은 저장소를 읽을 수만 있습니다. 파일 수정이 필요한 요청은 안전하게 중단됩니다.
           </p>
         </form>
@@ -83,8 +109,61 @@
             </div>
           </div>
 
+          <div id="approval-result" class="approval-state" hidden>
+            <div class="approval-heading">
+              <div>
+                <span class="approval-kicker">실행 전 확인</span>
+                <h3>이 범위에서만 파일을 변경합니다.</h3>
+              </div>
+              <span class="approval-expiry">10분간 유효</span>
+            </div>
+            <div class="approval-request">
+              <span>요청</span>
+              <p id="approval-request-text"></p>
+            </div>
+            <div class="approval-details">
+              <div>
+                <span>작업 공간</span>
+                <code id="approval-workspace"></code>
+              </div>
+              <div>
+                <span>허용 경로</span>
+                <ul id="approval-path-list"></ul>
+              </div>
+            </div>
+            <ul class="approval-rules">
+              <li>허용 경로 밖의 변경은 실패로 처리하고 자동으로 원상복구합니다.</li>
+              <li>파일 삭제와 결과에 보고되지 않은 변경도 원상복구합니다.</li>
+              <li>승인은 한 번만 사용할 수 있으며 실행 기록에 증거로 저장됩니다.</li>
+            </ul>
+            <div class="approval-actions">
+              <button id="reject-approval" type="button" class="secondary-button">취소</button>
+              <button id="execute-approval" type="button" class="danger-button">이 범위만 승인하고 실행</button>
+            </div>
+          </div>
+
           <div id="completed-result" hidden>
             <article id="result-content" class="result-content"></article>
+            <section id="write-receipt-panel" class="write-receipt" hidden>
+              <div class="receipt-heading">
+                <div>
+                  <span class="approval-kicker">파일 변경 검증</span>
+                  <h3 id="receipt-title">변경 범위를 확인했습니다.</h3>
+                </div>
+                <span id="receipt-badge" class="receipt-badge"></span>
+              </div>
+              <div class="receipt-columns">
+                <div>
+                  <span>생성</span>
+                  <ul id="receipt-created"></ul>
+                </div>
+                <div>
+                  <span>수정</span>
+                  <ul id="receipt-modified"></ul>
+                </div>
+              </div>
+              <p id="rollback-message" class="rollback-message" hidden></p>
+            </section>
             <details id="evidence-panel" class="evidence-panel">
               <summary>근거와 산출물 보기</summary>
               <div class="evidence-grid">

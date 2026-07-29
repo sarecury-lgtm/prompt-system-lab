@@ -2,11 +2,21 @@ const elements = {
   form: document.querySelector("#request-form"),
   request: document.querySelector("#request"),
   search: document.querySelector("#search-enabled"),
+  modes: document.querySelectorAll('input[name="work-mode"]'),
+  scopePanel: document.querySelector("#write-scope-panel"),
+  allowedPaths: document.querySelector("#allowed-paths"),
+  safetyNote: document.querySelector("#safety-note"),
   submit: document.querySelector("#submit-button"),
   empty: document.querySelector("#empty-result"),
   running: document.querySelector("#running-result"),
   runningTitle: document.querySelector("#running-title"),
   runningDetail: document.querySelector("#running-detail"),
+  approval: document.querySelector("#approval-result"),
+  approvalRequest: document.querySelector("#approval-request-text"),
+  approvalWorkspace: document.querySelector("#approval-workspace"),
+  approvalPaths: document.querySelector("#approval-path-list"),
+  approveButton: document.querySelector("#execute-approval"),
+  rejectButton: document.querySelector("#reject-approval"),
   completed: document.querySelector("#completed-result"),
   error: document.querySelector("#error-result"),
   errorMessage: document.querySelector("#error-message"),
@@ -17,6 +27,12 @@ const elements = {
   evidenceList: document.querySelector("#evidence-list"),
   artifactList: document.querySelector("#artifact-list"),
   evidencePanel: document.querySelector("#evidence-panel"),
+  receiptPanel: document.querySelector("#write-receipt-panel"),
+  receiptTitle: document.querySelector("#receipt-title"),
+  receiptBadge: document.querySelector("#receipt-badge"),
+  receiptCreated: document.querySelector("#receipt-created"),
+  receiptModified: document.querySelector("#receipt-modified"),
+  rollbackMessage: document.querySelector("#rollback-message"),
   headerStatus: document.querySelector("#header-status"),
   healthValue: document.querySelector("#health-value"),
   healthDescription: document.querySelector("#health-description"),
@@ -44,15 +60,50 @@ const nextActionCopy = {
 };
 
 let activeJobId = null;
+let activeApprovalId = null;
 let pollTimer = null;
 const activeJobStorageKey = "psos-active-job";
+const activeApprovalStorageKey = "psos-pending-approval";
 
 function setResultState(state) {
   elements.empty.hidden = state !== "empty";
   elements.running.hidden = state !== "running";
+  elements.approval.hidden = state !== "approval";
   elements.completed.hidden = state !== "completed";
   elements.error.hidden = state !== "error";
   elements.resultMeta.hidden = !["completed"].includes(state);
+}
+
+function selectedMode() {
+  return document.querySelector('input[name="work-mode"]:checked')?.value || "read";
+}
+
+function updateMode() {
+  const writeMode = selectedMode() === "write";
+  elements.scopePanel.hidden = !writeMode;
+  elements.allowedPaths.required = writeMode;
+  elements.submit.querySelector("span:first-child").textContent =
+    writeMode ? "권한 확인" : "해결 시작";
+  elements.safetyNote.textContent = writeMode
+    ? "아직 파일을 변경하지 않습니다. 다음 화면에서 요청과 허용 범위를 다시 확인합니다."
+    : "현재 화면은 저장소를 읽을 수만 있습니다. 파일 수정이 필요한 요청은 안전하게 중단됩니다.";
+}
+
+function parseAllowedPaths() {
+  return elements.allowedPaths.value
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function setFormLocked(locked) {
+  elements.request.disabled = locked;
+  elements.search.disabled = locked;
+  elements.allowedPaths.disabled = locked;
+  elements.modes.forEach((mode) => {
+    mode.disabled = locked;
+  });
+  elements.submit.disabled = locked;
 }
 
 function clearElement(element) {
@@ -165,6 +216,40 @@ function renderEvidence(data) {
   elements.evidencePanel.open = false;
 }
 
+function renderChangeList(list, paths) {
+  clearElement(list);
+  if (!paths?.length) {
+    appendTextItem(list, "", "없음");
+    return;
+  }
+  paths.forEach((path) => appendTextItem(list, path, ""));
+}
+
+function renderReceipt(data) {
+  const receipt = data.workspace_receipt;
+  const rollback = data.workspace_rollback;
+  elements.receiptPanel.hidden = !receipt && !rollback;
+  elements.receiptPanel.classList.toggle("rollback", Boolean(rollback));
+  elements.rollbackMessage.hidden = true;
+  if (!receipt && !rollback) return;
+  const changes = receipt?.actual_changes || rollback?.reverted_changes || {};
+  renderChangeList(elements.receiptCreated, changes.created || []);
+  renderChangeList(elements.receiptModified, changes.modified || []);
+  if (rollback) {
+    elements.receiptTitle.textContent = rollback.restored
+      ? "승인 범위를 벗어난 변경을 원상복구했습니다."
+      : "자동 원상복구를 완료하지 못했습니다.";
+    elements.receiptBadge.textContent = rollback.restored ? "원상복구" : "확인 필요";
+    elements.rollbackMessage.hidden = false;
+    elements.rollbackMessage.textContent = rollback.restored
+      ? "작업 공간이 실행 전 상태와 일치하는지 다시 검증했습니다."
+      : (rollback.issues || []).join(" ");
+    return;
+  }
+  elements.receiptTitle.textContent = "승인한 범위 안에서 변경을 확인했습니다.";
+  elements.receiptBadge.textContent = receipt.verified ? "검증 완료" : "확인 필요";
+}
+
 function showCompleted(data) {
   activeJobId = null;
   window.sessionStorage.removeItem(activeJobStorageKey);
@@ -173,6 +258,7 @@ function showCompleted(data) {
   elements.runId.textContent = data.run_id || "";
   renderMarkdown(data.result_markdown);
   renderEvidence(data);
+  renderReceipt(data);
   setResultState("completed");
   elements.resultContent.focus?.();
 }
@@ -183,6 +269,34 @@ function showError(message) {
   elements.submit.disabled = false;
   elements.errorMessage.textContent = message || "알 수 없는 오류가 발생했습니다.";
   setResultState("error");
+}
+
+function showApproval(approval) {
+  activeApprovalId = approval.approval_id;
+  window.sessionStorage.setItem(activeApprovalStorageKey, activeApprovalId);
+  elements.modes.forEach((mode) => {
+    mode.checked = mode.value === "write";
+  });
+  elements.request.value = approval.request;
+  elements.search.checked = Boolean(approval.search_enabled);
+  elements.allowedPaths.value = approval.allowed_write_paths.join("\n");
+  updateMode();
+  elements.approvalRequest.textContent = approval.request;
+  elements.approvalWorkspace.textContent = approval.workspace;
+  clearElement(elements.approvalPaths);
+  approval.allowed_write_paths.forEach((path) => {
+    appendTextItem(elements.approvalPaths, path, "");
+  });
+  elements.approveButton.disabled = false;
+  elements.rejectButton.disabled = false;
+  setFormLocked(true);
+  setResultState("approval");
+}
+
+function clearApproval() {
+  activeApprovalId = null;
+  window.sessionStorage.removeItem(activeApprovalStorageKey);
+  setFormLocked(false);
 }
 
 async function requestJson(url, options) {
@@ -230,19 +344,99 @@ async function submitRequest(event) {
   elements.runningTitle.textContent = "요청을 접수하고 있습니다.";
   elements.runningDetail.textContent = "잠시만 기다려 주세요.";
   try {
+    if (selectedMode() === "write") {
+      const paths = parseAllowedPaths();
+      if (!paths.length) {
+        elements.allowedPaths.focus();
+        throw new Error("변경을 허용할 파일 또는 폴더를 한 개 이상 입력해 주세요.");
+      }
+      const approval = await requestJson("/api/approvals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          request,
+          search_enabled: elements.search.checked,
+          allowed_write_paths: paths,
+        }),
+      });
+      showApproval(approval);
+      return;
+    }
     const job = await requestJson("/api/jobs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        request,
-        search_enabled: elements.search.checked,
-      }),
-    });
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          request,
+          search_enabled: elements.search.checked,
+        }),
+      });
     activeJobId = job.job_id;
     window.sessionStorage.setItem(activeJobStorageKey, activeJobId);
     pollJob();
   } catch (error) {
     showError(error.message);
+  }
+}
+
+async function executeApproval() {
+  if (!activeApprovalId) return;
+  elements.approveButton.disabled = true;
+  elements.rejectButton.disabled = true;
+  try {
+    const payload = await requestJson(
+      `/api/approvals/${encodeURIComponent(activeApprovalId)}/execute`,
+      { method: "POST" },
+    );
+    clearApproval();
+    activeJobId = payload.job.job_id;
+    window.sessionStorage.setItem(activeJobStorageKey, activeJobId);
+    elements.submit.disabled = true;
+    setResultState("running");
+    elements.runningTitle.textContent = "승인한 범위에서 파일을 변경하고 있습니다.";
+    elements.runningDetail.textContent =
+      "실행 전 백업을 만들고, 완료 후 실제 변경 경로를 검증합니다.";
+    pollJob();
+  } catch (error) {
+    clearApproval();
+    elements.approveButton.disabled = false;
+    elements.rejectButton.disabled = false;
+    showError(error.message);
+  }
+}
+
+async function rejectApproval() {
+  if (!activeApprovalId) return;
+  elements.approveButton.disabled = true;
+  elements.rejectButton.disabled = true;
+  try {
+    await requestJson(
+      `/api/approvals/${encodeURIComponent(activeApprovalId)}/reject`,
+      { method: "POST" },
+    );
+    clearApproval();
+    elements.empty.querySelector("p").textContent = "파일 변경 요청을 취소했습니다.";
+    elements.empty.querySelector("span").textContent =
+      "승인하지 않았으므로 작업 공간은 변경되지 않았습니다.";
+    setResultState("empty");
+  } catch (error) {
+    elements.approveButton.disabled = false;
+    elements.rejectButton.disabled = false;
+    showError(error.message);
+  }
+}
+
+async function restoreApproval(approvalId) {
+  try {
+    const approval = await requestJson(
+      `/api/approvals/${encodeURIComponent(approvalId)}`,
+    );
+    if (approval.status === "pending") {
+      showApproval(approval);
+    } else {
+      clearApproval();
+    }
+  } catch (_error) {
+    clearApproval();
   }
 }
 
@@ -327,14 +521,21 @@ async function loadStatus() {
 
 elements.form.addEventListener("submit", submitRequest);
 elements.refreshStatus.addEventListener("click", loadStatus);
+elements.approveButton.addEventListener("click", executeApproval);
+elements.rejectButton.addEventListener("click", rejectApproval);
+elements.modes.forEach((mode) => mode.addEventListener("change", updateMode));
+updateMode();
 loadStatus();
 const initialRun = new URL(window.location.href).searchParams.get("run");
 const storedJob = window.sessionStorage.getItem(activeJobStorageKey);
+const storedApproval = window.sessionStorage.getItem(activeApprovalStorageKey);
 if (storedJob) {
   activeJobId = storedJob;
   elements.submit.disabled = true;
   setResultState("running");
   pollJob();
+} else if (storedApproval) {
+  restoreApproval(storedApproval);
 } else if (initialRun) {
   loadRun(initialRun);
 }

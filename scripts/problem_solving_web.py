@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 import re
@@ -54,6 +55,9 @@ def compact_job(job: dict[str, Any]) -> dict[str, Any]:
             "state",
             "request",
             "search_enabled",
+            "workspace_write",
+            "allowed_write_paths",
+            "approval_id",
             "submitted_at",
             "started_at",
             "finished_at",
@@ -64,6 +68,8 @@ def compact_job(job: dict[str, Any]) -> dict[str, Any]:
             "artifacts",
             "evidence",
             "limitations",
+            "workspace_receipt",
+            "workspace_rollback",
             "error",
         )
     }
@@ -73,10 +79,17 @@ def run_problem_solving_request(
     request: str,
     search_enabled: bool,
     run_id: str,
+    workspace_write: bool,
+    allowed_write_paths: list[str],
+    approval: dict[str, Any] | None,
 ) -> dict[str, Any]:
     engine = problem_os.CodexEngine(
         ROOT,
-        allow_workspace_write=False,
+        allow_workspace_write=workspace_write,
+        allowed_write_paths=(
+            allowed_write_paths if workspace_write else None
+        ),
+        write_approval=approval,
         enable_search=search_enabled,
     )
     run_dir, payload = problem_os.run_request(
@@ -86,6 +99,22 @@ def run_problem_solving_request(
         run_id=run_id,
     )
     execution = payload["execution"]
+    trace = engine.trace()
+
+    def trace_record(name: str) -> dict[str, Any] | None:
+        path_text = next(
+            (
+                item.get(name)
+                for item in reversed(trace)
+                if isinstance(item.get(name), str)
+            ),
+            None,
+        )
+        if path_text is None:
+            return None
+        path = Path(path_text)
+        return read_json(path) if path.is_file() else None
+
     return {
         "run_id": run_dir.name,
         "route": payload["route"]["selected_route"],
@@ -94,6 +123,8 @@ def run_problem_solving_request(
         "artifacts": execution["artifacts"],
         "evidence": execution["evidence"],
         "limitations": execution["limitations"],
+        "workspace_receipt": trace_record("workspace_receipt"),
+        "workspace_rollback": trace_record("workspace_rollback"),
     }
 
 
@@ -103,7 +134,10 @@ class JobManager:
     def __init__(
         self,
         *,
-        runner: Callable[[str, bool, str], dict[str, Any]] = run_problem_solving_request,
+        runner: Callable[
+            [str, bool, str, bool, list[str], dict[str, Any] | None],
+            dict[str, Any],
+        ] = run_problem_solving_request,
         max_workers: int = 1,
         max_history: int = 20,
     ) -> None:
@@ -117,7 +151,15 @@ class JobManager:
         self._lock = threading.Lock()
         self._max_history = max_history
 
-    def submit(self, request: str, search_enabled: bool) -> dict[str, Any]:
+    def submit(
+        self,
+        request: str,
+        search_enabled: bool,
+        *,
+        workspace_write: bool = False,
+        allowed_write_paths: list[str] | None = None,
+        approval: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         cleaned = request.strip()
         if not cleaned:
             raise ValueError("요청을 입력해 주세요.")
@@ -125,6 +167,16 @@ class JobManager:
             raise ValueError("요청은 10,000자 이하여야 합니다.")
         if not isinstance(search_enabled, bool):
             raise ValueError("웹 검색 설정이 올바르지 않습니다.")
+        scopes = allowed_write_paths or []
+        if workspace_write:
+            try:
+                scopes = problem_os.normalize_write_scopes(ROOT, scopes)
+            except problem_os.ProblemSolvingError as exc:
+                raise ValueError(str(exc)) from exc
+            if not isinstance(approval, dict):
+                raise ValueError("승인된 파일 변경 기록이 필요합니다.")
+        elif scopes or approval is not None:
+            raise ValueError("읽기 전용 작업에는 쓰기 승인 정보를 사용할 수 없습니다.")
         job_id = f"job-{uuid.uuid4().hex[:12]}"
         run_id = problem_os.make_run_id()
         job = {
@@ -132,6 +184,18 @@ class JobManager:
             "state": "queued",
             "request": cleaned,
             "search_enabled": search_enabled,
+            "workspace_write": workspace_write,
+            "allowed_write_paths": scopes,
+            "approval_id": (
+                approval.get("approval_id")
+                if isinstance(approval, dict)
+                else None
+            ),
+            "_approval": (
+                json.loads(json.dumps(approval))
+                if isinstance(approval, dict)
+                else None
+            ),
             "submitted_at": utc_now(),
             "started_at": None,
             "finished_at": None,
@@ -142,6 +206,8 @@ class JobManager:
             "artifacts": [],
             "evidence": [],
             "limitations": [],
+            "workspace_receipt": None,
+            "workspace_rollback": None,
             "error": None,
         }
         with self._lock:
@@ -173,8 +239,22 @@ class JobManager:
             job["started_at"] = utc_now()
             request = job["request"]
             search_enabled = job["search_enabled"]
+            workspace_write = job["workspace_write"]
+            allowed_write_paths = job["allowed_write_paths"]
+            approval = (
+                job.get("_approval")
+                if workspace_write
+                else None
+            )
         try:
-            result = self._runner(request, search_enabled, job["run_id"])
+            result = self._runner(
+                request,
+                search_enabled,
+                job["run_id"],
+                workspace_write,
+                allowed_write_paths,
+                approval,
+            )
         except Exception as exc:
             with self._lock:
                 job = self._jobs[job_id]
@@ -205,6 +285,158 @@ class JobManager:
         self._executor.shutdown(wait=False, cancel_futures=True)
 
 
+def compact_approval(record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: record.get(key)
+        for key in (
+            "approval_id",
+            "status",
+            "request",
+            "request_sha256",
+            "search_enabled",
+            "workspace",
+            "allowed_write_paths",
+            "requested_at",
+            "expires_at",
+            "approved_at",
+            "rejected_at",
+            "job_id",
+            "error",
+        )
+    }
+
+
+class ApprovalManager:
+    """Create one-time, expiring local write approvals."""
+
+    def __init__(self, jobs: JobManager) -> None:
+        self._jobs = jobs
+        self._records: dict[str, dict[str, Any]] = {}
+        self._lock = threading.Lock()
+
+    def _expire(self, record: dict[str, Any]) -> None:
+        if (
+            record["status"] == "pending"
+            and dt.datetime.now(dt.timezone.utc)
+            >= dt.datetime.fromisoformat(record["expires_at"])
+        ):
+            record["status"] = "expired"
+
+    def create(
+        self,
+        request: str,
+        search_enabled: bool,
+        allowed_write_paths: Any,
+    ) -> dict[str, Any]:
+        cleaned = request.strip()
+        if not cleaned:
+            raise ValueError("요청을 입력해 주세요.")
+        if len(cleaned) > MAX_REQUEST_CHARS:
+            raise ValueError("요청은 10,000자 이하여야 합니다.")
+        if not isinstance(search_enabled, bool):
+            raise ValueError("웹 검색 설정이 올바르지 않습니다.")
+        try:
+            scopes = problem_os.normalize_write_scopes(
+                ROOT,
+                allowed_write_paths,
+            )
+        except problem_os.ProblemSolvingError as exc:
+            raise ValueError(str(exc)) from exc
+        requested = dt.datetime.now(dt.timezone.utc)
+        record = {
+            "version": 1,
+            "approval_id": f"approval-{uuid.uuid4().hex[:16]}",
+            "status": "pending",
+            "request": cleaned,
+            "request_sha256": hashlib.sha256(
+                cleaned.encode("utf-8")
+            ).hexdigest(),
+            "search_enabled": search_enabled,
+            "workspace": str(ROOT.resolve()),
+            "allowed_write_paths": scopes,
+            "requested_at": requested.isoformat(),
+            "expires_at": (requested + dt.timedelta(minutes=10)).isoformat(),
+            "approved_at": None,
+            "rejected_at": None,
+            "job_id": None,
+            "error": None,
+        }
+        with self._lock:
+            self._records[record["approval_id"]] = record
+        return compact_approval(record)
+
+    def get(self, approval_id: str) -> dict[str, Any] | None:
+        with self._lock:
+            record = self._records.get(approval_id)
+            if record is None:
+                return None
+            self._expire(record)
+            return compact_approval(record)
+
+    def approve(self, approval_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+        with self._lock:
+            record = self._records.get(approval_id)
+            if record is None:
+                raise KeyError("승인 요청을 찾을 수 없습니다.")
+            self._expire(record)
+            if record["status"] != "pending":
+                raise ValueError(
+                    f"승인 요청을 실행할 수 없는 상태입니다: {record['status']}"
+                )
+            record["status"] = "approved"
+            record["approved_at"] = utc_now()
+            evidence = {
+                key: record[key]
+                for key in (
+                    "version",
+                    "approval_id",
+                    "status",
+                    "request_sha256",
+                    "workspace",
+                    "allowed_write_paths",
+                    "requested_at",
+                    "expires_at",
+                    "approved_at",
+                )
+            }
+            evidence["approval_method"] = "local_web_explicit_click"
+            evidence["constraints"] = {
+                "deletions_allowed": False,
+                "outside_scope_action": "rollback",
+                "unreported_change_action": "rollback",
+            }
+        try:
+            job = self._jobs.submit(
+                record["request"],
+                record["search_enabled"],
+                workspace_write=True,
+                allowed_write_paths=record["allowed_write_paths"],
+                approval=evidence,
+            )
+        except Exception as exc:
+            with self._lock:
+                record["status"] = "failed"
+                record["error"] = str(exc).strip() or exc.__class__.__name__
+            raise
+        with self._lock:
+            record["job_id"] = job["job_id"]
+            return compact_approval(record), job
+
+    def reject(self, approval_id: str) -> dict[str, Any]:
+        with self._lock:
+            record = self._records.get(approval_id)
+            if record is None:
+                raise KeyError("승인 요청을 찾을 수 없습니다.")
+            self._expire(record)
+            if record["status"] != "pending":
+                raise ValueError(
+                    f"승인 요청을 취소할 수 없는 상태입니다: {record['status']}"
+                )
+            record["status"] = "rejected"
+            record["rejected_at"] = utc_now()
+            return compact_approval(record)
+
+
 def safe_run_dir(run_id: str, runs_root: Path = problem_os.RUNS_DIR) -> Path:
     if RUN_ID_PATTERN.fullmatch(run_id) is None:
         raise ValueError("실행 ID 형식이 올바르지 않습니다.")
@@ -230,6 +462,15 @@ def load_run(run_id: str, runs_root: Path = problem_os.RUNS_DIR) -> dict[str, An
     run_dir = safe_run_dir(run_id, runs_root)
     ledger = read_json(run_dir / "goal_ledger.json")
     route = read_json(run_dir / "route.json")
+    receipt_path = next(
+        iter(sorted(run_dir.glob("*-workspace-receipt.json"))),
+        None,
+    )
+    rollback_path = next(
+        iter(sorted(run_dir.glob("*-workspace-rollback.json"))),
+        None,
+    )
+    approval_path = run_dir / "web-write-approval.json"
     return {
         "run_id": run_id,
         "request": (run_dir / "request.txt").read_text(encoding="utf-8").strip(),
@@ -242,6 +483,15 @@ def load_run(run_id: str, runs_root: Path = problem_os.RUNS_DIR) -> dict[str, An
         "limitations": route.get("limitations", []),
         "goal": ledger.get("parent_goal"),
         "current_step": ledger.get("current_step"),
+        "workspace_receipt": (
+            read_json(receipt_path) if receipt_path is not None else None
+        ),
+        "workspace_rollback": (
+            read_json(rollback_path) if rollback_path is not None else None
+        ),
+        "write_approval": (
+            read_json(approval_path) if approval_path.is_file() else None
+        ),
     }
 
 
@@ -354,6 +604,18 @@ class PsosRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.send_json(job)
             return
+        if path.startswith("/api/approvals/"):
+            approval = self.app.approvals.get(
+                path.removeprefix("/api/approvals/")
+            )
+            if approval is None:
+                self.send_json(
+                    {"error": "승인 요청을 찾을 수 없습니다."},
+                    HTTPStatus.NOT_FOUND,
+                )
+            else:
+                self.send_json(approval)
+            return
         if path.startswith("/api/runs/"):
             try:
                 self.send_json(load_run(path.removeprefix("/api/runs/")))
@@ -366,19 +628,61 @@ class PsosRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
-        if path != "/api/jobs":
-            self.send_error(HTTPStatus.NOT_FOUND)
+        if path == "/api/jobs":
+            try:
+                payload = self.read_json_body()
+                job = self.app.jobs.submit(
+                    payload.get("request", ""),
+                    payload.get("search_enabled", False),
+                )
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            self.send_json(job, HTTPStatus.ACCEPTED)
             return
-        try:
-            payload = self.read_json_body()
-            job = self.app.jobs.submit(
-                payload.get("request", ""),
-                payload.get("search_enabled", False),
-            )
-        except ValueError as exc:
-            self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        if path == "/api/approvals":
+            try:
+                payload = self.read_json_body()
+                approval = self.app.approvals.create(
+                    payload.get("request", ""),
+                    payload.get("search_enabled", False),
+                    payload.get("allowed_write_paths"),
+                )
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            self.send_json(approval, HTTPStatus.CREATED)
             return
-        self.send_json(job, HTTPStatus.ACCEPTED)
+        parts = path.strip("/").split("/")
+        if len(parts) == 4 and parts[:2] == ["api", "approvals"]:
+            approval_id, action = parts[2], parts[3]
+            try:
+                if action == "execute":
+                    approval, job = self.app.approvals.approve(approval_id)
+                    self.send_json(
+                        {"approval": approval, "job": job},
+                        HTTPStatus.ACCEPTED,
+                    )
+                    return
+                if action == "reject":
+                    self.send_json(self.app.approvals.reject(approval_id))
+                    return
+            except KeyError as exc:
+                self.send_json(
+                    {"error": str(exc.args[0])},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.CONFLICT)
+                return
+            except Exception as exc:
+                self.send_json(
+                    {"error": str(exc).strip() or exc.__class__.__name__},
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+                return
+        self.send_error(HTTPStatus.NOT_FOUND)
 
 
 class PsosHTTPServer(ThreadingHTTPServer):
@@ -387,10 +691,12 @@ class PsosHTTPServer(ThreadingHTTPServer):
         server_address: tuple[str, int],
         *,
         jobs: JobManager,
+        approvals: ApprovalManager | None = None,
         web_dir: Path = WEB_DIR,
     ) -> None:
         super().__init__(server_address, PsosRequestHandler)
         self.jobs = jobs
+        self.approvals = approvals or ApprovalManager(jobs)
         self.web_dir = web_dir
 
     def server_close(self) -> None:

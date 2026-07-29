@@ -17,6 +17,7 @@ If you want to actually use this repo, start with these files:
 
 | Need | Use this file |
 |---|---|
+| Understand how the Personal Problem-Solving OS works | `specs/PSOS_SYSTEM_BLUEPRINT.md` |
 | Have ChatGPT turn an ordinary request into a ready-to-use prompt | `chatgpt-project/README.md` |
 | Learn how to use the repo | `USAGE.md` |
 | Find a reusable prompt-design pattern | `prompt-corpus/PATTERN_LESSONS_INDEX.md` |
@@ -43,6 +44,7 @@ If you want to actually use this repo, start with these files:
 
 | File | Purpose |
 |---|---|
+| `specs/PSOS_SYSTEM_BLUEPRINT.md` | AI-readable architecture, trust boundaries, evidence lifecycle, and safe change protocol |
 | `project-instructions/main.md` | Main operating rules for this project |
 | `chatgpt-project/PROMPT_COMPILER_INSTRUCTIONS.md` | AI writing contract for the user-facing ChatGPT Project |
 | `prompt-corpus/README.md` | Rules and navigation for the prompt corpus |

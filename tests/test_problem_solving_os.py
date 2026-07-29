@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -480,6 +481,34 @@ class ProblemSolvingOSTests(unittest.TestCase):
         self.assertIn("source.txt", snapshot)
         self.assertNotIn("runs/fixture/model-output.json", snapshot)
 
+    def test_workspace_write_snapshot_includes_gitignored_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            (workspace / ".gitignore").write_text(
+                "local-secret.txt\n",
+                encoding="utf-8",
+            )
+            (workspace / "local-secret.txt").write_text(
+                "before",
+                encoding="utf-8",
+            )
+            subprocess.run(
+                ["git", "init", "-q"],
+                cwd=workspace,
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+
+            ordinary = OS.workspace_snapshot(workspace)
+            write_snapshot = OS.workspace_snapshot(
+                workspace,
+                include_ignored=True,
+            )
+
+        self.assertNotIn("local-secret.txt", ordinary)
+        self.assertIn("local-secret.txt", write_snapshot)
+
     def test_workspace_receipt_rejects_claim_outside_workspace(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
@@ -500,6 +529,92 @@ class ProblemSolvingOSTests(unittest.TestCase):
         self.assertTrue(
             any("작업공간 밖" in issue for issue in receipt["issues"])
         )
+
+    def test_normalize_write_scopes_rejects_broad_protected_and_external_paths(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            normalized = OS.normalize_write_scopes(
+                workspace,
+                ["web/app.js", "docs"],
+            )
+            with self.assertRaises(OS.ProblemSolvingError):
+                OS.normalize_write_scopes(workspace, ["."])
+            with self.assertRaises(OS.ProblemSolvingError):
+                OS.normalize_write_scopes(workspace, [".git/config"])
+            with self.assertRaises(OS.ProblemSolvingError):
+                OS.normalize_write_scopes(workspace, ["runs/new"])
+            with self.assertRaises(OS.ProblemSolvingError):
+                OS.normalize_write_scopes(workspace, ["../outside"])
+
+        self.assertEqual(["web/app.js", "docs"], normalized)
+
+    def test_workspace_receipt_rejects_change_outside_approved_scope(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            receipt = OS.build_workspace_receipt(
+                workspace,
+                {},
+                {
+                    "web/app.js": {"sha256": "one", "size": 1},
+                    "README.md": {"sha256": "two", "size": 2},
+                },
+                [
+                    {
+                        "path": "web/app.js",
+                        "action": "created",
+                        "verification": "fixture",
+                    },
+                    {
+                        "path": "README.md",
+                        "action": "created",
+                        "verification": "fixture",
+                    },
+                ],
+                allowed_write_paths=["web"],
+            )
+
+        self.assertFalse(receipt["verified"])
+        self.assertEqual(["web"], receipt["approved_write_paths"])
+        self.assertTrue(
+            any("exceeded the approved" in issue for issue in receipt["issues"])
+        )
+
+    def test_workspace_backup_restores_modified_deleted_and_created_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            existing = workspace / "existing.txt"
+            deleted = workspace / "deleted.txt"
+            existing.write_text("before", encoding="utf-8")
+            deleted.write_text("keep", encoding="utf-8")
+            before = OS.workspace_snapshot(workspace)
+            backup = OS.backup_workspace_files(
+                workspace,
+                before,
+                root / "backup",
+            )
+
+            existing.write_text("after", encoding="utf-8")
+            deleted.unlink()
+            created = workspace / "created.txt"
+            created.write_text("new", encoding="utf-8")
+            after = OS.workspace_snapshot(workspace)
+            rollback = OS.restore_workspace(
+                workspace,
+                before,
+                after,
+                backup,
+            )
+
+            restored_existing = existing.read_text(encoding="utf-8")
+            restored_deleted = deleted.read_text(encoding="utf-8")
+            created_exists = created.exists()
+
+        self.assertTrue(rollback["restored"])
+        self.assertEqual("before", restored_existing)
+        self.assertEqual("keep", restored_deleted)
+        self.assertFalse(created_exists)
 
     def test_reuse_receipt_fingerprints_existing_file_and_directory(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -730,6 +845,83 @@ class ProblemSolvingOSTests(unittest.TestCase):
         self.assertTrue(receipt["verified"])
         self.assertTrue(engine.trace()[0]["workspace_receipt_verified"])
         self.assertIn("--skip-git-repo-check", commands[-1])
+
+    def test_codex_engine_rolls_back_change_outside_approved_scope(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            (workspace / "existing.txt").write_text("before", encoding="utf-8")
+            run_dir = workspace / "runs" / "scope-violation"
+            run_dir.mkdir(parents=True)
+            approval = {
+                "approval_id": "approval-fixture",
+                "approved_write_paths": ["allowed.txt"],
+            }
+            engine = OS.CodexEngine(
+                workspace,
+                allow_workspace_write=True,
+                allowed_write_paths=["allowed.txt"],
+                write_approval=approval,
+            )
+            engine._executable = "codex"
+            engine._capabilities = OS.EngineCapabilities(
+                True, False, True, True, "fixture"
+            )
+            invocation = OS.InvocationSpec(
+                name="primary-code",
+                phase="executor",
+                route="CODE",
+                profile=OS.ModelProfile(
+                    "gpt-5.6-sol", "high", False, "workspace-write"
+                ),
+                schema_path=OS.EXECUTION_SCHEMA_PATH,
+            )
+            output_path = run_dir / "primary-code-output.json"
+            model_payload = execution_result(
+                artifacts=[
+                    {
+                        "path": "outside.txt",
+                        "action": "created",
+                        "verification": "fixture",
+                    }
+                ]
+            )
+            real_subprocess_run = OS.subprocess.run
+
+            def fake_codex_run(*args, **kwargs):
+                if args[0][0] == "git":
+                    return real_subprocess_run(*args, **kwargs)
+                (workspace / "outside.txt").write_text("unsafe", encoding="utf-8")
+                output_path.write_text(
+                    json.dumps(model_payload, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                return mock.Mock(returncode=0, stdout="")
+
+            with mock.patch.object(OS.subprocess, "run", side_effect=fake_codex_run):
+                with self.assertRaises(OS.ProblemSolvingError):
+                    engine.execute("create outside file", run_dir, invocation)
+
+            receipt = json.loads(
+                (run_dir / "primary-code-workspace-receipt.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            rollback = json.loads(
+                (run_dir / "primary-code-workspace-rollback.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            saved_approval = json.loads(
+                (run_dir / "web-write-approval.json").read_text(encoding="utf-8")
+            )
+            outside_exists = (workspace / "outside.txt").exists()
+            trace = engine.trace()[0]
+
+        self.assertFalse(receipt["verified"])
+        self.assertTrue(rollback["restored"])
+        self.assertFalse(outside_exists)
+        self.assertEqual(approval, saved_approval)
+        self.assertTrue(trace["workspace_rollback_verified"])
 
     def test_missing_engine_saves_blocked_run_without_guessing_route(self):
         capabilities = OS.EngineCapabilities(False, False, False, False, "missing")
