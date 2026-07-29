@@ -59,6 +59,33 @@ class SystemBlueprintTests(unittest.TestCase):
             (ROOT / "USAGE.md").read_text(encoding="utf-8"),
         )
 
+    def test_blueprint_explains_why_each_major_subsystem_was_built(self):
+        text = BLUEPRINT.read_text(encoding="utf-8")
+        purpose_ids = (
+            "preserve-real-goal",
+            "remove-method-selection-burden",
+            "match-capability-and-cost",
+            "produce-results-not-plans",
+            "verify-model-claims",
+            "make-file-change-safe",
+            "learn-without-self-corruption",
+            "make-operation-understandable",
+        )
+
+        self.assertIn("Why each subsystem was built", text)
+        self.assertIn("purpose_to_build:", text)
+        for purpose_id in purpose_ids:
+            with self.subTest(purpose_id=purpose_id):
+                self.assertIn(f"purpose_id: {purpose_id}", text)
+        self.assertIn(
+            "It is an execution kernel, a local operating surface, an",
+            text,
+        )
+        self.assertIn(
+            "evidence system, and a governed learning loop",
+            text,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

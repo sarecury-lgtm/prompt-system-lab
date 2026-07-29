@@ -1,6 +1,6 @@
 ---
 document_id: psos-system-blueprint
-version: 1
+version: 2
 status: normative-guide
 audience:
   - ai-coding-agent
@@ -106,6 +106,168 @@ Non-goals:
 - turning every request into a project;
 - allowing model output to update its own policy;
 - presenting an unexecuted plan as a completed result.
+
+### 2.1 Why each subsystem was built (목적 → 구현)
+
+PSOS was built because an ordinary user often knows the desired outcome but does not know whether
+the right mechanism is an answer, research, an existing asset, a prompt, code, or a longer project.
+Asking the user to design that mechanism first transfers the system's job back to the user.
+
+The following map is causal, not just descriptive. Each `built` component exists to prevent the
+corresponding `problem`.
+
+```yaml
+purpose_to_build:
+  - purpose_id: preserve-real-goal
+    problem: >
+      Long or technical work can optimize a local task while silently replacing
+      the user's original goal and fixed constraints.
+    built:
+      - Goal Ledger
+      - strict router schema and consistency validation
+    expected_effect: >
+      Every selected step remains explainably connected to the parent goal.
+    proof:
+      - runs/<run-id>/request.txt
+      - runs/<run-id>/goal_ledger.json
+      - schemas/problem-solving-os-route.schema.json
+
+  - purpose_id: remove-method-selection-burden
+    problem: >
+      Users should not have to decide whether they need search, reuse, a prompt,
+      code, or a project before the system can help.
+    built:
+      - seven-route Solution Router
+      - smallest-sufficient-route rules
+      - HYBRID limited to two concrete routes
+    expected_effect: >
+      The user supplies the goal; the system chooses the least overbuilt mechanism.
+    proof:
+      - scripts/problem_solving_os.py
+      - problem-solving-project/INSTRUCTIONS.md
+      - runs/<run-id>/route.json
+
+  - purpose_id: match-capability-and-cost
+    problem: >
+      One model and one permission level are inefficient and may grant unnecessary
+      search or write capability.
+    built:
+      - explicit model policy for Luna, Terra, and Sol
+      - per-stage reasoning effort, web search, and sandbox settings
+      - bounded fallback policy
+    expected_effect: >
+      Lightweight work stays lightweight and powerful capabilities appear only
+      where the selected route requires them.
+    proof:
+      - problem-solving-project/model-policy.json
+      - route.json model_plan
+      - route.json orchestration_trace
+
+  - purpose_id: produce-results-not-plans
+    problem: >
+      An assistant can repeatedly describe what should be done without producing
+      a usable result or honestly declaring a capability boundary.
+    built:
+      - route-specific executors
+      - terminal statuses for completed, partial, blocked, and handoff
+      - durable result.md output
+    expected_effect: >
+      The system executes as far as it can and labels the difference between a
+      result, a partial result, and work that was not executed.
+    proof:
+      - schemas/problem-solving-os-execution.schema.json
+      - runs/<run-id>/result.md
+      - runs/<run-id>/route.json
+
+  - purpose_id: verify-model-claims
+    problem: >
+      A model can claim that it inspected an asset, changed a file, or completed
+      a task even when the external state does not support that claim.
+    built:
+      - strict JSON output schemas
+      - deterministic route validation
+      - REUSE asset fingerprints
+      - workspace change receipts
+    expected_effect: >
+      Model output remains an untrusted claim until independent evidence verifies it.
+    proof:
+      - schemas/problem-solving-os-execution.schema.json
+      - <stage>-reuse-receipt.json
+      - <stage>-workspace-receipt.json
+
+  - purpose_id: make-file-change-safe
+    problem: >
+      A broad workspace-write toggle can change unrelated files, delete data, or
+      leave a half-finished workspace after model or validation failure.
+    built:
+      - repository-relative write scopes
+      - one-time explicit web approval
+      - pre-execution snapshot and backup
+      - receipt gate and verified automatic rollback
+    expected_effect: >
+      Only the displayed scope may change, and failed or unverifiable changes are
+      restored before the system reports the outcome.
+    proof:
+      - web-write-approval.json
+      - <stage>-workspace-backup/manifest.json
+      - <stage>-workspace-receipt.json
+      - <stage>-workspace-rollback.json
+
+  - purpose_id: learn-without-self-corruption
+    problem: >
+      If casual feedback or a model's own judgment can directly change policy,
+      errors become self-reinforcing and provenance is lost.
+    built:
+      - evidence-bound feedback records
+      - immutable manual review
+      - independent-evidence policy proposals
+      - paired evaluation
+      - separate human approval
+      - atomic apply and rollback
+    expected_effect: >
+      Policy changes only after real outcomes, independent support, comparison,
+      and human authority all agree.
+    proof:
+      - learning_record.json
+      - learning_review.json
+      - policy-proposals/
+      - policy-evaluations/
+      - policy-approvals/
+      - policy-changes/
+
+  - purpose_id: make-operation-understandable
+    problem: >
+      Durable evidence is not useful if an operator cannot tell whether records
+      are healthy, what is pending, or what safe action comes next.
+    built:
+      - read-only lifecycle status audit
+      - local PSOS workspace UI
+      - AI-readable system blueprint
+    expected_effect: >
+      A person or AI can inspect current health, understand why components exist,
+      and continue from the next safe action without reconstructing the system.
+    proof:
+      - scripts/problem_solving_status.py
+      - scripts/problem_solving_web.py
+      - web/
+      - specs/PSOS_SYSTEM_BLUEPRINT.md
+```
+
+In compact form:
+
+| Original need | What was built because of it |
+|---|---|
+| Preserve the user's real outcome during long work | Goal Ledger and route consistency checks |
+| Avoid making the user choose the technical method | Seven-route Solution Router |
+| Use appropriate intelligence and permissions | Explicit Luna/Terra/Sol model policy |
+| Deliver usable work instead of repeated planning | Route executors and honest terminal statuses |
+| Prevent unsupported completion claims | Schemas, fingerprints, receipts, and hashes |
+| Allow useful file edits without broad trust | Scoped approval, backup, verification, and rollback |
+| Improve without learning from noise or self-judgment | Reviewed feedback and gated policy lifecycle |
+| Make the system operable by a person or another AI | Status audit, local UI, and this blueprint |
+
+The result is therefore not one prompt. It is an execution kernel, a local operating surface, an
+evidence system, and a governed learning loop built around the same preserved user goal.
 
 ## 3. Architectural principle
 
