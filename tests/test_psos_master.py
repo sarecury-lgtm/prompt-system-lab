@@ -78,6 +78,8 @@ class PsosMasterTests(unittest.TestCase):
             "--write-scope",
             "cli-write-approval.json",
             "content-addressed backup",
+            "실행 간 content-addressed 백업 v3",
+            "기존 v2·v1 복구 호환성",
             "기존 v1 경로 복사 백업",
             "paired evaluation",
             "atomic apply/rollback",

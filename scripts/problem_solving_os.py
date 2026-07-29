@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
@@ -425,20 +426,78 @@ def build_cli_write_approval(
     }
 
 
+def default_shared_blob_store(workspace: Path) -> Path:
+    """Return a workspace-specific blob store outside the writable workspace."""
+
+    workspace = workspace.expanduser().resolve()
+    configured_root = os.environ.get("PSOS_BACKUP_STORE_ROOT", "").strip()
+    if configured_root:
+        data_root = Path(configured_root).expanduser()
+    elif os.environ.get("LOCALAPPDATA"):
+        data_root = Path(os.environ["LOCALAPPDATA"])
+    elif os.environ.get("XDG_DATA_HOME"):
+        data_root = Path(os.environ["XDG_DATA_HOME"])
+    else:
+        data_root = Path.home() / ".local" / "share"
+    workspace_id = hashlib.sha256(
+        os.path.normcase(str(workspace)).encode("utf-8")
+    ).hexdigest()[:24]
+    store = (
+        data_root
+        / "prompt-system-lab"
+        / "workspace-backups"
+        / workspace_id
+    ).resolve()
+    if path_is_within(store, workspace):
+        raise ProblemSolvingError(
+            "shared backup store must be outside the writable workspace"
+        )
+    return store
+
+
 def backup_workspace_files(
     workspace: Path,
     snapshot: dict[str, dict[str, Any]],
     backup_dir: Path,
+    *,
+    shared_blob_store: Path | None = None,
 ) -> Path:
     workspace = workspace.resolve()
     backup_dir = backup_dir.resolve()
+    shared_store = (
+        shared_blob_store.expanduser().resolve()
+        if shared_blob_store is not None
+        else None
+    )
+    if shared_store is not None and path_is_within(
+        shared_store,
+        workspace,
+    ):
+        raise ProblemSolvingError(
+            "shared backup store must be outside the writable workspace"
+        )
+    if shared_store is not None and (
+        path_is_within(shared_store, backup_dir)
+        or path_is_within(backup_dir, shared_store)
+    ):
+        raise ProblemSolvingError(
+            "shared backup store and run backup must not contain each other"
+        )
     backup_dir.mkdir(parents=True, exist_ok=False)
     blobs_dir = backup_dir / "blobs"
-    blobs_dir.mkdir()
+    if shared_store is None:
+        blobs_dir.mkdir()
+    else:
+        (shared_store / "blobs").mkdir(parents=True, exist_ok=True)
     files_manifest: dict[str, dict[str, Any]] = {}
     blobs_manifest: dict[str, dict[str, Any]] = {}
     logical_bytes = 0
     stored_bytes = 0
+    new_shared_blob_count = 0
+    reused_shared_blob_count = 0
+    repaired_shared_blob_count = 0
+    shared_written_bytes = 0
+    reused_shared_bytes = 0
     for relative in sorted(snapshot):
         source = (workspace / relative).resolve()
         if not path_is_within(source, workspace) or not source.is_file():
@@ -457,18 +516,95 @@ def backup_workspace_files(
         blob_relative = Path("blobs") / sha256[:2] / sha256
         blob_path = backup_dir / blob_relative
         if sha256 not in blobs_manifest:
-            blob_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, blob_path)
-            stored = file_fingerprint(blob_path)
-            if stored != expected:
-                raise ProblemSolvingError(
-                    f"content-addressed backup verification failed: {relative}"
-                )
+            shared_status: str | None = None
+            if shared_store is None:
+                blob_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, blob_path)
+                stored_bytes += size
+            else:
+                shared_blob = shared_store / blob_relative
+                shared_blob.parent.mkdir(parents=True, exist_ok=True)
+                if not path_is_within(shared_blob.resolve(), shared_store):
+                    raise ProblemSolvingError(
+                        f"shared backup blob escapes store: {relative}"
+                    )
+                shared_existed = shared_blob.exists() or shared_blob.is_symlink()
+                try:
+                    shared_valid = (
+                        shared_blob.is_file()
+                        and not shared_blob.is_symlink()
+                        and file_fingerprint(shared_blob) == expected
+                    )
+                except OSError:
+                    shared_valid = False
+                if shared_valid:
+                    shared_status = "reused"
+                else:
+                    file_descriptor, temp_name = tempfile.mkstemp(
+                        prefix=f".{sha256}.",
+                        suffix=".tmp",
+                        dir=shared_blob.parent,
+                    )
+                    os.close(file_descriptor)
+                    temp_blob = Path(temp_name)
+                    try:
+                        shutil.copy2(source, temp_blob)
+                        if file_fingerprint(temp_blob) != expected:
+                            raise ProblemSolvingError(
+                                "shared backup staging verification failed: "
+                                f"{relative}"
+                            )
+                        try:
+                            concurrent_valid = (
+                                shared_blob.is_file()
+                                and not shared_blob.is_symlink()
+                                and file_fingerprint(shared_blob) == expected
+                            )
+                        except OSError:
+                            concurrent_valid = False
+                        if concurrent_valid:
+                            shared_status = "reused"
+                        else:
+                            os.replace(temp_blob, shared_blob)
+                            shared_status = (
+                                "repaired" if shared_existed else "new"
+                            )
+                    finally:
+                        if temp_blob.exists():
+                            temp_blob.unlink()
+                if file_fingerprint(shared_blob) != expected:
+                    raise ProblemSolvingError(
+                        f"shared backup verification failed: {relative}"
+                    )
+                if shared_status == "reused":
+                    reused_shared_blob_count += 1
+                    reused_shared_bytes += size
+                elif shared_status == "repaired":
+                    repaired_shared_blob_count += 1
+                    shared_written_bytes += size
+                else:
+                    new_shared_blob_count += 1
+                    shared_written_bytes += size
+            if shared_store is None:
+                stored = file_fingerprint(blob_path)
+                if stored != expected:
+                    raise ProblemSolvingError(
+                        "content-addressed backup verification failed: "
+                        f"{relative}"
+                    )
             blobs_manifest[sha256] = {
                 "path": blob_relative.as_posix(),
                 "size": size,
+                **(
+                    {
+                        "shared_store_path": blob_relative.as_posix(),
+                        "shared_status": shared_status,
+                        "materialization": "verified_shared_store_reference",
+                    }
+                    if shared_store is not None
+                    else {}
+                ),
             }
-            stored_bytes += size
         elif blobs_manifest[sha256]["size"] != size:
             raise ProblemSolvingError(
                 f"content-addressed backup size conflict: {relative}"
@@ -477,23 +613,53 @@ def backup_workspace_files(
             **expected,
             "blob": blob_relative.as_posix(),
         }
-    write_json(
-        backup_dir / "manifest.json",
-        {
-            "version": 2,
-            "strategy": "content_addressed_per_run",
-            "workspace": str(workspace),
-            "files": files_manifest,
-            "blobs": blobs_manifest,
-            "stats": {
-                "source_file_count": len(files_manifest),
-                "unique_blob_count": len(blobs_manifest),
-                "logical_bytes": logical_bytes,
-                "stored_bytes": stored_bytes,
-                "deduplicated_bytes": logical_bytes - stored_bytes,
-            },
+    manifest: dict[str, Any] = {
+        "version": 3 if shared_store is not None else 2,
+        "strategy": (
+            "content_addressed_cross_run"
+            if shared_store is not None
+            else "content_addressed_per_run"
+        ),
+        "workspace": str(workspace),
+        "files": files_manifest,
+        "blobs": blobs_manifest,
+        "stats": {
+            "source_file_count": len(files_manifest),
+            "unique_blob_count": len(blobs_manifest),
+            "logical_bytes": logical_bytes,
+            "stored_bytes": (
+                shared_written_bytes
+                if shared_store is not None
+                else stored_bytes
+            ),
+            "deduplicated_bytes": max(
+                logical_bytes
+                - (
+                    shared_written_bytes
+                    if shared_store is not None
+                    else stored_bytes
+                ),
+                0,
+            ),
         },
-    )
+    }
+    if shared_store is not None:
+        manifest["shared_blob_store"] = {
+            "version": 1,
+            "path": str(shared_store),
+            "workspace_id": shared_store.name,
+            "run_backup_dependency": "verified_shared_store",
+        }
+        manifest["stats"].update(
+            {
+                "new_shared_blob_count": new_shared_blob_count,
+                "reused_shared_blob_count": reused_shared_blob_count,
+                "repaired_shared_blob_count": repaired_shared_blob_count,
+                "shared_written_bytes": shared_written_bytes,
+                "reused_shared_bytes": reused_shared_bytes,
+            }
+        )
+    write_json(backup_dir / "manifest.json", manifest)
     return backup_dir
 
 
@@ -502,6 +668,9 @@ def restore_workspace(
     before: dict[str, dict[str, Any]],
     after: dict[str, dict[str, Any]],
     backup_dir: Path,
+    *,
+    excluded_root: Path | None = None,
+    shared_blob_store: Path | None = None,
 ) -> dict[str, Any]:
     workspace = workspace.resolve()
     backup_root = backup_dir.resolve()
@@ -511,6 +680,7 @@ def restore_workspace(
     manifest: dict[str, Any] | None = None
     manifest_version = 1
     manifest_strategy = "path_copy_legacy"
+    manifest_shared_store: Path | None = None
     manifest_path = backup_root / "manifest.json"
     if manifest_path.is_file():
         try:
@@ -522,6 +692,11 @@ def restore_workspace(
             manifest_strategy = str(
                 manifest.get("strategy", manifest_strategy)
             )
+            raw_store = manifest.get("shared_blob_store")
+            if isinstance(raw_store, dict) and isinstance(
+                raw_store.get("path"), str
+            ):
+                manifest_shared_store = Path(raw_store["path"]).resolve()
             if manifest.get("workspace") not in {None, str(workspace)}:
                 issues.append("backup manifest workspace does not match.")
         except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -557,9 +732,25 @@ def restore_workspace(
                 raw_blob = entry.get("blob")
                 if not isinstance(raw_blob, str) or not raw_blob:
                     raise OSError("content-addressed blob path is missing")
-                source = (backup_root / raw_blob).resolve()
-                if not path_is_within(source, backup_root):
-                    raise OSError("content-addressed blob escapes backup")
+                if manifest_version >= 3:
+                    blob_root = (
+                        shared_blob_store.expanduser().resolve()
+                        if shared_blob_store is not None
+                        else manifest_shared_store
+                    )
+                    if blob_root is None:
+                        raise OSError("shared backup store is missing")
+                    source = (blob_root / raw_blob).resolve()
+                    if not path_is_within(source, blob_root):
+                        raise OSError(
+                            "content-addressed blob escapes shared store"
+                        )
+                else:
+                    source = (backup_root / raw_blob).resolve()
+                    if not path_is_within(source, backup_root):
+                        raise OSError(
+                            "content-addressed blob escapes backup"
+                        )
             else:
                 source = files_dir / relative
             if not source.is_file():
@@ -571,14 +762,18 @@ def restore_workspace(
         except OSError as exc:
             issues.append(f"failed to restore {relative}: {exc}")
     try:
-        excluded_root = (
-            backup_dir.parent
-            if path_is_within(backup_dir, workspace)
-            else None
+        snapshot_excluded_root = (
+            excluded_root.resolve()
+            if excluded_root is not None
+            else (
+                backup_dir.parent
+                if path_is_within(backup_dir, workspace)
+                else None
+            )
         )
         restored_snapshot = workspace_snapshot(
             workspace,
-            excluded_root=excluded_root,
+            excluded_root=snapshot_excluded_root,
             include_ignored=True,
         )
     except ProblemSolvingError as exc:
@@ -824,6 +1019,7 @@ class CodexEngine:
         allow_workspace_write: bool = False,
         allowed_write_paths: list[str] | tuple[str, ...] | None = None,
         write_approval: dict[str, Any] | None = None,
+        backup_store: Path | None = None,
         enable_search: bool = True,
         timeout_seconds: int = 600,
     ) -> None:
@@ -839,6 +1035,18 @@ class CodexEngine:
             if write_approval is not None
             else None
         )
+        self.backup_store = (
+            backup_store.expanduser().resolve()
+            if backup_store is not None
+            else None
+        )
+        if self.backup_store is not None and path_is_within(
+            self.backup_store,
+            self.workspace,
+        ):
+            raise ProblemSolvingError(
+                "shared backup store must be outside the writable workspace"
+            )
         self.enable_search = enable_search
         self.timeout_seconds = timeout_seconds
         self._executable: str | None = None
@@ -938,6 +1146,11 @@ class CodexEngine:
         )
         before_snapshot: dict[str, dict[str, Any]] | None = None
         backup_dir: Path | None = None
+        backup_store = (
+            self.backup_store or default_shared_blob_store(self.workspace)
+            if receipt_enabled
+            else None
+        )
         rollback_attempted = False
 
         def rollback_after_failure(reason: str) -> None:
@@ -953,7 +1166,7 @@ class CodexEngine:
             try:
                 failed_snapshot = workspace_snapshot(
                     self.workspace,
-                    excluded_root=run_dir,
+                    excluded_root=run_dir.parent,
                     include_ignored=True,
                 )
                 rollback = restore_workspace(
@@ -961,6 +1174,8 @@ class CodexEngine:
                     before_snapshot,
                     failed_snapshot,
                     backup_dir,
+                    excluded_root=run_dir.parent,
+                    shared_blob_store=backup_store,
                 )
             except Exception as exc:
                 rollback = {
@@ -979,15 +1194,17 @@ class CodexEngine:
         if receipt_enabled:
             before_snapshot = workspace_snapshot(
                 self.workspace,
-                excluded_root=run_dir,
+                excluded_root=run_dir.parent,
                 include_ignored=True,
             )
             backup_dir = backup_workspace_files(
                 self.workspace,
                 before_snapshot,
                 run_dir / f"{invocation.name}-workspace-backup",
+                shared_blob_store=backup_store,
             )
             record["workspace_backup"] = str(backup_dir)
+            record["workspace_backup_store"] = str(backup_store)
             if self.write_approval is not None:
                 approval_filename = (
                     "cli-write-approval.json"
@@ -1075,7 +1292,7 @@ class CodexEngine:
                 self.workspace,
                 execution.get("evidence", []),
                 execution.get("artifacts", []),
-                excluded_root=run_dir,
+                excluded_root=run_dir.parent,
             )
             reuse_receipt_path = run_dir / f"{invocation.name}-reuse-receipt.json"
             write_json(reuse_receipt_path, reuse_receipt)
@@ -1093,7 +1310,7 @@ class CodexEngine:
         if receipt_enabled and before_snapshot is not None:
             after_snapshot = workspace_snapshot(
                 self.workspace,
-                excluded_root=run_dir,
+                excluded_root=run_dir.parent,
                 include_ignored=True,
             )
             artifacts = (

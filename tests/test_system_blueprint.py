@@ -46,6 +46,9 @@ class SystemBlueprintTests(unittest.TestCase):
             "--write-scope",
             "cli-write-approval.json",
             "content_addressed_per_run",
+            "content_addressed_cross_run",
+            "outside the model-writable",
+            "verified_shared_store",
             "legacy v1",
         ):
             with self.subTest(contract=required_contract):

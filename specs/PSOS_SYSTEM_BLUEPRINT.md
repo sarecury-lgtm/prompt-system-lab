@@ -1,6 +1,6 @@
 ---
 document_id: psos-system-blueprint
-version: 4
+version: 5
 status: normative-guide
 audience:
   - ai-coding-agent
@@ -497,22 +497,31 @@ request
 Before model execution:
 
 - snapshot tracked, untracked, and Git-ignored files;
-- exclude `.git` and the active run evidence directory;
+- exclude `.git` and the complete run evidence root;
 - verify that each source fingerprint still matches the snapshot before copying;
-- store each unique SHA-256 content value once under
-  `<stage>-workspace-backup/blobs/<prefix>/<sha256>`;
-- map every original path to its content-addressed blob in `manifest.json`;
-- record source file count, unique blob count, logical bytes, stored bytes, and deduplicated bytes;
+- derive a workspace-specific store ID and keep the shared store outside the model-writable
+  workspace under the operating system's user-data root;
+- store each unique SHA-256 content value once across runs under
+  `<os-data>/prompt-system-lab/workspace-backups/<workspace-id>/blobs/<prefix>/<sha256>`;
+- atomically replace a corrupt shared blob with a newly verified inode;
+- map every original path to its verified shared content-addressed blob in `manifest.json`;
+- record new, reused, and repaired shared blobs, logical bytes, reused bytes, and newly written
+  bytes;
 - verify each stored blob fingerprint before accepting the backup.
 
-Backup manifest v2 uses strategy `content_addressed_per_run`. Deduplication is scoped to one
-execution backup: separate runs do not yet share a blob store.
+Backup manifest v3 uses strategy `content_addressed_cross_run`. Keeping the store outside the
+workspace prevents a workspace-write model from mutating earlier rollback material through the
+active run directory. If a shared blob is corrupted, fingerprint verification prevents false
+restoration and the next backup atomically repairs it from the matching source snapshot.
+The manifest declares `run_backup_dependency: verified_shared_store`; operators must retain the
+shared store for as long as its v3 run manifests need to remain restorable.
 
 Restore MUST:
 
 - resolve a path only through the manifest's path-to-blob entry;
 - reject a blob path that escapes the backup directory;
 - compare manifest and blob fingerprints with the pre-execution snapshot;
+- support manifest v2 `content_addressed_per_run` backups;
 - support legacy v1 `<stage>-workspace-backup/files/<original-path>` backups.
 
 ### 9.3 Commit condition
@@ -811,8 +820,8 @@ Safe extension order:
 
 Potential future work:
 
-- cross-run incremental reuse of verified content-addressed blobs;
 - empty-directory tracking;
+- retention, size limits, and garbage collection for the shared blob store;
 - durable job/approval recovery across server restarts;
 - a UI for the reviewed policy lifecycle;
 - versioned migrations for long-lived run records.

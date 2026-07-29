@@ -469,18 +469,30 @@ class ProblemSolvingOSTests(unittest.TestCase):
         )
         self.assertTrue(any("파일 삭제" in issue for issue in receipt["issues"]))
 
-    def test_workspace_snapshot_excludes_run_directory(self):
+    def test_workspace_snapshot_excludes_run_evidence_root(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
-            run_dir = workspace / "runs" / "fixture"
+            runs_root = workspace / "runs"
+            run_dir = runs_root / "fixture"
+            shared_store = runs_root / ".workspace-backup-store" / "blobs"
             run_dir.mkdir(parents=True)
+            shared_store.mkdir(parents=True)
             (workspace / "source.txt").write_text("keep", encoding="utf-8")
             (run_dir / "model-output.json").write_text("{}", encoding="utf-8")
+            (shared_store / "blob").write_text("backup", encoding="utf-8")
 
-            snapshot = OS.workspace_snapshot(workspace, excluded_root=run_dir)
+            snapshot = OS.workspace_snapshot(
+                workspace,
+                excluded_root=runs_root,
+                include_ignored=True,
+            )
 
         self.assertIn("source.txt", snapshot)
         self.assertNotIn("runs/fixture/model-output.json", snapshot)
+        self.assertNotIn(
+            "runs/.workspace-backup-store/blobs/blob",
+            snapshot,
+        )
 
     def test_workspace_write_snapshot_includes_gitignored_files(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -676,6 +688,138 @@ class ProblemSolvingOSTests(unittest.TestCase):
             manifest["files"]["one.txt"]["blob"],
             manifest["files"]["two.txt"]["blob"],
         )
+
+    def test_cross_run_backup_reuses_verified_shared_blob(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            source = workspace / "source.txt"
+            source.write_text("shared content", encoding="utf-8")
+            snapshot = OS.workspace_snapshot(workspace)
+            shared_store = root / "runs" / ".workspace-backup-store"
+
+            first_backup = OS.backup_workspace_files(
+                workspace,
+                snapshot,
+                root / "runs" / "first" / "backup",
+                shared_blob_store=shared_store,
+            )
+            second_backup = OS.backup_workspace_files(
+                workspace,
+                snapshot,
+                root / "runs" / "second" / "backup",
+                shared_blob_store=shared_store,
+            )
+            first_manifest = json.loads(
+                (first_backup / "manifest.json").read_text(encoding="utf-8")
+            )
+            second_manifest = json.loads(
+                (second_backup / "manifest.json").read_text(encoding="utf-8")
+            )
+            shared_blob = (
+                shared_store
+                / first_manifest["files"]["source.txt"]["blob"]
+            )
+            shared_blob_count = len(
+                [path for path in shared_store.rglob("*") if path.is_file()]
+            )
+            first_has_local_blobs = (first_backup / "blobs").exists()
+            second_has_local_blobs = (second_backup / "blobs").exists()
+            source.write_text("changed", encoding="utf-8")
+            changed_snapshot = OS.workspace_snapshot(workspace)
+            rollback = OS.restore_workspace(
+                workspace,
+                snapshot,
+                changed_snapshot,
+                second_backup,
+                shared_blob_store=shared_store,
+            )
+            restored_content = source.read_text(encoding="utf-8")
+            shared_fingerprint = OS.file_fingerprint(shared_blob)
+
+        self.assertEqual(3, first_manifest["version"])
+        self.assertEqual(
+            "content_addressed_cross_run",
+            second_manifest["strategy"],
+        )
+        self.assertEqual(
+            1,
+            first_manifest["stats"]["new_shared_blob_count"],
+        )
+        self.assertEqual(
+            1,
+            second_manifest["stats"]["reused_shared_blob_count"],
+        )
+        self.assertEqual(0, second_manifest["stats"]["shared_written_bytes"])
+        self.assertEqual(1, shared_blob_count)
+        self.assertFalse(first_has_local_blobs)
+        self.assertFalse(second_has_local_blobs)
+        self.assertEqual(snapshot["source.txt"], shared_fingerprint)
+        self.assertTrue(rollback["restored"])
+        self.assertEqual(
+            "content_addressed_cross_run",
+            rollback["backup_strategy"],
+        )
+        self.assertEqual("shared content", restored_content)
+
+    def test_cross_run_backup_repairs_corrupted_shared_blob(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            source = workspace / "source.txt"
+            source.write_text("trusted", encoding="utf-8")
+            snapshot = OS.workspace_snapshot(workspace)
+            shared_store = root / "runs" / ".workspace-backup-store"
+            first_backup = OS.backup_workspace_files(
+                workspace,
+                snapshot,
+                root / "runs" / "first" / "backup",
+                shared_blob_store=shared_store,
+            )
+            first_manifest = json.loads(
+                (first_backup / "manifest.json").read_text(encoding="utf-8")
+            )
+            relative_blob = first_manifest["files"]["source.txt"]["blob"]
+            shared_blob = shared_store / relative_blob
+            shared_blob.write_text("corrupt", encoding="utf-8")
+
+            second_backup = OS.backup_workspace_files(
+                workspace,
+                snapshot,
+                root / "runs" / "second" / "backup",
+                shared_blob_store=shared_store,
+            )
+            second_manifest = json.loads(
+                (second_backup / "manifest.json").read_text(encoding="utf-8")
+            )
+            repaired_shared_fingerprint = OS.file_fingerprint(shared_blob)
+
+        self.assertEqual(
+            1,
+            second_manifest["stats"]["repaired_shared_blob_count"],
+        )
+        self.assertEqual(
+            snapshot["source.txt"],
+            repaired_shared_fingerprint,
+        )
+
+    def test_cross_run_backup_rejects_store_inside_workspace(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            (workspace / "source.txt").write_text("trusted", encoding="utf-8")
+            snapshot = OS.workspace_snapshot(workspace)
+
+            with self.assertRaises(OS.ProblemSolvingError):
+                OS.backup_workspace_files(
+                    workspace,
+                    snapshot,
+                    root / "backup",
+                    shared_blob_store=workspace / "runs" / "store",
+                )
 
     def test_restore_rejects_corrupted_content_addressed_blob(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -920,7 +1064,9 @@ class ProblemSolvingOSTests(unittest.TestCase):
 
     def test_codex_engine_saves_verified_workspace_receipt(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            workspace = Path(temp_dir)
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
             run_dir = workspace / "runs" / "fixture"
             run_dir.mkdir(parents=True)
             approval = {
@@ -933,6 +1079,7 @@ class ProblemSolvingOSTests(unittest.TestCase):
                 allow_workspace_write=True,
                 allowed_write_paths=["created.txt"],
                 write_approval=approval,
+                backup_store=root / "backup-store",
             )
             engine._executable = "codex"
             engine._capabilities = OS.EngineCapabilities(
@@ -997,7 +1144,9 @@ class ProblemSolvingOSTests(unittest.TestCase):
 
     def test_codex_engine_rolls_back_change_outside_approved_scope(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            workspace = Path(temp_dir)
+            root = Path(temp_dir)
+            workspace = root / "workspace"
+            workspace.mkdir()
             (workspace / "existing.txt").write_text("before", encoding="utf-8")
             run_dir = workspace / "runs" / "scope-violation"
             run_dir.mkdir(parents=True)
@@ -1010,6 +1159,7 @@ class ProblemSolvingOSTests(unittest.TestCase):
                 allow_workspace_write=True,
                 allowed_write_paths=["allowed.txt"],
                 write_approval=approval,
+                backup_store=root / "backup-store",
             )
             engine._executable = "codex"
             engine._capabilities = OS.EngineCapabilities(
