@@ -1,6 +1,6 @@
 ---
 document_id: psos-master
-version: 3
+version: 4
 status: master-entrypoint
 language: ko
 audience:
@@ -245,7 +245,7 @@ PSOS에서 모델 출력은 기본적으로 `untrusted claim`이다.
   → 정확한 요청·작업 공간·경로를 다시 표시
   → 한 번만 유효한 명시 승인
   → tracked·untracked·Git-ignored 파일 snapshot
-  → 실행별 content-addressed backup
+  → 실행 간 공유 content-addressed backup
   → 모델 실행
   → 실제 파일 변화 검증
   → 성공 또는 자동 rollback
@@ -271,20 +271,24 @@ PSOS에서 모델 출력은 기본적으로 `untrusted claim`이다.
 실패하면 생성 파일을 제거하고 수정·삭제 파일을 백업에서 복원한 뒤, 전체 파일 snapshot이
 실행 전과 같은지 다시 검사한다. rollback까지 검증되지 않으면 복구됐다고 주장하지 않는다.
 
-백업 v2는 파일 경로마다 내용을 다시 복사하지 않는다. SHA-256이 같은 내용은 실행별 backup
-안에서 하나의 blob으로 저장하고, manifest가 원래 경로를 blob에 연결한다.
+백업 v3는 SHA-256이 같은 내용을 실행 간 공용 저장소에 한 번만 기록한다. 공용 저장소는
+모델이 쓰는 작업 공간 밖의 OS 데이터 영역에 workspace별 ID로 분리한다. 각 실행 manifest는
+원래 경로를 검증된 공용 blob에 연결하므로, 작업 공간 안에 같은 내용을 다시 복사하지 않는다.
 
 ```text
-<stage>-workspace-backup/
-  manifest.json
+<OS-data>/prompt-system-lab/workspace-backups/<workspace-id>/
   blobs/
     <hash-prefix>/
       <sha256>
+
+<stage>-workspace-backup/
+  manifest.json
 ```
 
-manifest에는 원본 파일 수, 고유 blob 수, 논리 용량, 실제 저장 용량, 중복 제거 용량이
-기록된다. 복구할 때는 blob의 경로와 hash를 다시 확인한다. 손상된 blob은 사용하지 않으며
-복구 성공으로 보고하지 않는다. 기존 v1 경로 복사 백업도 계속 읽을 수 있다.
+manifest에는 새로 저장·재사용·수리한 공용 blob 수, 논리 용량과 실제 기록 용량이 남는다.
+공용 blob이 손상됐으면 원본 snapshot과 대조해 원자적으로 교체한다. 손상된 blob은 복구
+성공으로 오인하지 않는다. 기존 v2 실행별 content-addressed 백업과 기존 v1 경로 복사 백업도
+계속 복구할 수 있다.
 
 CLI에서는 다음 두 조건이 반드시 함께 있어야 한다.
 
@@ -324,8 +328,9 @@ learning_record.json
 learning_review.json
 ```
 
-`runs`는 rollback 대상에서 제외한다. 실패한 변경을 복구하더라도 실패 원인과 복구 증거는
-남아야 하기 때문이다.
+`runs` 전체는 snapshot과 rollback 대상에서 제외한다. 실패한 변경을 복구하더라도 실패
+원인과 복구 증거는 남아야 하고, 실행 기록이 다음 workspace backup에 재귀적으로 포함되어서는
+안 되기 때문이다. 공용 backup blob은 작업 공간 밖의 OS 데이터 영역에 별도로 남는다.
 
 ## 12. 학습과 정책 변경 설계
 
@@ -398,11 +403,11 @@ AND backup과 hash가 있는 원자적 적용
 - CODE·PROJECT workspace receipt 지원
 - 웹 UI의 범위별 파일 변경 승인과 자동 rollback 지원
 - CLI의 반복 가능한 `--write-scope` 승인과 `cli-write-approval.json` 증거 지원
-- 실행별 content-addressed 백업 v2와 기존 v1 복구 호환성 지원
+- 실행 간 content-addressed 백업 v3와 기존 v2·v1 복구 호환성 지원
 - 실제 feedback과 수동 review 지원
 - 정책 proposal·paired evaluation·approval·apply·rollback 지원
 - 전체 상태 audit와 로컬 UI 지원
-- 162개 자동 테스트 통과
+- 165개 자동 테스트 통과
 - 6개 route smoke test 통과
 - 저장된 실행 18/18 무결성 정상
 
@@ -416,9 +421,11 @@ python -B scripts/problem_solving_status.py
 
 ## 15. 현재 한계
 
-- 한 실행 안의 동일 내용은 중복 제거하지만 서로 다른 실행 사이에서 blob을 재사용하지는 않는다.
 - 안전 snapshot은 Git-ignored 파일까지 모두 읽고 hash하므로 매우 큰 저장소에서는 비용이
   커질 수 있다.
+- 공용 blob 저장소는 아직 자동 보존 기간·용량 제한·garbage collection을 제공하지 않는다.
+- v3 실행 manifest는 외부 공용 저장소에 의존하므로 해당 저장소를 수동 삭제하면 그 실행의
+  rollback 원본도 사라진다.
 - rollback은 파일 내용을 검증하지만 빈 디렉터리는 추적하지 않는다.
 - 웹 job과 pending approval은 서버 메모리에 있어 서버 재시작 후 실행 핸들은 사라진다.
 - 정책 생명주기 전체를 조작하는 사용자 UI는 아직 없다.
@@ -502,8 +509,8 @@ AND 한계와 미실행 부분이 숨겨지지 않음
 
 ## 19. 다음 우선순위
 
-1. 검증된 content-addressed blob의 실행 간 증분 재사용
-2. 빈 디렉터리 rollback 추적
+1. 빈 디렉터리 rollback 추적
+2. 공용 backup blob의 보존 기간·용량 제한·garbage collection
 3. 서버 재시작 후 job·approval 복구
 4. 검토된 정책 생명주기 관리 UI
 
