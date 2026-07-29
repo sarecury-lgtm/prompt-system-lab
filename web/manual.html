@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PSOS · ChatGPT 수동 브리지</title>
+  <link rel="stylesheet" href="/manual.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <p class="eyebrow">PERSONAL PROBLEM-SOLVING OS</p>
+      <h1>ChatGPT 수동 브리지</h1>
+      <p class="lede">Codex를 쓸 수 없을 때, PSOS가 작업 지시를 만들고 ChatGPT의 반환값을 기존 스키마로 검증해 이어서 실행합니다.</p>
+    </header>
+
+    <section class="panel" id="start-panel">
+      <div class="section-heading">
+        <span class="step">1</span>
+        <div>
+          <h2>요청</h2>
+          <p>평소처럼 목적만 적으세요.</p>
+        </div>
+      </div>
+      <textarea id="request" rows="7" placeholder="예: 현재 온라인에서 주문 가능한 복숭아 중 내 취향에 맞는 상품을 찾아줘."></textarea>
+      <label class="check-row">
+        <input id="search-enabled" type="checkbox">
+        <span>이 ChatGPT 대화에서 웹 검색을 사용할 예정</span>
+      </label>
+      <button class="primary" id="start">수동 실행 시작</button>
+    </section>
+
+    <section class="panel hidden" id="handoff-panel">
+      <div class="section-heading">
+        <span class="step">2</span>
+        <div>
+          <h2 id="phase-title">ChatGPT에 전달</h2>
+          <p id="phase-detail">아래 지시문을 현재 ChatGPT 대화에 넣으세요.</p>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <span class="run-id" id="run-id"></span>
+        <div class="toolbar-actions">
+          <button class="quiet" id="copy-prompt">지시문 복사</button>
+          <button class="quiet" id="open-chatgpt">ChatGPT 열기</button>
+        </div>
+      </div>
+      <textarea class="code-area" id="prompt" rows="14" readonly></textarea>
+
+      <div class="divider"></div>
+
+      <label class="field-label" for="response">ChatGPT가 반환한 JSON</label>
+      <textarea class="code-area" id="response" rows="12" placeholder="ChatGPT의 전체 응답을 여기에 붙여넣으세요. 코드 펜스가 있어도 처리합니다."></textarea>
+      <div class="submit-row">
+        <p id="status">응답을 붙여넣으면 기존 PSOS validator로 검사합니다.</p>
+        <button class="primary" id="submit">검증하고 계속</button>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="result-panel">
+      <div class="section-heading">
+        <span class="step done">✓</span>
+        <div>
+          <h2>완료</h2>
+          <p>결과와 수동 인계 기록이 run 디렉터리에 저장됐습니다.</p>
+        </div>
+      </div>
+      <pre id="result"></pre>
+      <button class="quiet" id="new-run">새 요청</button>
+    </section>
+
+    <aside class="note">
+      <strong>신뢰 경계</strong>
+      <p>이 모드는 ChatGPT 브라우저 내부의 실제 검색·도구 호출을 독립 receipt로 확인하지 못합니다. 대신 JSON 구조, 경로별 완료 조건, 로컬 쓰기 주장 금지, 응답 hash와 전체 왕복 기록을 검증합니다.</p>
+    </aside>
+  </main>
+  <script src="/manual.js"></script>
+</body>
+</html>
