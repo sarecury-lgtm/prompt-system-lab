@@ -132,6 +132,19 @@ receipt, atomically replaces the policy, then verifies the applied hash. Interru
 are recoverable by rerunning the same command. Rollback succeeds only when the active policy still
 matches the applied hash, never deletes the backup, and is itself idempotent.
 
+Inspect the complete lifecycle without changing any file:
+
+```powershell
+python scripts/problem_solving_status.py
+python scripts/problem_solving_status.py --json
+```
+
+The read-only audit revalidates runs, learning records, reviews, proposals, evaluations, approvals,
+change receipts, backups, and active-policy hashes. It distinguishes ordinary pending work from
+invalid records or policy drift, reports interrupted changes that can be resumed, and gives the next
+safe operator action. Human-readable output is the default; `--json` returns the full evidence and
+issue list for automation.
+
 Model and tool selection is explicit in
 [`problem-solving-project/model-policy.json`](problem-solving-project/model-policy.json):
 
