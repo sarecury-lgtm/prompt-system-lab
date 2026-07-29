@@ -190,18 +190,38 @@ def validate_existing_record(
         "promotion_state",
     }
     signals: dict[str, int] = {}
+    seen_event_ids: set[str] = set()
     for event in payload["events"]:
         if not isinstance(event, dict) or set(event) != event_fields:
             raise FeedbackError("기존 learning event 형식이 유효하지 않습니다.")
-        if event.get("signal") not in SIGNALS:
+        signal = event.get("signal")
+        if signal not in SIGNALS:
             raise FeedbackError("기존 learning event signal이 유효하지 않습니다.")
+        note = event.get("note")
+        if not isinstance(note, str):
+            raise FeedbackError("기존 learning event note가 문자열이 아닙니다.")
+        validate_meaningful_text(note, "existing event note")
+        evidence = event.get("evidence")
+        if not isinstance(evidence, list) or not all(
+            isinstance(item, str) for item in evidence
+        ):
+            raise FeedbackError("기존 learning event evidence가 문자열 배열이 아닙니다.")
+        for item in evidence:
+            validate_meaningful_text(item, "existing event evidence")
+        if signal in EVIDENCE_REQUIRED_SIGNALS and not evidence:
+            raise FeedbackError("기존 성공·채택 event에 evidence가 없습니다.")
+        if not isinstance(event.get("recorded_at"), str):
+            raise FeedbackError("기존 learning event recorded_at이 유효하지 않습니다.")
+        identifier = event.get("event_id")
+        if identifier != event_id(run_dir.name, signal, note, evidence):
+            raise FeedbackError("기존 learning event ID가 내용과 일치하지 않습니다.")
+        if identifier in seen_event_ids:
+            raise FeedbackError("기존 learning event ID가 중복되었습니다.")
+        seen_event_ids.add(identifier)
         if event.get("eligible_for_default_change") is not False:
             raise FeedbackError("검토되지 않은 event가 기본값 변경 대상으로 표시됐습니다.")
         if event.get("promotion_state") != "candidate":
             raise FeedbackError("지원하지 않는 learning event 승격 상태입니다.")
-        if not isinstance(event.get("evidence"), list):
-            raise FeedbackError("기존 learning event evidence가 배열이 아닙니다.")
-        signal = event["signal"]
         signals[signal] = signals.get(signal, 0) + 1
     expected_summary = {
         "event_count": len(payload["events"]),
