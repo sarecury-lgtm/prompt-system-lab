@@ -269,27 +269,31 @@ def workspace_snapshot(
     workspace: Path,
     *,
     excluded_root: Path | None = None,
+    include_ignored: bool = False,
 ) -> dict[str, dict[str, Any]]:
     workspace = workspace.resolve()
     excluded = excluded_root.resolve() if excluded_root is not None else None
-    try:
-        completed = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(workspace),
-                "ls-files",
-                "-co",
-                "--exclude-standard",
-                "-z",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            check=False,
-            timeout=30,
-        )
-    except (OSError, subprocess.SubprocessError):
+    if include_ignored:
         completed = None
+    else:
+        try:
+            completed = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(workspace),
+                    "ls-files",
+                    "-co",
+                    "--exclude-standard",
+                    "-z",
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                check=False,
+                timeout=30,
+            )
+        except (OSError, subprocess.SubprocessError):
+            completed = None
     if completed is not None and completed.returncode == 0:
         relative_paths = [
             Path(item.decode("utf-8", errors="surrogateescape"))
@@ -336,11 +340,141 @@ def workspace_changes(
     }
 
 
+def normalize_write_scopes(workspace: Path, scopes: Any) -> list[str]:
+    """Return unique repository-relative write scopes with unsafe roots rejected."""
+
+    workspace = workspace.expanduser().resolve()
+    if not isinstance(scopes, (list, tuple)) or not scopes:
+        raise ProblemSolvingError("변경을 허용할 경로를 하나 이상 입력해 주세요.")
+    if len(scopes) > 20:
+        raise ProblemSolvingError("변경 허용 경로는 최대 20개까지 입력할 수 있습니다.")
+    normalized: list[str] = []
+    for raw in scopes:
+        if not isinstance(raw, str) or not raw.strip():
+            raise ProblemSolvingError("변경 허용 경로는 빈 문자열일 수 없습니다.")
+        lexical = Path(raw.strip()).expanduser()
+        if lexical.is_absolute():
+            raise ProblemSolvingError(
+                f"저장소 기준 상대 경로만 승인할 수 있습니다: {raw}"
+            )
+        candidate = (workspace / lexical).resolve()
+        if not path_is_within(candidate, workspace):
+            raise ProblemSolvingError(
+                f"작업 공간 밖의 경로는 승인할 수 없습니다: {raw}"
+            )
+        relative_path = candidate.relative_to(workspace)
+        if relative_path == Path("."):
+            raise ProblemSolvingError(
+                "작업 공간 전체를 한 번에 승인할 수 없습니다."
+            )
+        if relative_path.parts[0].lower() in {".git", "runs"}:
+            raise ProblemSolvingError(
+                f"보호된 저장소 경로는 승인할 수 없습니다: {raw}"
+            )
+        relative = relative_path.as_posix().rstrip("/")
+        if relative not in normalized:
+            normalized.append(relative)
+    return normalized
+
+
+def path_in_write_scopes(path: str, scopes: list[str]) -> bool:
+    return any(
+        path == scope or path.startswith(scope.rstrip("/") + "/")
+        for scope in scopes
+    )
+
+
+def backup_workspace_files(
+    workspace: Path,
+    snapshot: dict[str, dict[str, Any]],
+    backup_dir: Path,
+) -> Path:
+    workspace = workspace.resolve()
+    backup_dir = backup_dir.resolve()
+    files_dir = backup_dir / "files"
+    files_dir.mkdir(parents=True, exist_ok=False)
+    for relative in sorted(snapshot):
+        source = (workspace / relative).resolve()
+        if not path_is_within(source, workspace) or not source.is_file():
+            raise ProblemSolvingError(
+                f"cannot back up workspace file: {relative}"
+            )
+        destination = files_dir / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+    write_json(
+        backup_dir / "manifest.json",
+        {
+            "version": 1,
+            "workspace": str(workspace),
+            "files": snapshot,
+        },
+    )
+    return backup_dir
+
+
+def restore_workspace(
+    workspace: Path,
+    before: dict[str, dict[str, Any]],
+    after: dict[str, dict[str, Any]],
+    backup_dir: Path,
+) -> dict[str, Any]:
+    workspace = workspace.resolve()
+    files_dir = backup_dir.resolve() / "files"
+    changes = workspace_changes(before, after)
+    issues: list[str] = []
+    for relative in changes["created"]:
+        target = workspace / relative
+        try:
+            if target.is_symlink() or target.is_file():
+                target.unlink()
+        except OSError as exc:
+            issues.append(f"failed to remove created file {relative}: {exc}")
+    for relative in sorted(
+        set(changes["modified"]) | set(changes["deleted"])
+    ):
+        source = files_dir / relative
+        target = workspace / relative
+        try:
+            if not source.is_file():
+                raise OSError("backup file is missing")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+        except OSError as exc:
+            issues.append(f"failed to restore {relative}: {exc}")
+    try:
+        excluded_root = (
+            backup_dir.parent
+            if path_is_within(backup_dir, workspace)
+            else None
+        )
+        restored_snapshot = workspace_snapshot(
+            workspace,
+            excluded_root=excluded_root,
+            include_ignored=True,
+        )
+    except ProblemSolvingError as exc:
+        restored_snapshot = {}
+        issues.append(f"failed to verify restored workspace: {exc}")
+    if restored_snapshot != before:
+        issues.append("restored workspace does not match the pre-execution snapshot.")
+    return {
+        "version": 1,
+        "workspace": str(workspace),
+        "restored": not issues,
+        "empty_directories_not_tracked": True,
+        "reverted_changes": changes,
+        "issues": issues,
+    }
+
+
 def build_workspace_receipt(
     workspace: Path,
     before: dict[str, dict[str, Any]],
     after: dict[str, dict[str, Any]],
     artifacts: Any,
+    *,
+    allowed_write_paths: list[str] | None = None,
 ) -> dict[str, Any]:
     workspace = workspace.resolve()
     changes = workspace_changes(before, after)
@@ -385,6 +519,21 @@ def build_workspace_receipt(
             or path.startswith(claim["path"].rstrip("/") + "/")
         )
     changed_paths = set(changes["created"]) | set(changes["modified"])
+    if allowed_write_paths is not None:
+        outside_scope = sorted(
+            path
+            for path in (
+                set(changes["created"])
+                | set(changes["modified"])
+                | set(changes["deleted"])
+            )
+            if not path_in_write_scopes(path, allowed_write_paths)
+        )
+        if outside_scope:
+            issues.append(
+                "workspace changes exceeded the approved write paths: "
+                + ", ".join(outside_scope)
+            )
     unclaimed = sorted(changed_paths - covered_paths)
     if unclaimed:
         issues.append("결과에 기록되지 않은 파일 변화가 있습니다: " + ", ".join(unclaimed))
@@ -398,6 +547,7 @@ def build_workspace_receipt(
         "version": 1,
         "workspace": str(workspace),
         "verified": not issues,
+        "approved_write_paths": allowed_write_paths,
         "claims": claims,
         "actual_changes": changes,
         "issues": issues,
@@ -542,11 +692,23 @@ class CodexEngine:
         workspace: Path,
         *,
         allow_workspace_write: bool = False,
+        allowed_write_paths: list[str] | tuple[str, ...] | None = None,
+        write_approval: dict[str, Any] | None = None,
         enable_search: bool = True,
         timeout_seconds: int = 600,
     ) -> None:
         self.workspace = workspace.expanduser().resolve()
         self.allow_workspace_write = allow_workspace_write
+        self.allowed_write_paths = (
+            normalize_write_scopes(self.workspace, allowed_write_paths)
+            if allowed_write_paths is not None
+            else None
+        )
+        self.write_approval = (
+            json.loads(json.dumps(write_approval))
+            if write_approval is not None
+            else None
+        )
         self.enable_search = enable_search
         self.timeout_seconds = timeout_seconds
         self._executable: str | None = None
@@ -610,6 +772,15 @@ class CodexEngine:
         effective_sandbox = invocation.profile.sandbox
         if effective_sandbox == "workspace-write" and not capabilities.workspace_write:
             effective_sandbox = "read-only"
+        if effective_sandbox == "workspace-write" and self.allowed_write_paths:
+            prompt += (
+                "\n\n[Approved write boundary]\n"
+                "You may create or modify files only at these repository-relative "
+                "paths or below these directories:\n- "
+                + "\n- ".join(self.allowed_write_paths)
+                + "\nDo not delete files. Report every created or modified path "
+                "in execution.artifacts."
+            )
         request_path = run_dir / f"{invocation.name}-request.md"
         output_path = run_dir / f"{invocation.name}-output.json"
         log_path = run_dir / f"{invocation.name}.log"
@@ -636,11 +807,61 @@ class CodexEngine:
             and effective_sandbox == "workspace-write"
         )
         before_snapshot: dict[str, dict[str, Any]] | None = None
+        backup_dir: Path | None = None
+        rollback_attempted = False
+
+        def rollback_after_failure(reason: str) -> None:
+            nonlocal rollback_attempted
+            if (
+                rollback_attempted
+                or not receipt_enabled
+                or before_snapshot is None
+                or backup_dir is None
+            ):
+                return
+            rollback_attempted = True
+            try:
+                failed_snapshot = workspace_snapshot(
+                    self.workspace,
+                    excluded_root=run_dir,
+                    include_ignored=True,
+                )
+                rollback = restore_workspace(
+                    self.workspace,
+                    before_snapshot,
+                    failed_snapshot,
+                    backup_dir,
+                )
+            except Exception as exc:
+                rollback = {
+                    "version": 1,
+                    "workspace": str(self.workspace),
+                    "restored": False,
+                    "reverted_changes": {},
+                    "issues": [str(exc).strip() or exc.__class__.__name__],
+                }
+            rollback["reason"] = reason
+            rollback_path = run_dir / f"{invocation.name}-workspace-rollback.json"
+            write_json(rollback_path, rollback)
+            record["workspace_rollback"] = str(rollback_path)
+            record["workspace_rollback_verified"] = rollback["restored"]
+
         if receipt_enabled:
             before_snapshot = workspace_snapshot(
                 self.workspace,
                 excluded_root=run_dir,
+                include_ignored=True,
             )
+            backup_dir = backup_workspace_files(
+                self.workspace,
+                before_snapshot,
+                run_dir / f"{invocation.name}-workspace-backup",
+            )
+            record["workspace_backup"] = str(backup_dir)
+            if self.write_approval is not None:
+                approval_path = run_dir / "web-write-approval.json"
+                write_json(approval_path, self.write_approval)
+                record["write_approval"] = str(approval_path)
 
         arguments: list[str] = []
         if invocation.profile.web_search:
@@ -685,16 +906,21 @@ class CodexEngine:
         except (OSError, subprocess.SubprocessError) as exc:
             record["status"] = "failed_to_start"
             record["error"] = str(exc)
+            rollback_after_failure("Codex CLI failed to start.")
             raise ProblemSolvingError(f"Codex CLI 실행 실패: {exc}") from exc
         log_path.write_text(completed.stdout or "", encoding="utf-8")
         record["exit_code"] = completed.returncode
         if completed.returncode != 0:
             record["status"] = "failed"
+            rollback_after_failure(
+                f"Codex CLI exited with code {completed.returncode}."
+            )
             raise ProblemSolvingError(
                 f"{invocation.name} Codex CLI가 exit {completed.returncode}로 실패했습니다."
             )
         if not output_path.is_file():
             record["status"] = "missing_output"
+            rollback_after_failure("Codex CLI did not create structured output.")
             raise ProblemSolvingError(
                 f"{invocation.name} Codex CLI가 구조화 결과를 만들지 않았습니다."
             )
@@ -703,6 +929,7 @@ class CodexEngine:
         except (OSError, json.JSONDecodeError) as exc:
             record["status"] = "invalid_json"
             record["error"] = str(exc)
+            rollback_after_failure("Codex CLI returned invalid structured output.")
             raise ProblemSolvingError(
                 f"{invocation.name} 결과 JSON을 읽을 수 없습니다: {exc}"
             ) from exc
@@ -731,6 +958,7 @@ class CodexEngine:
             after_snapshot = workspace_snapshot(
                 self.workspace,
                 excluded_root=run_dir,
+                include_ignored=True,
             )
             artifacts = (
                 payload.get("execution", {}).get("artifacts", [])
@@ -742,6 +970,7 @@ class CodexEngine:
                 before_snapshot,
                 after_snapshot,
                 artifacts,
+                allowed_write_paths=self.allowed_write_paths,
             )
             receipt_path = run_dir / f"{invocation.name}-workspace-receipt.json"
             write_json(receipt_path, receipt)
@@ -749,6 +978,15 @@ class CodexEngine:
             record["workspace_receipt_verified"] = receipt["verified"]
             if not receipt["verified"]:
                 record["status"] = "workspace_receipt_failed"
+                rollback_after_failure(
+                    "Workspace receipt did not verify the approved change."
+                )
+                if not record.get("workspace_rollback_verified"):
+                    raise ProblemSolvingError(
+                        "workspace receipt failed and automatic rollback could "
+                        "not fully restore the workspace: "
+                        + "; ".join(receipt["issues"])
+                    )
                 raise ProblemSolvingError(
                     "CODE/PROJECT의 파일 변경 주장 검증에 실패했습니다: "
                     + "; ".join(receipt["issues"])

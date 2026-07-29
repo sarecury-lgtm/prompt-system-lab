@@ -2,18 +2,29 @@
 
 ## Primary task flow
 
+Read-only flow:
+
 `request → run → read → inspect evidence → check system status`
+
+Scoped write flow:
+
+`request → choose file change → enter paths → inspect approval → approve → run → verify receipt`
 
 The request field is the first and widest interaction. The result stays in the same reading column.
 System integrity, lifecycle counts, next action, and recent runs remain in a subordinate status rail.
+File change is a distinct mode, not a permission checkbox. Its path scope and approval evidence stay
+between the request and execution so the user can inspect the exact boundary before anything runs.
 
 ## Content roles
 
 - Navigation: product identity and global health only.
-- Controls: one request field, one optional search toggle, one primary action.
+- Controls: one request field, a two-option work mode, one optional search toggle, path inputs only
+  for file change, and one primary action.
 - Primary content: the generated result, capped at 780px for readable line length.
 - Context: selected route and immutable run ID.
 - Evaluation: evidence and artifacts in an opt-in disclosure.
+- Approval: exact request, fixed workspace, normalized paths, and three non-negotiable safety rules.
+- Write receipt: verified created/modified files or the automatic rollback result.
 - Status: integrity summary, lifecycle counts, next safe action, and recent runs.
 
 ## Visual rules

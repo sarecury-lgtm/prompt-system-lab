@@ -21,9 +21,18 @@ python scripts/problem_solving_web.py --open-browser chrome
 
 The server binds only to `127.0.0.1` and opens `http://127.0.0.1:8765/`. The screen accepts an
 ordinary-language request, shows execution progress and the final result, exposes verified evidence
-and artifacts, and summarizes lifecycle health and recent runs. It uses the repository as a
-read-only workspace; requests that require file changes stop safely. Web search is disabled unless
-the user selects it for the request. Stop the server with `Ctrl+C`.
+and artifacts, and summarizes lifecycle health and recent runs. `답변만` is the default and keeps
+the repository read-only. `파일 변경` requires one or more repository-relative paths, shows the
+exact request, workspace, and approved paths, and does not run until the user clicks the separate
+approval button. Each approval is one-time and expires after ten minutes. The whole repository,
+`.git`, `runs`, absolute paths, and parent-directory traversal cannot be approved.
+
+Before an approved write starts, the runtime snapshots and backs up the workspace. Completion is
+rejected if a file is deleted, changed outside the approved paths, or changed without being
+reported. It then restores the pre-execution file state automatically and records both the failed
+receipt and rollback result. The safety snapshot includes Git-ignored files as well as tracked and
+untracked files. File contents are verified after restoration; empty directories are not tracked.
+Web search is disabled unless the user selects it for the request. Stop the server with `Ctrl+C`.
 
 ### Command line
 

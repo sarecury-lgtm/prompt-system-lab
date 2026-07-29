@@ -30,7 +30,17 @@ class ProblemSolvingWebTests(unittest.TestCase):
         self.fail("job did not finish")
 
     def test_job_manager_completes_and_returns_public_result(self):
-        def runner(request, search_enabled, run_id):
+        def runner(
+            request,
+            search_enabled,
+            run_id,
+            workspace_write,
+            allowed_write_paths,
+            approval,
+        ):
+            self.assertFalse(workspace_write)
+            self.assertEqual([], allowed_write_paths)
+            self.assertIsNone(approval)
             return {
                 "run_id": run_id,
                 "route": "REUSE",
@@ -39,6 +49,8 @@ class ProblemSolvingWebTests(unittest.TestCase):
                 "artifacts": [{"path": "USAGE.md"}],
                 "evidence": [{"finding": "verified"}],
                 "limitations": [],
+                "workspace_receipt": None,
+                "workspace_rollback": None,
             }
 
         manager = WEB.JobManager(runner=runner)
@@ -54,7 +66,7 @@ class ProblemSolvingWebTests(unittest.TestCase):
         self.assertNotIn("_runner", job)
 
     def test_job_manager_records_failure_without_traceback(self):
-        def runner(_request, _search_enabled, _run_id):
+        def runner(*_args):
             raise RuntimeError("engine unavailable")
 
         manager = WEB.JobManager(runner=runner)
@@ -83,7 +95,14 @@ class ProblemSolvingWebTests(unittest.TestCase):
     def test_active_run_id_is_visible_for_status_exclusion(self):
         release = WEB.threading.Event()
 
-        def runner(_request, _search_enabled, run_id):
+        def runner(
+            _request,
+            _search_enabled,
+            run_id,
+            _workspace_write,
+            _allowed_write_paths,
+            _approval,
+        ):
             release.wait(1)
             return {
                 "run_id": run_id,
@@ -93,6 +112,8 @@ class ProblemSolvingWebTests(unittest.TestCase):
                 "artifacts": [],
                 "evidence": [],
                 "limitations": [],
+                "workspace_receipt": None,
+                "workspace_rollback": None,
             }
 
         manager = WEB.JobManager(runner=runner)
@@ -106,6 +127,125 @@ class ProblemSolvingWebTests(unittest.TestCase):
 
         self.assertEqual({submitted["run_id"]}, active)
         self.assertEqual(set(), manager.active_run_ids())
+
+    def test_job_manager_requires_scoped_approval_for_workspace_write(self):
+        manager = WEB.JobManager(runner=lambda *_: {})
+        try:
+            with self.assertRaisesRegex(ValueError, "경로"):
+                manager.submit(
+                    "modify a file",
+                    False,
+                    workspace_write=True,
+                    approval={"approval_id": "approval-test"},
+                )
+            with self.assertRaisesRegex(ValueError, "승인"):
+                manager.submit(
+                    "modify a file",
+                    False,
+                    workspace_write=True,
+                    allowed_write_paths=["web/app.js"],
+                )
+        finally:
+            manager.shutdown()
+
+    def test_approval_is_one_time_and_starts_scoped_write_job(self):
+        captured = {}
+
+        def runner(
+            request,
+            search_enabled,
+            run_id,
+            workspace_write,
+            allowed_write_paths,
+            approval,
+        ):
+            captured.update(
+                {
+                    "request": request,
+                    "search_enabled": search_enabled,
+                    "workspace_write": workspace_write,
+                    "allowed_write_paths": allowed_write_paths,
+                    "approval": approval,
+                }
+            )
+            return {
+                "run_id": run_id,
+                "route": "CODE",
+                "execution_status": "completed",
+                "result_markdown": "변경 완료",
+                "artifacts": [{"path": "web/app.js", "action": "modified"}],
+                "evidence": [],
+                "limitations": [],
+                "workspace_receipt": {"verified": True},
+                "workspace_rollback": None,
+            }
+
+        jobs = WEB.JobManager(runner=runner)
+        approvals = WEB.ApprovalManager(jobs)
+        try:
+            pending = approvals.create(
+                "web/app.js를 수정해 줘",
+                False,
+                ["web/app.js"],
+            )
+            approved, submitted = approvals.approve(pending["approval_id"])
+            job = self.wait_for_job(jobs, submitted["job_id"])
+            with self.assertRaisesRegex(ValueError, "상태"):
+                approvals.approve(pending["approval_id"])
+        finally:
+            jobs.shutdown()
+
+        self.assertEqual("approved", approved["status"])
+        self.assertEqual("completed", job["state"])
+        self.assertTrue(captured["workspace_write"])
+        self.assertEqual(["web/app.js"], captured["allowed_write_paths"])
+        self.assertEqual(
+            "local_web_explicit_click",
+            captured["approval"]["approval_method"],
+        )
+
+    def test_rejected_approval_cannot_execute(self):
+        jobs = WEB.JobManager(runner=lambda *_: {})
+        approvals = WEB.ApprovalManager(jobs)
+        try:
+            pending = approvals.create(
+                "문서를 수정해 줘",
+                False,
+                ["USAGE.md"],
+            )
+            rejected = approvals.reject(pending["approval_id"])
+            with self.assertRaisesRegex(ValueError, "상태"):
+                approvals.approve(pending["approval_id"])
+        finally:
+            jobs.shutdown()
+
+        self.assertEqual("rejected", rejected["status"])
+
+    def test_approval_records_job_submission_failure(self):
+        jobs = WEB.JobManager(runner=lambda *_: {})
+        approvals = WEB.ApprovalManager(jobs)
+        pending = approvals.create(
+            "문서를 수정해 줘",
+            False,
+            ["USAGE.md"],
+        )
+        original_submit = jobs.submit
+
+        def fail_submit(*_args, **_kwargs):
+            raise RuntimeError("queue unavailable")
+
+        jobs.submit = fail_submit
+        try:
+            with self.assertRaisesRegex(RuntimeError, "queue unavailable"):
+                approvals.approve(pending["approval_id"])
+            failed = approvals.get(pending["approval_id"])
+        finally:
+            jobs.submit = original_submit
+            jobs.shutdown()
+
+        self.assertEqual("failed", failed["status"])
+        self.assertEqual("queue unavailable", failed["error"])
+        self.assertIsNone(failed["job_id"])
 
     def test_load_run_returns_bounded_public_fields(self):
         with tempfile.TemporaryDirectory() as temp_dir:
