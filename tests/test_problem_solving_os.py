@@ -163,6 +163,17 @@ class ProblemSolvingOSTests(unittest.TestCase):
             self.assertIn("고정 독자: 신규 입사자", call["prompt"])
             self.assertIn(str(context.resolve()), call["prompt"])
 
+    def test_router_reserves_direct_for_requests_without_file_changes(self):
+        prompt = OS.build_router_prompt(
+            "receipt_probe.txt를 만들어 줘.",
+            "",
+            None,
+            OS.EngineCapabilities(True, False, True, True, "fixture"),
+        )
+
+        self.assertIn("파일 시스템 변경 없이", prompt)
+        self.assertIn("작업 규모가 작아도 DIRECT가 아니라 CODE", prompt)
+
     def test_router_retries_with_sol_when_luna_output_is_invalid(self):
         engine = FakeEngine([{}, route_result(), execution_result()])
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -390,6 +401,165 @@ class ProblemSolvingOSTests(unittest.TestCase):
             )
         self.assertEqual("blocked_by_capability", payload["execution"]["status"])
         self.assertIn("쓰기 capability", payload["execution"]["limitations"][0])
+
+    def test_workspace_receipt_verifies_claimed_create_and_modify(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            existing = workspace / "existing.txt"
+            existing.write_text("before", encoding="utf-8")
+            before = OS.workspace_snapshot(workspace)
+
+            existing.write_text("after", encoding="utf-8")
+            (workspace / "created.txt").write_text("new", encoding="utf-8")
+            after = OS.workspace_snapshot(workspace)
+            receipt = OS.build_workspace_receipt(
+                workspace,
+                before,
+                after,
+                [
+                    {
+                        "path": "existing.txt",
+                        "action": "modified",
+                        "verification": "fixture",
+                    },
+                    {
+                        "path": "created.txt",
+                        "action": "created",
+                        "verification": "fixture",
+                    },
+                ],
+            )
+
+        self.assertTrue(receipt["verified"])
+        self.assertEqual(["created.txt"], receipt["actual_changes"]["created"])
+        self.assertEqual(["existing.txt"], receipt["actual_changes"]["modified"])
+        self.assertEqual([], receipt["issues"])
+
+    def test_workspace_receipt_rejects_false_unreported_and_deleted_changes(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            deleted = workspace / "deleted.txt"
+            deleted.write_text("remove me", encoding="utf-8")
+            before = OS.workspace_snapshot(workspace)
+
+            deleted.unlink()
+            (workspace / "unreported.txt").write_text("surprise", encoding="utf-8")
+            after = OS.workspace_snapshot(workspace)
+            receipt = OS.build_workspace_receipt(
+                workspace,
+                before,
+                after,
+                [
+                    {
+                        "path": "claimed.txt",
+                        "action": "created",
+                        "verification": "fixture",
+                    }
+                ],
+            )
+
+        self.assertFalse(receipt["verified"])
+        self.assertTrue(
+            any("일치하지 않습니다" in issue for issue in receipt["issues"])
+        )
+        self.assertTrue(
+            any("기록되지 않은 파일 변화" in issue for issue in receipt["issues"])
+        )
+        self.assertTrue(any("파일 삭제" in issue for issue in receipt["issues"]))
+
+    def test_workspace_snapshot_excludes_run_directory(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            run_dir = workspace / "runs" / "fixture"
+            run_dir.mkdir(parents=True)
+            (workspace / "source.txt").write_text("keep", encoding="utf-8")
+            (run_dir / "model-output.json").write_text("{}", encoding="utf-8")
+
+            snapshot = OS.workspace_snapshot(workspace, excluded_root=run_dir)
+
+        self.assertIn("source.txt", snapshot)
+        self.assertNotIn("runs/fixture/model-output.json", snapshot)
+
+    def test_workspace_receipt_rejects_claim_outside_workspace(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            receipt = OS.build_workspace_receipt(
+                workspace,
+                {},
+                {},
+                [
+                    {
+                        "path": str(workspace.parent / "outside.txt"),
+                        "action": "created",
+                        "verification": "fixture",
+                    }
+                ],
+            )
+
+        self.assertFalse(receipt["verified"])
+        self.assertTrue(
+            any("작업공간 밖" in issue for issue in receipt["issues"])
+        )
+
+    def test_codex_engine_saves_verified_workspace_receipt(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            run_dir = workspace / "runs" / "fixture"
+            run_dir.mkdir(parents=True)
+            engine = OS.CodexEngine(workspace, allow_workspace_write=True)
+            engine._executable = "codex"
+            engine._capabilities = OS.EngineCapabilities(
+                True, False, True, True, "fixture"
+            )
+            invocation = OS.InvocationSpec(
+                name="primary-code",
+                phase="executor",
+                route="CODE",
+                profile=OS.ModelProfile(
+                    "gpt-5.6-sol", "high", False, "workspace-write"
+                ),
+                schema_path=OS.EXECUTION_SCHEMA_PATH,
+            )
+            output_path = run_dir / "primary-code-output.json"
+            model_payload = execution_result(
+                artifacts=[
+                    {
+                        "path": "created.txt",
+                        "action": "created",
+                        "verification": "fixture",
+                    }
+                ]
+            )
+            commands = []
+
+            def fake_codex_run(*args, **kwargs):
+                commands.append(args[0])
+                output_path.write_text(
+                    json.dumps(model_payload, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                return mock.Mock(returncode=0, stdout="")
+
+            with mock.patch.object(
+                OS,
+                "workspace_snapshot",
+                side_effect=[
+                    {},
+                    {"created.txt": {"sha256": "abc", "size": 3}},
+                ],
+            ), mock.patch.object(OS.subprocess, "run", side_effect=fake_codex_run):
+                payload = engine.execute("create file", run_dir, invocation)
+
+            receipt = json.loads(
+                (run_dir / "primary-code-workspace-receipt.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        self.assertEqual(model_payload, payload)
+        self.assertTrue(receipt["verified"])
+        self.assertTrue(engine.trace()[0]["workspace_receipt_verified"])
+        self.assertIn("--skip-git-repo-check", commands[-1])
 
     def test_missing_engine_saves_blocked_run_without_guessing_route(self):
         capabilities = OS.EngineCapabilities(False, False, False, False, "missing")
