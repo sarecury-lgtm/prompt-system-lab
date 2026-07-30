@@ -25,6 +25,7 @@ from tests.test_problem_solving_os_contract_runtime import (  # noqa: E402
     execution_result,
     route_result,
 )
+from tests.test_problem_solving_prompt_trace import make_prompt_run  # noqa: E402
 
 
 def semantically_linked_assessment(prompt, _run_dir, _invocation):
@@ -118,7 +119,39 @@ class QualityRuntimeTests(unittest.TestCase):
                 payload["run"]["evidence_bundle"],
             )
 
-    def test_simple_direct_does_not_create_empty_bundle(self):
+    def test_prompt_trace_is_attached_without_changing_result(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir = make_prompt_run(temp_dir)
+            original = json.loads(
+                (run_dir / "primary-prompt-output.json").read_text(encoding="utf-8")
+            )["execution"]["result_markdown"]
+            payload = {
+                "execution": {
+                    "status": "completed",
+                    "summary": "최종 프롬프트",
+                    "result_markdown": original,
+                    "capabilities_used": ["ai_reasoning"],
+                    "needed_capability": None,
+                    "handoff": None,
+                    "artifacts": [],
+                    "evidence": [],
+                    "limitations": [],
+                },
+                "run": {},
+            }
+            record = QUALITY._attach_prompt_trace(run_dir, payload)
+            route = json.loads((run_dir / "route.json").read_text(encoding="utf-8"))
+            json_exists = (run_dir / record["json_path"]).is_file()
+            markdown_exists = (run_dir / record["markdown_path"]).is_file()
+
+        self.assertEqual(original, payload["execution"]["result_markdown"])
+        self.assertEqual(record, payload["prompt_generation_trace"])
+        self.assertEqual(record, payload["run"]["prompt_generation_trace"])
+        self.assertEqual(record, route["prompt_generation_trace"])
+        self.assertTrue(json_exists)
+        self.assertTrue(markdown_exists)
+
+    def test_simple_direct_does_not_create_empty_bundle_or_prompt_trace(self):
         engine = FakeEngine(
             [
                 route_result("DIRECT"),
@@ -134,7 +167,9 @@ class QualityRuntimeTests(unittest.TestCase):
                 run_id="quality-simple-direct",
             )
             self.assertFalse((run_dir / "evidence_bundle.json").exists())
+            self.assertFalse((run_dir / "prompt_generation_trace.json").exists())
             self.assertNotIn("evidence_bundle", payload)
+            self.assertNotIn("prompt_generation_trace", payload)
 
 
 if __name__ == "__main__":
