@@ -1,0 +1,42 @@
+name: PROMPT build brief
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/problem_solving_prompt_build_brief.py"
+      - "scripts/problem_solving_prompt_brief_trace.py"
+      - "scripts/problem_solving_os_quality_runtime.py"
+      - "schemas/problem-solving-prompt-build-brief.schema.json"
+      - "tests/test_problem_solving_prompt_build_brief.py"
+      - "tests/test_problem_solving_prompt_brief_trace.py"
+      - "tests/test_problem_solving_prompt_build_brief_quality_integration.py"
+      - ".github/workflows/prompt-build-brief.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile modules
+        run: |
+          python -m py_compile scripts/problem_solving_prompt_build_brief.py
+          python -m py_compile scripts/problem_solving_prompt_brief_trace.py
+          python -m py_compile scripts/problem_solving_os_quality_runtime.py
+      - name: Validate schema
+        run: python -m json.tool schemas/problem-solving-prompt-build-brief.schema.json > /dev/null
+      - name: Run focused tests
+        run: >-
+          python -m unittest
+          tests.test_problem_solving_prompt_build_brief
+          tests.test_problem_solving_prompt_brief_trace
+          tests.test_problem_solving_prompt_build_brief_quality_integration
+          tests.test_problem_solving_os_quality_runtime
+      - name: Run canonical regression
+        run: python -m unittest tests.test_problem_solving_os
