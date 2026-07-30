@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PSOS PROMPT ablation assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "variants",
+    "preferred_candidate_ids",
+    "conclusion"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "variants": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "requirement_preservation",
+          "procedure_clarity",
+          "repetition_pressure",
+          "format_pressure",
+          "practical_reusability",
+          "finding",
+          "missing_conditions"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "pattern": "^[A-D]$"
+          },
+          "requirement_preservation": {
+            "enum": ["satisfied", "partial", "failed"]
+          },
+          "procedure_clarity": {
+            "enum": ["strong", "mixed", "weak"]
+          },
+          "repetition_pressure": {
+            "enum": ["low", "medium", "high"]
+          },
+          "format_pressure": {
+            "enum": ["low", "medium", "high"]
+          },
+          "practical_reusability": {
+            "enum": ["strong", "mixed", "weak"]
+          },
+          "finding": {
+            "type": "string",
+            "minLength": 1
+          },
+          "missing_conditions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "preferred_candidate_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-D]$"
+      },
+      "uniqueItems": true
+    },
+    "conclusion": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

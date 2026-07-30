@@ -1,0 +1,70 @@
+name: PSOS PROMPT build and diagnostics
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/problem_solving_prompt_build_brief.py"
+      - "scripts/problem_solving_prompt_brief_trace.py"
+      - "scripts/problem_solving_prompt_trace.py"
+      - "scripts/problem_solving_prompt_causal_audit.py"
+      - "scripts/problem_solving_prompt_ablation.py"
+      - "scripts/problem_solving_prompt_ablation_run.py"
+      - "scripts/problem_solving_os_quality_runtime.py"
+      - "schemas/problem-solving-prompt-build-brief.schema.json"
+      - "schemas/problem-solving-prompt-ablation-assessment.schema.json"
+      - "tests/fixtures/prompt-build-brief-cross-domain.json"
+      - "tests/fixtures/prompt-generation-chart-case.json"
+      - "tests/test_problem_solving_prompt_build_brief.py"
+      - "tests/test_problem_solving_prompt_build_brief_cross_domain.py"
+      - "tests/test_problem_solving_prompt_brief_trace.py"
+      - "tests/test_problem_solving_prompt_build_brief_quality_integration.py"
+      - "tests/test_problem_solving_prompt_trace.py"
+      - "tests/test_prompt_generation_causal_audit.py"
+      - "tests/test_prompt_generation_ablation.py"
+      - "tests/test_problem_solving_prompt_ablation_run.py"
+      - "tests/test_prompt_generation_chart_case.py"
+      - "tests/test_problem_solving_os_quality_runtime.py"
+      - ".github/workflows/psos-prompt-diagnostics.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile PROMPT build and diagnostics
+        run: |
+          python -m py_compile scripts/problem_solving_prompt_build_brief.py
+          python -m py_compile scripts/problem_solving_prompt_brief_trace.py
+          python -m py_compile scripts/problem_solving_prompt_trace.py
+          python -m py_compile scripts/problem_solving_prompt_causal_audit.py
+          python -m py_compile scripts/problem_solving_prompt_ablation.py
+          python -m py_compile scripts/problem_solving_prompt_ablation_run.py
+          python -m py_compile scripts/problem_solving_os_quality_runtime.py
+      - name: Validate schemas and fixtures
+        run: |
+          python -m json.tool schemas/problem-solving-prompt-build-brief.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-prompt-ablation-assessment.schema.json > /dev/null
+          python -m json.tool tests/fixtures/prompt-build-brief-cross-domain.json > /dev/null
+          python -m json.tool tests/fixtures/prompt-generation-chart-case.json > /dev/null
+      - name: Run PROMPT build and diagnostic tests
+        run: >-
+          python -m unittest
+          tests.test_problem_solving_prompt_build_brief
+          tests.test_problem_solving_prompt_build_brief_cross_domain
+          tests.test_problem_solving_prompt_brief_trace
+          tests.test_problem_solving_prompt_build_brief_quality_integration
+          tests.test_problem_solving_prompt_trace
+          tests.test_prompt_generation_causal_audit
+          tests.test_prompt_generation_ablation
+          tests.test_problem_solving_prompt_ablation_run
+          tests.test_prompt_generation_chart_case
+          tests.test_problem_solving_os_quality_runtime
+      - name: Run canonical PSOS regression suite
+        run: python -m unittest tests.test_problem_solving_os
