@@ -23,6 +23,21 @@ class ManualWebAssetTests(unittest.TestCase):
         self.assertNotIn('/api/manual/active', script)
         self.assertIn('psos-current-run-id', script)
 
+    def test_prompt_comparison_uses_new_chats_and_separate_endpoints(self):
+        html = (ROOT / "web" / "manual.html").read_text(encoding="utf-8")
+        script = (ROOT / "web" / "manual.js").read_text(encoding="utf-8")
+        server = (
+            ROOT / "scripts" / "problem_solving_manual_web.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn('id="compare-prompt"', html)
+        self.assertIn('id="back-to-parent"', html)
+        self.assertIn('session_kind === "prompt_ablation"', script)
+        self.assertIn('반드시 새 ChatGPT 채팅', script)
+        self.assertIn('/api/manual/prompt-ablation/start', script)
+        self.assertIn('/api/manual/prompt-ablation/submit', script)
+        self.assertIn('/api/manual/prompt-ablation/start', server)
+        self.assertIn('/api/manual/prompt-ablation/submit', server)
+
     def test_extension_does_not_overwrite_or_extract_arbitrary_or_old_reply(self):
         content = (
             ROOT / "extensions" / "psos-chatgpt-bridge" / "content.js"
