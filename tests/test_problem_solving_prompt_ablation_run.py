@@ -1,3 +1,5 @@
+# CI probe: validate the complete PROMPT ablation runner on an isolated PR.
+
 import hashlib
 import importlib.util
 import json
