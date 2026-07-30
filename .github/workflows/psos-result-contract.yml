@@ -48,9 +48,12 @@ on:
       - "tests/test_problem_solving_os.py"
       - "tests/fixtures/result-contract-cases.json"
       - "tests/fixtures/prompt-generation-chart-case.json"
+      - "tests/fixtures/visual_evidence_e2e_server.py"
+      - "tests/e2e/visual-evidence-flow.mjs"
       - "web/quality-review.js"
       - "web/quality-review.css"
       - "extensions/psos-visual-evidence/**"
+      - "package.json"
       - ".github/workflows/psos-result-contract.yml"
   push:
     branches:
@@ -100,9 +103,12 @@ on:
       - "tests/test_problem_solving_os.py"
       - "tests/fixtures/result-contract-cases.json"
       - "tests/fixtures/prompt-generation-chart-case.json"
+      - "tests/fixtures/visual_evidence_e2e_server.py"
+      - "tests/e2e/visual-evidence-flow.mjs"
       - "web/quality-review.js"
       - "web/quality-review.css"
       - "extensions/psos-visual-evidence/**"
+      - "package.json"
       - ".github/workflows/psos-result-contract.yml"
 
 permissions:
@@ -133,6 +139,7 @@ jobs:
           python -m py_compile scripts/problem_solving_os_contract_runtime.py
           python -m py_compile scripts/problem_solving_os_quality_runtime.py
           python -m py_compile scripts/problem_solving_quality_web.py
+          python -m py_compile tests/fixtures/visual_evidence_e2e_server.py
       - name: Validate fixture and schema JSON
         run: |
           python -m json.tool tests/fixtures/result-contract-cases.json > /dev/null
@@ -151,6 +158,7 @@ jobs:
           node --check web/quality-review.js
           node --check extensions/psos-visual-evidence/background.js
           node --check extensions/psos-visual-evidence/content.js
+          node --check tests/e2e/visual-evidence-flow.mjs
       - name: Run focused quality tests
         run: >-
           python -m unittest
@@ -173,3 +181,31 @@ jobs:
           tests.test_problem_solving_web
       - name: Run canonical PSOS regression suite
         run: python -m unittest tests.test_problem_solving_os
+
+  browser-e2e:
+    needs: contract-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run extension to review gallery flow
+        env:
+          PYTHON: python
+        run: xvfb-run -a npm run test:visual-e2e
+      - name: Upload failure screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-evidence-e2e-failure
+          path: visual-evidence-e2e-failure.png
+          if-no-files-found: ignore
