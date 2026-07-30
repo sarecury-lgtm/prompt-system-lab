@@ -11,7 +11,7 @@
     <header class="hero">
       <p class="eyebrow">PERSONAL PROBLEM-SOLVING OS</p>
       <h1>ChatGPT 수동 브리지</h1>
-      <p class="lede">Codex를 쓸 수 없을 때, PSOS가 작업 지시를 만들고 ChatGPT의 반환값을 기존 스키마로 검증해 이어서 실행합니다.</p>
+      <p class="lede">PSOS가 단계별 지시문을 만들고, ChatGPT의 결과를 검증해 이어서 실행합니다. 만족하지 못한 결과는 원본을 보존한 채 수정 run으로 다시 돌릴 수 있습니다.</p>
     </header>
 
     <section class="panel" id="start-panel">
@@ -19,14 +19,19 @@
         <span class="step">1</span>
         <div>
           <h2>요청</h2>
-          <p>평소처럼 목적만 적으세요.</p>
+          <p>평소처럼 원하는 결과를 적으세요.</p>
         </div>
       </div>
-      <textarea id="request" rows="7" placeholder="예: 현재 온라인에서 주문 가능한 복숭아 중 내 취향에 맞는 상품을 찾아줘."></textarea>
-      <label class="check-row">
-        <input id="search-enabled" type="checkbox">
-        <span>이 ChatGPT 대화에서 웹 검색을 사용할 예정</span>
-      </label>
+      <textarea id="request" rows="7" placeholder="예: 현재 온라인에서 주문 가능한 복숭아 중 아주 달고 큰 백도 물복을 찾아줘."></textarea>
+
+      <label class="field-label" for="research-mode">RESEARCH 실행 방식</label>
+      <select id="research-mode">
+        <option value="standard">일반 웹 검색</option>
+        <option value="deep">심층 리서치</option>
+        <option value="none">웹 검색 없음</option>
+      </select>
+      <p class="field-help">라우터가 RESEARCH를 선택했을 때 적용됩니다. 심층 리서치는 보고서를 먼저 받은 뒤 JSON 정규화 단계를 한 번 더 거칩니다.</p>
+
       <button class="primary" id="start">수동 실행 시작</button>
     </section>
 
@@ -39,6 +44,8 @@
         </div>
       </div>
 
+      <div class="stage-callout" id="stage-callout"></div>
+
       <div class="toolbar">
         <span class="run-id" id="run-id"></span>
         <div class="toolbar-actions">
@@ -50,8 +57,8 @@
 
       <div class="divider"></div>
 
-      <label class="field-label" for="response">ChatGPT가 반환한 JSON</label>
-      <textarea class="code-area" id="response" rows="12" placeholder="ChatGPT의 전체 응답을 여기에 붙여넣으세요. 코드 펜스가 있어도 처리합니다."></textarea>
+      <label class="field-label" id="response-label" for="response">ChatGPT가 반환한 JSON</label>
+      <textarea class="code-area" id="response" rows="12" placeholder="ChatGPT의 전체 응답을 여기에 붙여넣으세요."></textarea>
       <div class="submit-row">
         <p id="status">응답을 붙여넣으면 기존 PSOS validator로 검사합니다.</p>
         <button class="primary" id="submit">검증하고 계속</button>
@@ -63,11 +70,28 @@
         <span class="step done">✓</span>
         <div>
           <h2>완료</h2>
-          <p>결과와 수동 인계 기록이 run 디렉터리에 저장됐습니다.</p>
+          <p id="result-detail">결과와 수동 인계 기록이 run 디렉터리에 저장됐습니다.</p>
         </div>
       </div>
       <pre id="result"></pre>
-      <button class="quiet" id="new-run">새 요청</button>
+      <div class="result-actions">
+        <button class="quiet" id="new-run">새 요청</button>
+        <button class="primary" id="show-revision">이 결과 수정</button>
+      </div>
+
+      <div class="revision-box hidden" id="revision-box">
+        <div class="divider"></div>
+        <h3>무엇이 아쉬웠나요?</h3>
+        <p>원래 결과는 그대로 보존하고, 아래 정정을 반영한 새 revision run을 만듭니다.</p>
+        <textarea id="revision-feedback" rows="6" placeholder="예: 식감보다 압도적인 단맛이 최우선이다. 흰 과육의 큰 백도 물복으로 다시 조사하고, 11브릭스 정도의 평범한 후보는 제외해라."></textarea>
+        <label class="field-label" for="revision-research-mode">다시 조사할 방식</label>
+        <select id="revision-research-mode">
+          <option value="standard">일반 웹 검색</option>
+          <option value="deep">심층 리서치</option>
+          <option value="none">웹 검색 없음</option>
+        </select>
+        <button class="primary" id="revise">수정 실행 시작</button>
+      </div>
     </section>
 
     <aside class="note">
