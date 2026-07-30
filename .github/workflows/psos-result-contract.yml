@@ -13,6 +13,7 @@ on:
       - "tests/test_problem_solving_contract.py"
       - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
+      - "tests/test_problem_solving_os.py"
       - "tests/fixtures/result-contract-cases.json"
       - ".github/workflows/psos-result-contract.yml"
   push:
@@ -28,6 +29,7 @@ on:
       - "tests/test_problem_solving_contract.py"
       - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
+      - "tests/test_problem_solving_os.py"
       - "tests/fixtures/result-contract-cases.json"
       - ".github/workflows/psos-result-contract.yml"
 
@@ -58,3 +60,5 @@ jobs:
           tests.test_problem_solving_contract
           tests.test_problem_solving_contract_enforcement
           tests.test_problem_solving_os_contract_runtime
+      - name: Run canonical PSOS regression suite
+        run: python -m unittest tests.test_problem_solving_os
