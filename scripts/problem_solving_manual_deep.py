@@ -20,6 +20,13 @@ COMMERCE_CURRENT_PATTERN = re.compile(
 COMMERCE_OBJECT_PATTERN = re.compile(
     r"상품|제품|판매처|판매자|스토어|쇼핑몰|온라인몰|구매|구입|주문|가격|재고"
 )
+STATUS_PATTERN = re.compile(
+    r"판매\s*상태|구매\s*가능|주문\s*가능|구매\s*버튼|품절|재고|판매\s*중"
+)
+SELLER_PATTERN = re.compile(r"판매자|판매처|농원|과수원|스토어|몰")
+CHECKED_AT_PATTERN = re.compile(
+    r"확인\s*(?:시각|일시|기준)|조사\s*기준|20\d{2}[년./-]\s*\d{1,2}"
+)
 
 
 def is_live_listing_request(state: dict[str, Any]) -> bool:
@@ -136,6 +143,34 @@ def _direct_urls(urls: list[str]) -> list[str]:
     return direct
 
 
+def _listing_missing(text: str, *, require_evidence_urls: bool = False, evidence: Any = None) -> list[str]:
+    missing: list[str] = []
+    urls = _distinct_urls(text)
+    if len(_direct_urls(urls)) < 3:
+        missing.append("서로 구분되는 직접 판매·상품 URL 3개 이상")
+    if len(PRICE_PATTERN.findall(text)) < 2:
+        missing.append("복수 후보의 현재 가격")
+    if not STATUS_PATTERN.search(text):
+        missing.append("현재 판매 또는 주문 가능 상태")
+    if not SELLER_PATTERN.search(text):
+        missing.append("판매자 또는 판매처")
+    if not CHECKED_AT_PATTERN.search(text):
+        missing.append("조사·확인 시각")
+
+    if require_evidence_urls:
+        evidence_urls: list[str] = []
+        if isinstance(evidence, list):
+            for item in evidence:
+                if not isinstance(item, dict):
+                    continue
+                source = str(item.get("source", "")).strip()
+                if URL_PATTERN.fullmatch(source):
+                    evidence_urls.append(source)
+        if len(set(evidence_urls)) < 2:
+            missing.append("evidence.source에 실제 출처 URL 2개 이상")
+    return missing
+
+
 def validate_deep_report(raw: str, state: dict[str, Any]) -> str:
     """Reject category-level or source-free reports before normalization."""
 
@@ -150,19 +185,7 @@ def validate_deep_report(raw: str, state: dict[str, Any]) -> str:
     if not is_live_listing_request(state):
         return report
 
-    missing: list[str] = []
-    direct_urls = _direct_urls(urls)
-    if len(direct_urls) < 3:
-        missing.append("서로 구분되는 직접 판매·상품 URL 3개 이상")
-    if len(PRICE_PATTERN.findall(report)) < 2:
-        missing.append("복수 후보의 현재 가격")
-    if not re.search(r"판매\s*상태|구매\s*가능|주문\s*가능|구매\s*버튼|품절|재고|판매\s*중", report):
-        missing.append("현재 판매 또는 주문 가능 상태")
-    if not re.search(r"판매자|판매처|농원|과수원|스토어|몰", report):
-        missing.append("판매자 또는 판매처")
-    if not re.search(r"확인\s*(?:시각|일시|기준)|조사\s*기준|20\d{2}[년./-]\s*\d{1,2}", report):
-        missing.append("조사·확인 시각")
-
+    missing = _listing_missing(report)
     if missing:
         raise manual.ManualBridgeError(
             "이 보고서는 현재 판매 상품 조사로는 미완성입니다. 빠진 항목: "
@@ -170,6 +193,30 @@ def validate_deep_report(raw: str, state: dict[str, Any]) -> str:
             + ". 품종·상품군 설명으로 대체하지 말고 개별 상품 페이지를 확인한 보고서를 다시 제출해 주세요."
         )
     return report
+
+
+def validate_normalized_response(raw: str, state: dict[str, Any]) -> None:
+    """Ensure normalization preserves actionable links and source evidence."""
+
+    if not is_live_listing_request(state):
+        return
+    value, _normalized = manual.parse_response(raw)
+    execution = value.get("execution")
+    if not isinstance(execution, dict):
+        return
+    result = str(execution.get("result_markdown", ""))
+    missing = _listing_missing(
+        result,
+        require_evidence_urls=True,
+        evidence=execution.get("evidence"),
+    )
+    if missing:
+        raise manual.ManualBridgeError(
+            "심층 리서치 정규화 결과가 원 보고서의 구매 정보를 보존하지 못했습니다. 빠진 항목: "
+            + ", ".join(missing)
+            + ". result_markdown에 상품별 직접 URL·가격·판매 상태·판매처·확인 시각을 남기고, "
+            "evidence.source에는 provided_context가 아니라 보고서의 실제 URL을 넣어 다시 반환해 주세요."
+        )
 
 
 class ManualBridge(revision_manual.ManualBridge):
@@ -197,6 +244,76 @@ class ManualBridge(revision_manual.ManualBridge):
             return
         super().prepare_executor(run_dir, state, route, label, primary)
 
+    def prepare_deep_normalizer(
+        self,
+        run_dir,
+        state: dict[str, Any],
+        route: str,
+        label: str,
+        report: str,
+        primary: dict[str, Any] | None = None,
+    ) -> None:
+        super().prepare_deep_normalizer(run_dir, state, route, label, report, primary)
+        stage = state["stage"]
+        prompt_path = run_dir / stage["prompt_path"]
+        prompt = prompt_path.read_text(encoding="utf-8").rstrip() + """
+
+[심층 리서치 정규화 보존 계약]
+- 보고서의 핵심 결론만 요약하고 상품 식별 정보와 링크를 버리지 않는다.
+- 현재 판매 상품 조사라면 result_markdown에 최종 후보별 정확한 상품명, 판매처, 가격, 구성, 판매 상태, 확인 시각, 직접 상품 URL을 그대로 남긴다.
+- evidence.source에는 'provided_context'라고 쓰지 말고 보고서에 실제로 존재하는 출처 URL을 넣는다.
+- 보고서에 없는 사실은 추가하지 않으며, 근거가 약한 판매자 주장은 확인 사실로 승격하지 않는다.
+- 필요한 상품 URL이나 현재 판매 정보가 보고서에 없다면 completed를 꾸미지 말고 blocked_by_capability 또는 확인 실패를 명시한다.
+"""
+        prompt_path.write_text(prompt + "\n", encoding="utf-8")
+        stage["prompt_sha256"] = manual.sha256_text(prompt)
+
+    def _saved_report(self, run_dir, state: dict[str, Any], stage: dict[str, Any]) -> str | None:
+        label = stage.get("stage_label")
+        reports = state.get("deep_research_reports") or {}
+        relative = reports.get(label) if isinstance(reports, dict) else None
+        if not relative:
+            for item in reversed(state.get("history") or []):
+                if (
+                    item.get("response_kind") == "markdown"
+                    and item.get("stage_label") == label
+                ):
+                    relative = item.get("response_path")
+                    break
+        if not relative:
+            return None
+        path = run_dir / str(relative)
+        try:
+            return path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+
+    def _rewind_bad_saved_report(
+        self,
+        run_dir,
+        state: dict[str, Any],
+        stage: dict[str, Any],
+        reason: str,
+    ) -> dict[str, Any]:
+        route = stage.get("route") or "RESEARCH"
+        label = stage.get("stage_label") or "primary"
+        self.set_prompt(
+            run_dir,
+            state,
+            f"{label}_deep_report",
+            route,
+            label,
+            deep_research_report_prompt(state, route),
+            None,
+            response_kind="markdown",
+        )
+        state["error"] = (
+            "기존 심층 리서치 보고서가 새 품질 기준을 충족하지 않아 정규화를 취소하고 "
+            "보고서 단계로 되돌렸습니다. " + reason
+        )
+        self.save(run_dir, state)
+        return manual.public_state(state, run_dir)
+
     def submit(self, run_id: str, response: str) -> dict[str, Any]:
         with self.lock:
             run_dir = self.run_dir(run_id)
@@ -204,14 +321,44 @@ class ManualBridge(revision_manual.ManualBridge):
                 raise manual.ManualBridgeError("해당 run을 찾을 수 없습니다.")
             state = manual.read_state(run_dir)
             stage = state.get("stage") or {}
-            if (
-                state.get("state", "").startswith("awaiting_")
-                and stage.get("response_kind") == "markdown"
-            ):
+            awaiting = state.get("state", "").startswith("awaiting_")
+
+            if awaiting and stage.get("response_kind") == "markdown":
                 try:
                     validate_deep_report(response, state)
                 except manual.ManualBridgeError as exc:
                     state["error"] = str(exc)
                     self.save(run_dir, state)
                     raise
+
+            elif (
+                awaiting
+                and state.get("research_mode") == "deep"
+                and stage.get("route") == "RESEARCH"
+                and stage.get("response_kind", "json") == "json"
+            ):
+                saved_report = self._saved_report(run_dir, state, stage)
+                if saved_report is None:
+                    return self._rewind_bad_saved_report(
+                        run_dir,
+                        state,
+                        stage,
+                        "저장된 원 보고서를 찾을 수 없습니다.",
+                    )
+                try:
+                    validate_deep_report(saved_report, state)
+                except manual.ManualBridgeError as exc:
+                    return self._rewind_bad_saved_report(
+                        run_dir,
+                        state,
+                        stage,
+                        str(exc),
+                    )
+                try:
+                    validate_normalized_response(response, state)
+                except manual.ManualBridgeError as exc:
+                    state["error"] = str(exc)
+                    self.save(run_dir, state)
+                    raise
+
             return super().submit(run_id, response)
