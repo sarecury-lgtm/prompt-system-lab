@@ -28,47 +28,107 @@ function setBusy(button, busy) {
 
 function researchModeLabel(mode) {
   return {
-    none: "웹 검색 없음",
-    standard: "일반 웹 검색",
-    deep: "심층 리서치",
+    none: "검색 없음",
+    standard: "일반 조사",
+    deep: "심층 조사",
   }[mode] || mode;
 }
 
-function configureResponseArea(session) {
-  const label = $("#response-label");
-  const response = $("#response");
-  const responseHelp = $("#response-help");
-  const callout = $("#stage-callout");
-
-  if (session.response_kind === "markdown") {
-    label.textContent = "② 심층 리서치가 완성한 보고서 전체 붙여넣기";
-    responseHelp.textContent = "이번 단계에서는 JSON이 아니라 Deep research가 만든 보고서 전체를 아래 입력칸에 붙입니다.";
-    response.placeholder = "Deep research가 완성한 Markdown 보고서를 처음부터 끝까지 붙여넣으세요. JSON으로 바꾸지 마세요.";
-    callout.textContent = "ChatGPT에서 Deep research를 직접 켠 뒤 위 지시문을 보내세요. 이번 반환값은 JSON이 아니라 완성된 보고서입니다.";
-    submitButton.textContent = "보고서 저장하고 계속";
-    submitButton.dataset.label = "보고서 저장하고 계속";
-    return;
-  }
-
-  label.textContent = "② ChatGPT가 반환한 JSON 붙여넣기";
-  responseHelp.textContent = "위의 읽기 전용 지시문이 아니라, ChatGPT가 새로 답한 내용을 이 아래 칸에 붙여넣습니다.";
-  response.placeholder = "ChatGPT의 전체 JSON 응답을 여기에 붙여넣으세요. 코드 펜스와 뒤쪽 링크 각주는 자동 정리합니다.";
-  submitButton.textContent = "검증하고 계속";
-  submitButton.dataset.label = "검증하고 계속";
-
-  if (
+function stagePresentation(session) {
+  const isDeepReport = session.response_kind === "markdown";
+  const isDeepNormalize =
     session.research_mode === "deep" &&
     session.route === "RESEARCH" &&
-    session.phase !== "router"
-  ) {
-    callout.textContent = "심층 리서치 보고서는 저장됐습니다. 이번 지시문은 보고서를 PSOS execution JSON으로 정리하는 단계입니다. 일반 ChatGPT로 보내면 됩니다.";
-  } else if (session.phase === "router") {
-    callout.textContent = "첫 왕복입니다. 라우터 JSON이 통과하면 위 지시문과 아래 입력칸이 자동으로 다음 단계로 바뀝니다.";
-  } else if (session.parent_run_id) {
-    callout.textContent = "기존 결과와 수정 피드백이 지시문 안에 포함돼 있습니다. ChatGPT가 피드백을 실제로 적용한 수정 전체본을 만들면 그 JSON을 아래 ② 칸에 붙이세요.";
-  } else {
-    callout.textContent = "위 지시문은 이전 단계와 다른 새 작업입니다. 지시문을 ChatGPT에 보내 새 답변을 받은 뒤, 화면 아래쪽 ② 입력칸에 붙여넣으세요. 결과 수정은 이 run이 완료된 뒤 나타납니다.";
+    session.phase !== "router" &&
+    !isDeepReport;
+
+  if (session.phase === "router") {
+    return {
+      step: "1단계",
+      title: "방향만 정하기",
+      detail: "아직 실제 조사나 결과 작성은 하지 않습니다.",
+      badge: "일반 ChatGPT",
+      badgeKind: "normal",
+      action: "버튼을 누르면 지시문이 복사되고 ChatGPT가 열립니다. 일반 채팅에 그대로 보내고, 받은 답변 전체를 아래 칸에 붙이세요.",
+      note: "이 단계에서는 심층 리서치를 켜지 않습니다.",
+      responseLabel: "ChatGPT 답변 전체 붙여넣기",
+      responseHelp: "ChatGPT가 준 내용을 수정하지 말고 그대로 붙이세요.",
+      responsePlaceholder: "ChatGPT 답변 전체를 여기에 붙여넣으세요.",
+      submitLabel: "답변 확인하고 다음",
+    };
   }
+
+  if (isDeepReport) {
+    return {
+      step: "2단계",
+      title: "실제 조사하기",
+      detail: "이번 단계에서만 ChatGPT의 심층 리서치를 사용합니다.",
+      badge: "심층 리서치 켜기",
+      badgeKind: "deep",
+      action: "버튼을 누른 뒤 열린 ChatGPT에서 ‘+’ 메뉴의 심층 리서치를 선택해 전송하세요. 조사가 끝나면 완성된 보고서 전체를 아래 칸에 붙이세요.",
+      note: "JSON으로 바꾸지 말고 보고서 원문을 처음부터 끝까지 붙입니다.",
+      responseLabel: "심층 리서치 보고서 전체 붙여넣기",
+      responseHelp: "인용과 출처 링크가 포함된 완성 보고서를 그대로 붙이세요.",
+      responsePlaceholder: "심층 리서치가 완성한 보고서 전체를 여기에 붙여넣으세요.",
+      submitLabel: "보고서 확인하고 다음",
+    };
+  }
+
+  if (isDeepNormalize) {
+    return {
+      step: "3단계",
+      title: "결과 정리하기",
+      detail: "조사 보고서를 PSOS 결과 형식으로 정리하는 마지막 단계입니다.",
+      badge: "일반 ChatGPT",
+      badgeKind: "normal",
+      action: "버튼을 눌러 이번 지시문을 일반 ChatGPT에 보내세요. 받은 답변 전체를 아래 칸에 붙이면 완료됩니다.",
+      note: "이번에는 심층 리서치를 끄고 일반 채팅으로 보냅니다.",
+      responseLabel: "정리된 답변 전체 붙여넣기",
+      responseHelp: "ChatGPT가 반환한 JSON 전체를 그대로 붙이세요.",
+      responsePlaceholder: "ChatGPT가 정리한 답변 전체를 여기에 붙여넣으세요.",
+      submitLabel: "최종 결과 확인",
+    };
+  }
+
+  const isRevision = Boolean(session.parent_run_id);
+  const isResearch = session.route === "RESEARCH";
+  return {
+    step: session.phase === "secondary" ? "다음 단계" : (isRevision ? "수정 단계" : "2단계"),
+    title: isRevision ? "피드백 반영하기" : (isResearch ? "실제 조사하기" : "실제 결과 만들기"),
+    detail: isRevision
+      ? "기존 결과를 기준으로 피드백을 적용한 새 전체본을 만듭니다."
+      : "선택된 해결 방식으로 실제 결과를 만듭니다.",
+    badge: isResearch ? "일반 ChatGPT · 웹 검색" : "일반 ChatGPT",
+    badgeKind: "normal",
+    action: "버튼을 눌러 지시문을 일반 ChatGPT에 보내고, 받은 답변 전체를 아래 칸에 붙이세요.",
+    note: isResearch
+      ? "ChatGPT가 필요한 웹 검색을 수행합니다. 별도로 심층 리서치를 켤 필요는 없습니다."
+      : "화면에 나온 지시문을 수정하지 않고 그대로 보내면 됩니다.",
+    responseLabel: "ChatGPT 답변 전체 붙여넣기",
+    responseHelp: "ChatGPT가 새로 답한 내용을 수정하지 말고 그대로 붙이세요.",
+    responsePlaceholder: "ChatGPT 답변 전체를 여기에 붙여넣으세요.",
+    submitLabel: session.phase === "secondary" ? "최종 결과 확인" : "답변 확인하고 계속",
+  };
+}
+
+function applyPresentation(session) {
+  const view = stagePresentation(session);
+  $("#phase-step").textContent = view.step;
+  $("#phase-title").textContent = view.title;
+  $("#phase-detail").textContent = view.detail;
+  $("#chat-mode-badge").textContent = view.badge;
+  $("#chat-mode-badge").classList.toggle("deep", view.badgeKind === "deep");
+  $("#action-text").textContent = view.action;
+  $("#action-note").textContent = view.note;
+  $("#response-label").textContent = view.responseLabel;
+  $("#response-help").textContent = view.responseHelp;
+  $("#response").placeholder = view.responsePlaceholder;
+  submitButton.textContent = view.submitLabel;
+  submitButton.dataset.label = view.submitLabel;
+  $("#send-to-chatgpt").textContent = view.badgeKind === "deep"
+    ? "복사하고 ChatGPT 열기 · 심층 리서치 사용"
+    : "지시문 복사하고 ChatGPT 열기";
+  $("#send-to-chatgpt").dataset.label = $("#send-to-chatgpt").textContent;
 }
 
 function showSession(session) {
@@ -78,8 +138,9 @@ function showSession(session) {
   localStorage.removeItem("psos-skip-latest");
   $("#run-id").textContent = `${session.run_id} · ${researchModeLabel(session.research_mode)}`;
   $("#prompt").value = session.prompt || "";
+  $("#prompt-details").open = false;
   $("#response").value = "";
-  statusText.textContent = session.error || "응답을 붙여넣으면 현재 단계에 맞게 검사합니다.";
+  statusText.textContent = session.error || "답변을 붙여넣으면 현재 단계에 맞게 검사합니다.";
   statusText.classList.toggle("error", Boolean(session.error));
 
   if (session.state === "completed") {
@@ -93,35 +154,14 @@ function showSession(session) {
     $("#revision-box").classList.add("hidden");
     $("#revision-feedback").value = "";
     $("#revision-file").value = "";
-    $("#revision-file-status").textContent = "TXT·MD 파일을 고르면 내용이 위 피드백 칸에 들어갑니다.";
+    $("#revision-file-status").textContent = "TXT·MD 파일을 고르면 내용이 위 칸에 들어갑니다.";
     $("#result-detail").textContent = session.parent_run_id
-      ? `원본 ${session.parent_run_id}을 보존한 revision 결과입니다.`
-      : "결과와 수동 인계 기록이 run 디렉터리에 저장됐습니다.";
+      ? "원본을 보존한 수정 결과입니다."
+      : "결과와 작업 기록이 저장됐습니다.";
     return;
   }
 
-  const isDeepReport = session.response_kind === "markdown";
-  const isDeepNormalize =
-    session.research_mode === "deep" &&
-    session.route === "RESEARCH" &&
-    session.phase !== "router" &&
-    !isDeepReport;
-  const labels = {
-    router: ["경로 판단", "ChatGPT가 목표와 가장 작은 충분 해결 경로만 정합니다."],
-    primary: ["실제 결과 생성", "선택된 경로의 결과를 JSON으로 돌려받습니다."],
-    secondary: ["보조 경로 실행", "주 경로 결과를 이어받아 최종 결과를 완성합니다."],
-  };
-  let titleDetail = labels[session.phase] || ["ChatGPT에 전달", "아래 지시문을 전달하세요."];
-  if (isDeepReport) {
-    titleDetail = ["심층 리서치 실행", "Deep research로 조사한 완성 보고서를 그대로 돌려받습니다."];
-  } else if (isDeepNormalize) {
-    titleDetail = ["보고서 정규화", "저장된 심층 리서치 보고서를 PSOS JSON으로 변환합니다."];
-  } else if (session.parent_run_id && session.phase !== "router") {
-    titleDetail = ["결과 직접 수정", "직전 결과에 피드백을 적용한 수정 전체본을 만듭니다."];
-  }
-  $("#phase-title").textContent = titleDetail[0];
-  $("#phase-detail").textContent = titleDetail[1];
-  configureResponseArea(session);
+  applyPresentation(session);
   startPanel.classList.add("hidden");
   resultPanel.classList.add("hidden");
   handoffPanel.classList.remove("hidden");
@@ -136,6 +176,7 @@ function returnToStart({ preserveCurrentRequest = false } = {}) {
   localStorage.setItem("psos-skip-latest", "1");
   $("#request").value = previousRequest;
   $("#research-mode").value = previousMode;
+  updateResearchModeHelp();
   $("#revision-feedback").value = "";
   $("#revision-file").value = "";
   $("#revision-box").classList.add("hidden");
@@ -145,11 +186,20 @@ function returnToStart({ preserveCurrentRequest = false } = {}) {
   $("#request").focus();
 }
 
+function updateResearchModeHelp() {
+  const mode = $("#research-mode").value;
+  $("#research-mode-help").textContent = {
+    standard: "잘 모르겠으면 이 기본값을 사용하세요. 필요한 웹 검색은 실제 결과 단계에서 ChatGPT가 수행합니다.",
+    deep: "첫 단계는 여전히 일반 ChatGPT입니다. 실제 조사 단계가 되면 화면에 ‘심층 리서치 켜기’라고 크게 표시됩니다.",
+    none: "최신 정보나 외부 출처가 필요 없는 작성·분석 요청에 사용합니다.",
+  }[mode];
+}
+
 function updateRevisionModeHelp() {
   const preserve = $("#revision-mode").value === "preserve_route";
   $("#revision-mode-help").textContent = preserve
-    ? "문장 교체·규칙 추가·항목 삭제처럼 기존 산출물을 개선하는 피드백은 이 기본값을 사용합니다. 라우터를 다시 거치지 않습니다."
-    : "원래 목표를 잘못 이해했거나 산출물 종류 자체를 바꿔야 할 때만 사용합니다. 라우터부터 다시 실행합니다.";
+    ? "대부분의 피드백은 이 기본값을 사용합니다. 기존 해결 방식은 유지하고 결과만 고칩니다."
+    : "원래 목표를 잘못 이해했거나 결과 종류 자체를 바꿔야 할 때만 사용합니다.";
 }
 
 startButton.addEventListener("click", async () => {
@@ -178,8 +228,8 @@ submitButton.addEventListener("click", async () => {
   setBusy(submitButton, true);
   statusText.classList.remove("error");
   statusText.textContent = currentSession?.response_kind === "markdown"
-    ? "보고서를 저장하고 정규화 지시문을 만드는 중입니다."
-    : "JSON 구조와 PSOS 완료 조건을 검사하는 중입니다.";
+    ? "보고서 내용을 검사하는 중입니다."
+    : "답변 구조와 완료 조건을 검사하는 중입니다.";
   try {
     const body = await api("/api/manual/submit", {
       method: "POST",
@@ -194,20 +244,32 @@ submitButton.addEventListener("click", async () => {
   }
 });
 
-$("#copy-prompt").addEventListener("click", async () => {
-  await navigator.clipboard.writeText($("#prompt").value);
-  const button = $("#copy-prompt");
-  const original = button.textContent;
-  button.textContent = "복사됨";
-  setTimeout(() => { button.textContent = original; }, 1000);
-});
+$("#send-to-chatgpt").addEventListener("click", async () => {
+  const button = $("#send-to-chatgpt");
+  const original = button.dataset.label || button.textContent;
+  const opened = window.open("https://chatgpt.com/", "_blank");
+  if (opened) opened.opener = null;
 
-$("#open-chatgpt").addEventListener("click", () => {
-  window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText($("#prompt").value);
+    copied = true;
+  } catch (_error) {
+    $("#prompt-details").open = true;
+    $("#prompt").focus();
+    $("#prompt").select();
+    copied = document.execCommand("copy");
+  }
+
+  button.textContent = copied
+    ? "복사됨 · ChatGPT에 붙여넣으세요"
+    : "복사 실패 · 아래 지시문을 직접 복사하세요";
+  if (!copied) $("#prompt-details").open = true;
+  setTimeout(() => { button.textContent = original; }, 1800);
 });
 
 $("#abandon-run").addEventListener("click", () => {
-  const leave = window.confirm("현재 작업 화면을 닫고 새 요청으로 돌아갈까요? 기존 run 기록은 삭제되지 않습니다.");
+  const leave = window.confirm("현재 작업 화면을 닫고 시작 화면으로 돌아갈까요? 기존 기록은 삭제되지 않습니다.");
   if (leave) returnToStart({ preserveCurrentRequest: true });
 });
 
@@ -218,6 +280,7 @@ $("#show-revision").addEventListener("click", () => {
   }
 });
 
+$("#research-mode").addEventListener("change", updateResearchModeHelp);
 $("#revision-mode").addEventListener("change", updateRevisionModeHelp);
 
 $("#revision-file").addEventListener("change", async (event) => {
@@ -285,9 +348,10 @@ async function restoreLastSession() {
     const latest = await api("/api/manual/latest");
     if (latest.session) showSession(latest.session);
   } catch (_error) {
-    // The start panel remains usable when no previous session can be restored.
+    // No saved session: keep the start panel visible.
   }
 }
 
+updateResearchModeHelp();
 updateRevisionModeHelp();
 restoreLastSession();
