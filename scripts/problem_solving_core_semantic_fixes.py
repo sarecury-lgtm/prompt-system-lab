@@ -82,11 +82,7 @@ def _validate_route_output(os_module: Any, payload: Any) -> dict[str, Any]:
     if ledger["selected_route"] != selected or ledger["secondary_route"] != secondary:
         raise error("Goal Ledger와 route 선택이 일치하지 않습니다.")
     route_reason = _nonempty(route["route_reason"], "route.route_reason", error)
-    ledger_reason = _nonempty(
-        ledger["route_reason"], "Goal Ledger route_reason", error
-    )
-    if ledger_reason != route_reason:
-        raise error("Goal Ledger와 route의 route_reason이 일치하지 않습니다.")
+    _nonempty(ledger["route_reason"], "Goal Ledger route_reason", error)
 
     for field in (
         "parent_goal",
@@ -97,7 +93,9 @@ def _validate_route_output(os_module: Any, payload: Any) -> dict[str, Any]:
         "completion_condition",
     ):
         ledger[field] = _nonempty(ledger[field], f"Goal Ledger {field}", error)
-    ledger["route_reason"] = ledger_reason
+    # route가 경로 선택의 정식 기록이다. Goal Ledger의 중복 필드는 표현 차이 때문에
+    # 전체 실행을 막지 않고 동일한 기준값으로 정규화한다.
+    ledger["route_reason"] = route_reason
     route["route_reason"] = route_reason
     ledger["fixed_constraints"] = _string_list(
         ledger["fixed_constraints"],
@@ -219,6 +217,7 @@ def apply(os_module: Any) -> Any:
 12. HYBRID의 primary_route는 먼저 만들어야 하는 선행 결과이고 secondary_route는 그 결과를
     입력으로 받아 최종 사용자 산출물을 만드는 경로다. 단순히 두 경로가 관련 있다는 이유로
     HYBRID를 선택하거나 순서를 뒤집지 않는다.
+13. Goal Ledger와 route의 route_reason은 가능하면 같은 짧은 문장으로 쓴다.
 """
 
     def validate_execution_output(
