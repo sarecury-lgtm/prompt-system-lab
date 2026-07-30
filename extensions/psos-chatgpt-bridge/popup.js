@@ -23,6 +23,7 @@ async function sendToTab(message) {
 
 async function bridge(path, options = {}) {
   const base = serverInput.value.trim().replace(/\/$/, "");
+  if (!base) throw new Error("브리지 주소가 비어 있습니다.");
   const response = await fetch(base + path, {
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     ...options,
@@ -41,17 +42,48 @@ chrome.storage.local.get("psosServer").then(({ psosServer }) => {
 });
 serverInput.addEventListener("change", saveServer);
 
+async function saveLinkedSession(session) {
+  await chrome.storage.local.set({
+    psosRunId: session.run_id,
+    psosPhase: session.phase || "",
+  });
+}
+
+async function clearLinkedSession() {
+  await chrome.storage.local.remove(["psosRunId", "psosPhase"]);
+}
+
+async function linkedPendingSession() {
+  const { psosRunId } = await chrome.storage.local.get("psosRunId");
+  if (!psosRunId) return null;
+  try {
+    const body = await bridge(`/api/manual/status?run_id=${encodeURIComponent(psosRunId)}`);
+    if (body.session?.state?.startsWith("awaiting_")) return body.session;
+    if (body.session?.state === "completed") await clearLinkedSession();
+  } catch (_error) {
+    await clearLinkedSession();
+  }
+  return null;
+}
+
 async function insertSession(session) {
-  if (!session) throw new Error("대기 중인 PSOS 수동 작업이 없습니다.");
+  if (!session?.state?.startsWith("awaiting_")) {
+    throw new Error("전송할 대기 단계가 없습니다.");
+  }
   await sendToTab({ type: "PSOS_INSERT_PROMPT", prompt: session.prompt });
-  await chrome.storage.local.set({ psosRunId: session.run_id });
-  setStatus(`${session.phase || "다음"} 지시문을 입력했습니다.\nChatGPT에서 전송 버튼을 누르세요.`);
+  await saveLinkedSession(session);
+  setStatus(`${session.phase || "다음"} 지시문을 입력했습니다.\n내용을 확인한 뒤 ChatGPT 전송 버튼을 누르세요.`);
 }
 
 document.querySelector("#insert").addEventListener("click", async () => {
   try {
-    setStatus("대기 중 작업을 확인하는 중…");
+    setStatus("연결된 작업을 확인하는 중…");
     await saveServer();
+    const linked = await linkedPendingSession();
+    if (linked) {
+      await insertSession(linked);
+      return;
+    }
     const body = await bridge("/api/manual/active");
     await insertSession(body.session);
   } catch (error) {
@@ -61,17 +93,18 @@ document.querySelector("#insert").addEventListener("click", async () => {
 
 document.querySelector("#return").addEventListener("click", async () => {
   try {
-    setStatus("마지막 답변을 읽는 중…");
+    setStatus("현재 run과 마지막 답변을 확인하는 중…");
     await saveServer();
+    const session = await linkedPendingSession();
+    if (!session) throw new Error("연결된 대기 run이 없습니다. 먼저 작업을 가져오세요.");
     const extracted = await sendToTab({ type: "PSOS_EXTRACT_LAST_RESPONSE" });
-    const { psosRunId } = await chrome.storage.local.get("psosRunId");
-    if (!psosRunId) throw new Error("연결된 PSOS run-id가 없습니다. 먼저 작업을 가져오세요.");
     const body = await bridge("/api/manual/submit", {
       method: "POST",
-      body: JSON.stringify({ run_id: psosRunId, response: extracted.response }),
+      body: JSON.stringify({ run_id: session.run_id, response: extracted.response }),
     });
     if (body.session.state === "completed") {
-      setStatus("PSOS 검증과 저장이 완료됐습니다.");
+      await clearLinkedSession();
+      setStatus("PSOS 검증과 저장이 완료됐습니다. 로컬 브리지 화면에서 결과를 확인하거나 복사하세요.");
       return;
     }
     await insertSession(body.session);
