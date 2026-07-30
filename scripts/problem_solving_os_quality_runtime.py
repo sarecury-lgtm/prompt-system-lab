@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import sys
@@ -72,6 +73,25 @@ def _persist_quality_record(
     OS.write_json(route_path, route_record)
 
 
+def _attach_user_output(
+    run_dir: Path,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Persist the actual user-facing output separately from the PSOS audit view."""
+
+    text = str(payload["execution"].get("result_markdown", "")).strip()
+    output_path = run_dir / "output.md"
+    output_path.write_text(text + ("\n" if text else ""), encoding="utf-8")
+    record = {
+        "version": 1,
+        "path": output_path.name,
+        "sha256": hashlib.sha256(output_path.read_bytes()).hexdigest(),
+        "kind": "user_output",
+    }
+    _persist_quality_record(run_dir, payload, "output", record)
+    return record
+
+
 def _attach_prompt_trace(
     run_dir: Path,
     payload: dict[str, Any],
@@ -109,6 +129,7 @@ def run_request(
         model_policy_path=model_policy_path,
         run_id=run_id,
     )
+    _attach_user_output(run_dir, payload)
     QUALITY_FIXES.set_workspace_root(EVIDENCE, engine)
     evidence_record = EVIDENCE.attach_evidence_bundle(run_dir, payload)
     _persist_quality_record(run_dir, payload, "evidence_bundle", evidence_record)
@@ -168,7 +189,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    print((run_dir / "result.md").read_text(encoding="utf-8").rstrip())
+    print((run_dir / "output.md").read_text(encoding="utf-8").rstrip())
     if "evidence_bundle" in payload:
         print(f"\n근거 검토: {run_dir / payload['evidence_bundle']['review_markdown']}")
     prompt_trace = payload.get("prompt_generation_trace")
