@@ -5,10 +5,13 @@ on:
   pull_request:
     paths:
       - "scripts/problem_solving_contract.py"
+      - "scripts/problem_solving_contract_enforcement.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os.py"
       - "schemas/problem-solving-os-result-contract.schema.json"
+      - "schemas/problem-solving-os-result-contract-assessment.schema.json"
       - "tests/test_problem_solving_contract.py"
+      - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/fixtures/result-contract-cases.json"
       - ".github/workflows/psos-result-contract.yml"
@@ -17,10 +20,13 @@ on:
       - main
     paths:
       - "scripts/problem_solving_contract.py"
+      - "scripts/problem_solving_contract_enforcement.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os.py"
       - "schemas/problem-solving-os-result-contract.schema.json"
+      - "schemas/problem-solving-os-result-contract-assessment.schema.json"
       - "tests/test_problem_solving_contract.py"
+      - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/fixtures/result-contract-cases.json"
       - ".github/workflows/psos-result-contract.yml"
@@ -39,11 +45,16 @@ jobs:
       - name: Compile contract modules
         run: |
           python -m py_compile scripts/problem_solving_contract.py
+          python -m py_compile scripts/problem_solving_contract_enforcement.py
           python -m py_compile scripts/problem_solving_os_contract_runtime.py
-      - name: Validate fixture JSON
-        run: python -m json.tool tests/fixtures/result-contract-cases.json > /dev/null
+      - name: Validate fixture and schema JSON
+        run: |
+          python -m json.tool tests/fixtures/result-contract-cases.json > /dev/null
+          python -m json.tool schemas/problem-solving-os-result-contract.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-os-result-contract-assessment.schema.json > /dev/null
       - name: Run focused contract tests
         run: >-
           python -m unittest
           tests.test_problem_solving_contract
+          tests.test_problem_solving_contract_enforcement
           tests.test_problem_solving_os_contract_runtime
