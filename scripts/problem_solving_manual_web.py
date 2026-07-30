@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -28,6 +29,31 @@ STATIC = {
     "/manual.js": ("manual.js", "text/javascript; charset=utf-8"),
     "/manual.css": ("manual.css", "text/css; charset=utf-8"),
 }
+MARKDOWN_REFERENCE = re.compile(
+    r'^\s*\[[^\]\r\n]+\]:\s+\S+(?:\s+"[^"]*")?\s*$'
+)
+
+
+def strip_trailing_markdown_references(raw: str) -> str:
+    """Keep one JSON object while tolerating ChatGPT link definitions after it."""
+
+    text = raw.strip()
+    start = text.find("{")
+    if start < 0:
+        return raw
+    try:
+        _value, end = json.JSONDecoder().raw_decode(text[start:])
+    except json.JSONDecodeError:
+        return raw
+    suffix = text[start + end :].strip()
+    if suffix.startswith("```"):
+        suffix = suffix[3:].strip()
+    if not suffix:
+        return text[start : start + end]
+    lines = [line for line in suffix.splitlines() if line.strip()]
+    if lines and all(MARKDOWN_REFERENCE.fullmatch(line) for line in lines):
+        return text[start : start + end]
+    return raw
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -156,9 +182,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(HTTPStatus.CREATED, {"session": session})
                 return
             if self.path == "/api/manual/submit":
+                response = strip_trailing_markdown_references(
+                    str(value.get("response", ""))
+                )
                 session = self.bridge.submit(
                     str(value.get("run_id", "")),
-                    str(value.get("response", "")),
+                    response,
                 )
                 self.send_json(HTTPStatus.OK, {"session": session})
                 return
