@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve the canonical PSOS UI with quality runtime and evidence review actions."""
+"""Serve the canonical PSOS UI with quality, review, and visual evidence actions."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ if str(SCRIPT_DIR) not in sys.path:
 
 import problem_solving_evidence_review as evidence_review
 import problem_solving_os_quality_runtime as quality_runtime
+import problem_solving_visual_evidence as visual_evidence
 import problem_solving_web as base_web
 
 
@@ -97,6 +98,11 @@ def load_public_evidence(run_id: str) -> dict[str, Any]:
     bundle, bundle_sha = evidence_review.load_bundle(run_dir)
     review = evidence_review.load_review(run_dir)
     public_bundle = copy.deepcopy(bundle)
+    subject_labels = {
+        subject.get("id"): subject.get("label")
+        for subject in public_bundle.get("subjects", [])
+        if isinstance(subject, Mapping)
+    }
     for item in public_bundle.get("items", []):
         source = str(item.get("source") or "")
         preview = item.get("preview") if isinstance(item.get("preview"), dict) else {}
@@ -110,6 +116,7 @@ def load_public_evidence(run_id: str) -> dict[str, Any]:
         else:
             item["preview_url"] = None
         item["open_url"] = source if _is_url(source) else None
+        item["subject_label"] = subject_labels.get(item.get("subject_id"), "결과 전체")
     return {
         "run_id": run_id,
         "bundle_sha256": bundle_sha,
@@ -158,23 +165,44 @@ def safe_evidence_image(run_id: str, evidence_id: str) -> Path:
     raise FileNotFoundError("허용된 위치에서 이미지 파일을 찾을 수 없습니다.")
 
 
+def _update_route_record(
+    run_dir: Path,
+    key: str,
+    record: Mapping[str, Any],
+) -> None:
+    route_path = run_dir / "route.json"
+    route = base_web.read_json(route_path)
+    route[key] = dict(record)
+    run_record = route.get("run")
+    if isinstance(run_record, dict):
+        run_record[key] = dict(record)
+    quality_runtime.OS.write_json(route_path, route)
+
+
 def save_public_review(run_id: str, payload: Mapping[str, Any]) -> dict[str, Any]:
     run_dir = base_web.safe_run_dir(run_id)
     review, review_sha = evidence_review.save_review(run_dir, payload)
-    route_path = run_dir / "route.json"
-    route = base_web.read_json(route_path)
     record = {
         "path": "evidence_review.json",
         "sha256": review_sha,
         "status": review["review_status"],
         "updated_at": review["updated_at"],
     }
-    route["evidence_review"] = record
-    run_record = route.get("run")
-    if isinstance(run_record, dict):
-        run_record["evidence_review"] = record
-    quality_runtime.OS.write_json(route_path, route)
+    _update_route_record(run_dir, "evidence_review", record)
     return {"review": review, "record": record}
+
+
+def import_public_visual_evidence(
+    run_id: str,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    run_dir = base_web.safe_run_dir(run_id)
+    result = visual_evidence.import_visual_evidence(run_dir, payload)
+    _update_route_record(run_dir, "evidence_bundle", result["bundle_record"])
+    _update_route_record(run_dir, "visual_evidence_import", result["import"])
+    public = load_public_evidence(run_id)
+    public["import"] = result["import"]
+    return public
 
 
 def submit_review_revision(
@@ -190,6 +218,7 @@ def submit_review_revision(
         )
     review_result = save_public_review(run_id, payload)
     context_record = evidence_review.build_revision_context(run_dir)
+    context_record = visual_evidence.enrich_revision_context(run_dir, context_record)
     context_path = (run_dir / str(context_record["path"])).resolve()
     try:
         visible_context_path = context_path.relative_to(ROOT.resolve()).as_posix()
@@ -204,12 +233,7 @@ def submit_review_revision(
         search_enabled=search_enabled,
         request=request,
     )
-    route_path = run_dir / "route.json"
-    route = base_web.read_json(route_path)
-    route["evidence_revision"] = revision_record
-    if isinstance(route.get("run"), dict):
-        route["run"]["evidence_revision"] = revision_record
-    quality_runtime.OS.write_json(route_path, route)
+    _update_route_record(run_dir, "evidence_revision", revision_record)
     return {
         "review": review_result["review"],
         "context": context_record,
@@ -219,7 +243,7 @@ def submit_review_revision(
 
 
 class QualityRequestHandler(base_web.PsosRequestHandler):
-    server_version = "PSOSQualityWeb/1"
+    server_version = "PSOSQualityWeb/2"
 
     @property
     def app(self) -> "QualityHTTPServer":
@@ -298,11 +322,16 @@ class QualityRequestHandler(base_web.PsosRequestHandler):
         parts = urlparse(self.path).path.strip("/").split("/")
         if len(parts) == 4 and parts[:2] == ["api", "runs"]:
             run_id, action = unquote(parts[2]), parts[3]
-            if action in {"evidence-review", "evidence-revision"}:
+            if action in {"evidence-review", "evidence-revision", "visual-evidence"}:
                 try:
                     payload = self.read_json_body()
                     if action == "evidence-review":
                         self.send_json(save_public_review(run_id, payload))
+                    elif action == "visual-evidence":
+                        self.send_json(
+                            import_public_visual_evidence(run_id, payload),
+                            HTTPStatus.CREATED,
+                        )
                     else:
                         self.send_json(
                             submit_review_revision(self.app.jobs, run_id, payload),
