@@ -64,6 +64,8 @@ function configureResponseArea(session) {
     callout.textContent = "심층 리서치 보고서는 저장됐습니다. 이번 지시문은 보고서를 PSOS execution JSON으로 정리하는 단계입니다. 일반 ChatGPT로 보내면 됩니다.";
   } else if (session.phase === "router") {
     callout.textContent = "첫 왕복입니다. 라우터 JSON이 통과하면 위 지시문과 아래 입력칸이 자동으로 다음 단계로 바뀝니다.";
+  } else if (session.parent_run_id) {
+    callout.textContent = "기존 결과와 수정 피드백이 지시문 안에 포함돼 있습니다. ChatGPT가 피드백을 실제로 적용한 수정 전체본을 만들면 그 JSON을 아래 ② 칸에 붙이세요.";
   } else {
     callout.textContent = "위 지시문은 이전 단계와 다른 새 작업입니다. 지시문을 ChatGPT에 보내 새 답변을 받은 뒤, 화면 아래쪽 ② 입력칸에 붙여넣으세요. 결과 수정은 이 run이 완료된 뒤 나타납니다.";
   }
@@ -86,8 +88,12 @@ function showSession(session) {
     resultPanel.classList.remove("hidden");
     $("#result").textContent = session.result_markdown;
     $("#revision-research-mode").value = session.research_mode || "standard";
+    $("#revision-mode").value = "preserve_route";
+    updateRevisionModeHelp();
     $("#revision-box").classList.add("hidden");
     $("#revision-feedback").value = "";
+    $("#revision-file").value = "";
+    $("#revision-file-status").textContent = "TXT·MD 파일을 고르면 내용이 위 피드백 칸에 들어갑니다.";
     $("#result-detail").textContent = session.parent_run_id
       ? `원본 ${session.parent_run_id}을 보존한 revision 결과입니다.`
       : "결과와 수동 인계 기록이 run 디렉터리에 저장됐습니다.";
@@ -110,6 +116,8 @@ function showSession(session) {
     titleDetail = ["심층 리서치 실행", "Deep research로 조사한 완성 보고서를 그대로 돌려받습니다."];
   } else if (isDeepNormalize) {
     titleDetail = ["보고서 정규화", "저장된 심층 리서치 보고서를 PSOS JSON으로 변환합니다."];
+  } else if (session.parent_run_id && session.phase !== "router") {
+    titleDetail = ["결과 직접 수정", "직전 결과에 피드백을 적용한 수정 전체본을 만듭니다."];
   }
   $("#phase-title").textContent = titleDetail[0];
   $("#phase-detail").textContent = titleDetail[1];
@@ -129,11 +137,19 @@ function returnToStart({ preserveCurrentRequest = false } = {}) {
   $("#request").value = previousRequest;
   $("#research-mode").value = previousMode;
   $("#revision-feedback").value = "";
+  $("#revision-file").value = "";
   $("#revision-box").classList.add("hidden");
   resultPanel.classList.add("hidden");
   handoffPanel.classList.add("hidden");
   startPanel.classList.remove("hidden");
   $("#request").focus();
+}
+
+function updateRevisionModeHelp() {
+  const preserve = $("#revision-mode").value === "preserve_route";
+  $("#revision-mode-help").textContent = preserve
+    ? "문장 교체·규칙 추가·항목 삭제처럼 기존 산출물을 개선하는 피드백은 이 기본값을 사용합니다. 라우터를 다시 거치지 않습니다."
+    : "원래 목표를 잘못 이해했거나 산출물 종류 자체를 바꿔야 할 때만 사용합니다. 라우터부터 다시 실행합니다.";
 }
 
 startButton.addEventListener("click", async () => {
@@ -202,6 +218,24 @@ $("#show-revision").addEventListener("click", () => {
   }
 });
 
+$("#revision-mode").addEventListener("change", updateRevisionModeHelp);
+
+$("#revision-file").addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const status = $("#revision-file-status");
+  status.textContent = `${file.name} 읽는 중…`;
+  try {
+    const text = await file.text();
+    if (!text.trim()) throw new Error("파일이 비어 있습니다.");
+    $("#revision-feedback").value = text;
+    status.textContent = `${file.name} 내용을 피드백 칸에 불러왔습니다.`;
+  } catch (error) {
+    event.target.value = "";
+    status.textContent = error.message || "파일을 읽지 못했습니다.";
+  }
+});
+
 reviseButton.addEventListener("click", async () => {
   const feedback = $("#revision-feedback").value.trim();
   if (!feedback) return $("#revision-feedback").focus();
@@ -212,6 +246,7 @@ reviseButton.addEventListener("click", async () => {
       body: JSON.stringify({
         parent_run_id: currentRunId,
         feedback,
+        revision_mode: $("#revision-mode").value,
         research_mode: $("#revision-research-mode").value,
       }),
     });
@@ -254,4 +289,5 @@ async function restoreLastSession() {
   }
 }
 
+updateRevisionModeHelp();
 restoreLastSession();
