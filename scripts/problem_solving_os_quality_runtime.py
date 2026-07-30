@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_os_contract_runtime.py"
 EVIDENCE_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_evidence_bundle.py"
 PROMPT_BRIEF_PATH = ROOT / "scripts" / "problem_solving_prompt_build_brief.py"
+PROMPT_BRIEF_TRACE_PATH = ROOT / "scripts" / "problem_solving_prompt_brief_trace.py"
 PROMPT_TRACE_PATH = ROOT / "scripts" / "problem_solving_prompt_trace.py"
 PROMPT_CAUSAL_AUDIT_PATH = ROOT / "scripts" / "problem_solving_prompt_causal_audit.py"
 PROMPT_ABLATION_PATH = ROOT / "scripts" / "problem_solving_prompt_ablation.py"
@@ -43,6 +44,10 @@ EVIDENCE = _load_local_module(
 PROMPT_BRIEF = _load_local_module(
     "psos_prompt_build_brief_runtime",
     PROMPT_BRIEF_PATH,
+)
+PROMPT_BRIEF_TRACE = _load_local_module(
+    "psos_prompt_build_brief_trace_runtime",
+    PROMPT_BRIEF_TRACE_PATH,
 )
 PROMPT_TRACE = _load_local_module(
     "psos_prompt_generation_trace",
@@ -107,13 +112,29 @@ def _attach_user_output(
     return record
 
 
+def _brief_entry(payload: dict[str, Any]) -> dict[str, Any] | None:
+    record = payload.get("prompt_build_brief")
+    if not isinstance(record, dict) or record.get("status") != "applied":
+        return None
+    entries = record.get("entries")
+    if not isinstance(entries, list) or not entries or not isinstance(entries[0], dict):
+        return None
+    return entries[0]
+
+
 def _attach_prompt_trace(
     run_dir: Path,
     payload: dict[str, Any],
 ) -> dict[str, Any] | None:
     try:
-        record = PROMPT_TRACE.attach_prompt_generation_trace(run_dir, payload)
-    except PROMPT_TRACE.PromptTraceError as exc:
+        if _brief_entry(payload) is not None:
+            record = PROMPT_BRIEF_TRACE.attach_prompt_brief_trace(run_dir, payload)
+        else:
+            record = PROMPT_TRACE.attach_prompt_generation_trace(run_dir, payload)
+    except (
+        PROMPT_TRACE.PromptTraceError,
+        PROMPT_BRIEF_TRACE.PromptBriefTraceError,
+    ) as exc:
         record = {
             "version": 1,
             "status": "unavailable",
@@ -129,22 +150,53 @@ def _attach_prompt_causal_audit(
     run_dir: Path,
     payload: dict[str, Any],
 ) -> dict[str, Any] | None:
-    try:
-        record = PROMPT_CAUSAL_AUDIT.attach_prompt_generation_causal_audit(
-            run_dir,
-            payload,
-        )
-    except (
-        PROMPT_CAUSAL_AUDIT.PromptCausalAuditError,
-        PROMPT_CAUSAL_AUDIT.TRACE.PromptTraceError,
-    ) as exc:
-        record = {
-            "version": 1,
-            "status": "unavailable",
-            "error": str(exc),
-            "error_path": "prompt_generation_causal_audit_error.json",
+    brief = _brief_entry(payload)
+    if brief is not None:
+        audit = {
+            "version": 2,
+            "status": "intervention_applied",
+            "previous_cause": "원문·Goal Ledger·Compiler baseline의 압축 없는 병렬 합류",
+            "intervention": "Prompt Build Brief 단일 입력 계약",
+            "legacy_executor_input": brief["original_executor_input_path"],
+            "brief": brief["brief_path"],
+            "new_executor_contract": "원문·전체 Ledger·baseline을 최종 Executor에 직접 전달하지 않음",
+            "remaining_question": "실제 입력에 적용했을 때 판단 품질이 개선되는지 비교 필요",
         }
-        OS.write_json(run_dir / record["error_path"], record)
+        json_path = run_dir / "prompt_generation_causal_audit.json"
+        OS.write_json(json_path, audit)
+        markdown_path = run_dir / "prompt_generation_causal_audit.md"
+        markdown_path.write_text(
+            "# PROMPT 생성 인과 감사 · Brief 개입 후\n\n"
+            "- 이전 원인: 원문·Goal Ledger·Compiler baseline의 압축 없는 병렬 합류\n"
+            "- 적용한 개입: Prompt Build Brief 단일 입력 계약\n"
+            f"- 이전 Executor 입력: `{brief['original_executor_input_path']}`\n"
+            f"- 통합 Brief: `{brief['brief_path']}`\n"
+            "- 남은 검증: 생성된 프롬프트를 실제 입력에 적용해 판단 품질 비교\n",
+            encoding="utf-8",
+        )
+        record = {
+            "version": 2,
+            "status": "intervention_applied",
+            "json_path": json_path.name,
+            "markdown_path": markdown_path.name,
+        }
+    else:
+        try:
+            record = PROMPT_CAUSAL_AUDIT.attach_prompt_generation_causal_audit(
+                run_dir,
+                payload,
+            )
+        except (
+            PROMPT_CAUSAL_AUDIT.PromptCausalAuditError,
+            PROMPT_CAUSAL_AUDIT.TRACE.PromptTraceError,
+        ) as exc:
+            record = {
+                "version": 1,
+                "status": "unavailable",
+                "error": str(exc),
+                "error_path": "prompt_generation_causal_audit_error.json",
+            }
+            OS.write_json(run_dir / record["error_path"], record)
     _persist_quality_record(
         run_dir,
         payload,
@@ -158,22 +210,48 @@ def _attach_prompt_ablation(
     run_dir: Path,
     payload: dict[str, Any],
 ) -> dict[str, Any] | None:
-    try:
-        record = PROMPT_ABLATION.attach_prompt_ablation_variants(
-            run_dir,
-            payload,
-        )
-    except (
-        PROMPT_ABLATION.PromptAblationError,
-        PROMPT_ABLATION.TRACE.PromptTraceError,
-    ) as exc:
-        record = {
-            "version": 1,
-            "status": "unavailable",
-            "error": str(exc),
-            "error_path": "prompt_ablation_error.json",
+    brief = _brief_entry(payload)
+    if brief is not None:
+        output_dir = run_dir / "prompt_ablation"
+        output_dir.mkdir(exist_ok=True)
+        manifest = {
+            "version": 2,
+            "status": "superseded_by_prompt_build_brief",
+            "legacy_executor_input": brief["original_executor_input_path"],
+            "current_brief": brief["brief_path"],
+            "current_executor_input_contract": "single_prompt_build_brief",
+            "boundary": (
+                "이 run에서는 진단 결과를 반영한 Brief 경로가 이미 실행됐습니다. "
+                "이전 방식과의 실제 품질 비교는 저장된 legacy 입력과 현재 결과를 별도 실행해 수행합니다."
+            ),
         }
-        OS.write_json(run_dir / record["error_path"], record)
+        manifest_path = output_dir / "manifest.json"
+        OS.write_json(manifest_path, manifest)
+        record = {
+            "version": 2,
+            "status": manifest["status"],
+            "directory": output_dir.relative_to(run_dir).as_posix(),
+            "manifest_path": manifest_path.relative_to(run_dir).as_posix(),
+            "legacy_executor_input": brief["original_executor_input_path"],
+            "current_brief": brief["brief_path"],
+        }
+    else:
+        try:
+            record = PROMPT_ABLATION.attach_prompt_ablation_variants(
+                run_dir,
+                payload,
+            )
+        except (
+            PROMPT_ABLATION.PromptAblationError,
+            PROMPT_ABLATION.TRACE.PromptTraceError,
+        ) as exc:
+            record = {
+                "version": 1,
+                "status": "unavailable",
+                "error": str(exc),
+                "error_path": "prompt_ablation_error.json",
+            }
+            OS.write_json(run_dir / record["error_path"], record)
     _persist_quality_record(run_dir, payload, "prompt_ablation", record)
     return record
 
