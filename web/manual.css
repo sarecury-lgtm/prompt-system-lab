@@ -85,6 +85,21 @@ textarea:focus, select:focus { border-color: #5a5a53; box-shadow: 0 0 0 3px rgba
   font-size: 14px;
   line-height: 1.55;
 }
+.file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid #deded8;
+  border-radius: 14px;
+  background: #f7f7f3;
+  color: #343430;
+  font-size: 14px;
+  font-weight: 650;
+}
+.file-row input { max-width: 58%; color: #66665f; font-size: 13px; }
 
 .toolbar, .submit-row, .result-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .toolbar { margin-bottom: 12px; }
@@ -110,4 +125,6 @@ textarea:focus, select:focus { border-color: #5a5a53; box-shadow: 0 0 0 3px rgba
   .toolbar, .submit-row { align-items: stretch; flex-direction: column; }
   .toolbar-actions, .result-actions { width: 100%; }
   .toolbar-actions button, .submit-row button, .result-actions button { flex: 1; }
+  .file-row { align-items: stretch; flex-direction: column; }
+  .file-row input { max-width: 100%; }
 }
