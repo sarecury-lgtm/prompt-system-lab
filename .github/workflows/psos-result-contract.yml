@@ -10,6 +10,7 @@ on:
       - "scripts/problem_solving_quality_semantic_fixes.py"
       - "scripts/problem_solving_evidence_bundle.py"
       - "scripts/problem_solving_evidence_review.py"
+      - "scripts/problem_solving_prompt_trace.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os_quality_runtime.py"
       - "scripts/problem_solving_quality_web.py"
@@ -26,6 +27,7 @@ on:
       - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_evidence_bundle.py"
       - "tests/test_problem_solving_evidence_review.py"
+      - "tests/test_problem_solving_prompt_trace.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
       - "tests/test_problem_solving_quality_web.py"
@@ -45,6 +47,7 @@ on:
       - "scripts/problem_solving_quality_semantic_fixes.py"
       - "scripts/problem_solving_evidence_bundle.py"
       - "scripts/problem_solving_evidence_review.py"
+      - "scripts/problem_solving_prompt_trace.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os_quality_runtime.py"
       - "scripts/problem_solving_quality_web.py"
@@ -61,6 +64,7 @@ on:
       - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_evidence_bundle.py"
       - "tests/test_problem_solving_evidence_review.py"
+      - "tests/test_problem_solving_prompt_trace.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
       - "tests/test_problem_solving_quality_web.py"
@@ -90,6 +94,7 @@ jobs:
           python -m py_compile scripts/problem_solving_quality_semantic_fixes.py
           python -m py_compile scripts/problem_solving_evidence_bundle.py
           python -m py_compile scripts/problem_solving_evidence_review.py
+          python -m py_compile scripts/problem_solving_prompt_trace.py
           python -m py_compile scripts/problem_solving_os_contract_runtime.py
           python -m py_compile scripts/problem_solving_os_quality_runtime.py
           python -m py_compile scripts/problem_solving_quality_web.py
@@ -114,6 +119,7 @@ jobs:
           tests.test_problem_solving_contract_enforcement
           tests.test_problem_solving_evidence_bundle
           tests.test_problem_solving_evidence_review
+          tests.test_problem_solving_prompt_trace
           tests.test_problem_solving_os_contract_runtime
           tests.test_problem_solving_os_quality_runtime
           tests.test_problem_solving_quality_web
