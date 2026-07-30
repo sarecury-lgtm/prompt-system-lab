@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 import sys
@@ -25,6 +26,9 @@ sys.modules[REVIEW_SPEC.name] = FIXTURE
 REVIEW_SPEC.loader.exec_module(FIXTURE)
 
 
+PNG = b"\x89PNG\r\n\x1a\n" + b"quality-web-archive"
+
+
 class FakeJobs:
     def __init__(self):
         self.calls = []
@@ -41,9 +45,16 @@ class FakeJobs:
 class QualityWebTests(unittest.TestCase):
     def setUp(self):
         self.original_safe_run_dir = WEB.base_web.safe_run_dir
+        self.original_visual_import = WEB.visual_evidence.import_visual_evidence
+
+        def import_without_network(run_dir, payload):
+            return self.original_visual_import(run_dir, payload, archive=False)
+
+        WEB.visual_evidence.import_visual_evidence = import_without_network
 
     def tearDown(self):
         WEB.base_web.safe_run_dir = self.original_safe_run_dir
+        WEB.visual_evidence.import_visual_evidence = self.original_visual_import
 
     def bind_run(self, run_dir):
         WEB.base_web.safe_run_dir = lambda run_id: run_dir
@@ -86,6 +97,25 @@ class QualityWebTests(unittest.TestCase):
                     "link_url": "https://shop.example.test/item/123",
                 }
             ],
+        }
+
+    def fake_archiver(self, run_dir, images):
+        digest = hashlib.sha256(PNG).hexdigest()
+        relative = Path("evidence") / "images" / f"{digest}.png"
+        target = run_dir / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(PNG)
+        return {
+            image["src"]: {
+                "status": "archived",
+                "path": relative.as_posix(),
+                "sha256": digest,
+                "media_type": "image/png",
+                "byte_count": len(PNG),
+                "final_url": image["src"],
+                "error": None,
+            }
+            for image in images
         }
 
     def test_public_bundle_exposes_review_and_external_image_preview(self):
@@ -131,6 +161,24 @@ class QualityWebTests(unittest.TestCase):
             public_image["preview_url"].endswith("/evidence-items/ev-image")
         )
         self.assertEqual(expected_image_path, resolved)
+
+    def test_archived_visual_import_uses_local_preview_endpoint(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir, bundle_sha = FIXTURE.make_run(temp_dir)
+            imported = self.original_visual_import(
+                run_dir,
+                self.visual_payload(bundle_sha),
+                archiver=self.fake_archiver,
+            )
+            self.bind_run(run_dir)
+            public = WEB.load_public_evidence(run_dir.name)
+            item_id = imported["import"]["archived_item_ids"][0]
+            resolved = WEB.safe_evidence_image(run_dir.name, item_id)
+
+        item = next(entry for entry in public["bundle"]["items"] if entry["id"] == item_id)
+        self.assertTrue(item["preview_url"].endswith(f"/evidence-items/{item_id}"))
+        self.assertEqual(PNG, resolved.read_bytes())
+        self.assertEqual("archived", item["archive"]["status"])
 
     def test_save_review_updates_route_anchor(self):
         with tempfile.TemporaryDirectory() as temp_dir:
