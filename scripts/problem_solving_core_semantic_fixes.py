@@ -3,7 +3,8 @@
 
 The canonical runtime is intentionally left import-compatible while draft branches
 exercise these stricter semantics. The patch is idempotent and changes only
-router/execution validation, router guidance, and HYBRID result merging.
+router/execution validation, prompt-output isolation, router guidance, and HYBRID
+result merging.
 """
 
 from __future__ import annotations
@@ -22,6 +23,8 @@ _PIPELINE_MARKERS = (
     "다음 단계로 전달",
     "결과를 만들지",
 )
+_PROMPT_OUTPUT_START = "<!-- PSOS_PROMPT_START -->"
+_PROMPT_OUTPUT_END = "<!-- PSOS_PROMPT_END -->"
 
 
 def _nonempty(value: Any, field: str, error_type: type[Exception]) -> str:
@@ -47,6 +50,29 @@ def _string_list(
     if not allow_empty and not normalized:
         raise error_type(f"{field}는 비어 있을 수 없습니다.")
     return normalized
+
+
+def _extract_prompt_output(value: Any, error_type: type[Exception]) -> str:
+    raw = _nonempty(value, "execution.result_markdown", error_type)
+    if raw.count(_PROMPT_OUTPUT_START) != 1 or raw.count(_PROMPT_OUTPUT_END) != 1:
+        raise error_type(
+            "PROMPT 완료 결과는 지정된 시작·종료 표식 사이에 최종 프롬프트 하나만 넣어야 합니다."
+        )
+    start_index = raw.index(_PROMPT_OUTPUT_START)
+    end_index = raw.index(_PROMPT_OUTPUT_END)
+    if end_index <= start_index:
+        raise error_type("PROMPT 결과 표식의 순서가 올바르지 않습니다.")
+
+    before = raw[:start_index].strip()
+    prompt = raw[start_index + len(_PROMPT_OUTPUT_START) : end_index].strip()
+    after = raw[end_index + len(_PROMPT_OUTPUT_END) :].strip()
+    if before or after:
+        raise error_type(
+            "PROMPT 결과에는 최종 프롬프트 밖의 피드백·평가·개선점·선택 기록을 붙일 수 없습니다."
+        )
+    if not prompt:
+        raise error_type("PROMPT 결과의 최종 프롬프트가 비어 있습니다.")
+    return prompt
 
 
 def _validate_route_output(os_module: Any, payload: Any) -> dict[str, Any]:
@@ -135,6 +161,12 @@ def _validate_execution_consistency(
     execution = original(payload, route, profile, capabilities)
     error = os_module.ProblemSolvingError
 
+    if route == "PROMPT" and execution["status"] == "completed":
+        execution["result_markdown"] = _extract_prompt_output(
+            execution["result_markdown"],
+            error,
+        )
+
     needed = execution["needed_capability"]
     handoff = execution["handoff"]
     if needed is not None:
@@ -202,6 +234,7 @@ def apply(os_module: Any) -> Any:
         return os_module
 
     original_build_router_prompt = os_module.build_router_prompt
+    original_build_execution_prompt = os_module.build_execution_prompt
     original_validate_execution = os_module.validate_execution_output
     original_merge = os_module.merge_executions
 
@@ -218,6 +251,27 @@ def apply(os_module: Any) -> Any:
     입력으로 받아 최종 사용자 산출물을 만드는 경로다. 단순히 두 경로가 관련 있다는 이유로
     HYBRID를 선택하거나 순서를 뒤집지 않는다.
 13. Goal Ledger와 route의 route_reason은 가능하면 같은 짧은 문장으로 쓴다.
+"""
+
+    def build_execution_prompt(*args: Any, **kwargs: Any) -> str:
+        route = kwargs.get("route")
+        if route is None and args:
+            route = args[0]
+        base = original_build_execution_prompt(*args, **kwargs).rstrip()
+        if route != "PROMPT":
+            return base
+        return base + f"""
+
+[PROMPT 결과 전용 계약]
+1. 내부에서 초안을 점검하고 필요하면 수정하되, 그 검토 과정은 출력하지 않는다.
+2. execution.result_markdown에는 아래 시작·종료 표식 사이에 완성된 프롬프트 하나만 넣는다.
+3. 표식 앞뒤에는 평가, 피드백, 개선점, 선택 기록, 사용법 설명, 요약을 붙이지 않는다.
+4. 사용자가 명시적으로 프롬프트 평가를 요청하지 않았다면, 제공된 초안은 최종 프롬프트를
+   만드는 재료로 사용하고 별도의 비평 대상으로 다루지 않는다.
+
+{_PROMPT_OUTPUT_START}
+[완성된 프롬프트 하나]
+{_PROMPT_OUTPUT_END}
 """
 
     def validate_execution_output(
@@ -250,6 +304,7 @@ def apply(os_module: Any) -> Any:
         )
 
     os_module.build_router_prompt = build_router_prompt
+    os_module.build_execution_prompt = build_execution_prompt
     os_module.validate_route_output = lambda payload: _validate_route_output(os_module, payload)
     os_module.validate_execution_output = validate_execution_output
     os_module.merge_executions = merge_executions
