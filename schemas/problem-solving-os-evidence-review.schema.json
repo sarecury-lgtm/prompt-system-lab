@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "bundle_sha256",
+    "allowed_decisions",
+    "review_status",
+    "reviewer_note",
+    "updated_at",
+    "decisions"
+  ],
+  "properties": {
+    "version": {"const": 1},
+    "bundle_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "allowed_decisions": {
+      "const": ["keep", "question", "exclude"]
+    },
+    "review_status": {
+      "enum": ["pending", "partial", "completed"]
+    },
+    "reviewer_note": {"type": "string", "maxLength": 2000},
+    "updated_at": {"type": ["string", "null"]},
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["evidence_id", "decision", "note"],
+        "properties": {
+          "evidence_id": {"type": "string", "minLength": 1},
+          "decision": {
+            "enum": ["unreviewed", "keep", "question", "exclude"]
+          },
+          "note": {"type": "string", "maxLength": 500}
+        }
+      }
+    }
+  }
+}
