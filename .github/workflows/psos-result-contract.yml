@@ -6,6 +6,8 @@ on:
     paths:
       - "scripts/problem_solving_contract.py"
       - "scripts/problem_solving_contract_enforcement.py"
+      - "scripts/problem_solving_core_semantic_fixes.py"
+      - "scripts/problem_solving_quality_semantic_fixes.py"
       - "scripts/problem_solving_evidence_bundle.py"
       - "scripts/problem_solving_evidence_review.py"
       - "scripts/problem_solving_os_contract_runtime.py"
@@ -13,10 +15,13 @@ on:
       - "scripts/problem_solving_quality_web.py"
       - "scripts/problem_solving_web.py"
       - "scripts/problem_solving_os.py"
+      - "schemas/problem-solving-os-route.schema.json"
       - "schemas/problem-solving-os-result-contract.schema.json"
       - "schemas/problem-solving-os-result-contract-assessment.schema.json"
       - "schemas/problem-solving-os-evidence-bundle.schema.json"
       - "schemas/problem-solving-os-evidence-review.schema.json"
+      - "tests/test_problem_solving_core_semantic_fixes.py"
+      - "tests/test_problem_solving_quality_semantic_fixes.py"
       - "tests/test_problem_solving_contract.py"
       - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_evidence_bundle.py"
@@ -36,6 +41,8 @@ on:
     paths:
       - "scripts/problem_solving_contract.py"
       - "scripts/problem_solving_contract_enforcement.py"
+      - "scripts/problem_solving_core_semantic_fixes.py"
+      - "scripts/problem_solving_quality_semantic_fixes.py"
       - "scripts/problem_solving_evidence_bundle.py"
       - "scripts/problem_solving_evidence_review.py"
       - "scripts/problem_solving_os_contract_runtime.py"
@@ -43,10 +50,13 @@ on:
       - "scripts/problem_solving_quality_web.py"
       - "scripts/problem_solving_web.py"
       - "scripts/problem_solving_os.py"
+      - "schemas/problem-solving-os-route.schema.json"
       - "schemas/problem-solving-os-result-contract.schema.json"
       - "schemas/problem-solving-os-result-contract-assessment.schema.json"
       - "schemas/problem-solving-os-evidence-bundle.schema.json"
       - "schemas/problem-solving-os-evidence-review.schema.json"
+      - "tests/test_problem_solving_core_semantic_fixes.py"
+      - "tests/test_problem_solving_quality_semantic_fixes.py"
       - "tests/test_problem_solving_contract.py"
       - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_evidence_bundle.py"
@@ -76,6 +86,8 @@ jobs:
         run: |
           python -m py_compile scripts/problem_solving_contract.py
           python -m py_compile scripts/problem_solving_contract_enforcement.py
+          python -m py_compile scripts/problem_solving_core_semantic_fixes.py
+          python -m py_compile scripts/problem_solving_quality_semantic_fixes.py
           python -m py_compile scripts/problem_solving_evidence_bundle.py
           python -m py_compile scripts/problem_solving_evidence_review.py
           python -m py_compile scripts/problem_solving_os_contract_runtime.py
@@ -84,6 +96,7 @@ jobs:
       - name: Validate fixture and schema JSON
         run: |
           python -m json.tool tests/fixtures/result-contract-cases.json > /dev/null
+          python -m json.tool schemas/problem-solving-os-route.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-result-contract.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-result-contract-assessment.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-evidence-bundle.schema.json > /dev/null
@@ -95,6 +108,8 @@ jobs:
       - name: Run focused quality tests
         run: >-
           python -m unittest
+          tests.test_problem_solving_core_semantic_fixes
+          tests.test_problem_solving_quality_semantic_fixes
           tests.test_problem_solving_contract
           tests.test_problem_solving_contract_enforcement
           tests.test_problem_solving_evidence_bundle
