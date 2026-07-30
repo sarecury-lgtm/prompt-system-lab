@@ -8,12 +8,12 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "scripts" / "problem_solving_manual.py"
-SPEC = importlib.util.spec_from_file_location("chart_prompt_manual", MODULE_PATH)
-MANUAL = importlib.util.module_from_spec(SPEC)
+MODULE_PATH = ROOT / "scripts" / "problem_solving_manual_web.py"
+SPEC = importlib.util.spec_from_file_location("chart_prompt_manual_web", MODULE_PATH)
+WEB = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
-sys.modules[SPEC.name] = MANUAL
-SPEC.loader.exec_module(MANUAL)
+sys.modules[SPEC.name] = WEB
+SPEC.loader.exec_module(WEB)
 
 
 REQUEST = (
@@ -86,9 +86,9 @@ class ChartPromptManualFlowTests(unittest.TestCase):
     def test_chart_prompt_finishes_without_research_and_exposes_only_output(self):
         with tempfile.TemporaryDirectory() as directory:
             runs = Path(directory) / "runs"
-            bridge = MANUAL.ManualBridge(runs_dir=runs)
+            bridge = WEB.deep_manual.ManualBridge(runs_dir=runs)
             with mock.patch.object(
-                MANUAL.problem_os,
+                WEB.problem_os,
                 "make_run_id",
                 return_value="chart-prompt-flow",
             ):
