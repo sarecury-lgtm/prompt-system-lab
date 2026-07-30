@@ -188,13 +188,23 @@
 
     const sourceRow = document.createElement("div");
     sourceRow.className = "quality-source";
-    if (item.open_url) {
+    const originalUrl = item.open_url || item.archive?.original_url;
+    if (originalUrl) {
       const link = document.createElement("a");
-      link.href = item.open_url;
+      link.href = originalUrl;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = "원본 열기 ↗";
+      link.textContent = item.archive?.status === "archived" ? "원본 페이지 열기 ↗" : "원본 열기 ↗";
       sourceRow.appendChild(link);
+      if (item.archive?.status === "archived") {
+        const archive = document.createElement("code");
+        archive.textContent = `로컬 보존 · ${item.archive.media_type} · SHA-256 ${item.archive.sha256}`;
+        sourceRow.appendChild(archive);
+      } else if (item.archive?.status === "unavailable") {
+        const archive = document.createElement("code");
+        archive.textContent = `로컬 보존 실패 · ${item.archive.error}`;
+        sourceRow.appendChild(archive);
+      }
     } else {
       const source = document.createElement("code");
       source.textContent = item.source;
