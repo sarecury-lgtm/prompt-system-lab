@@ -73,7 +73,10 @@ def validate_public_http_url(url: str) -> str:
     hostname = parsed.hostname.rstrip(".").casefold()
     if hostname == "localhost" or hostname.endswith(".localhost"):
         raise VisualArchiveError("로컬 호스트의 이미지는 외부 보존 대상으로 사용할 수 없습니다.")
-    port = parsed.port or (443 if parsed.scheme.lower() == "https" else 80)
+    try:
+        port = parsed.port or (443 if parsed.scheme.lower() == "https" else 80)
+    except ValueError as exc:
+        raise VisualArchiveError("이미지 URL 포트가 올바르지 않습니다.") from exc
     try:
         literal = ipaddress.ip_address(hostname)
         addresses = {str(literal)}
@@ -109,10 +112,11 @@ def _read_limited(response: Any, limit: int) -> bytes:
     length = response.headers.get("Content-Length")
     if length:
         try:
-            if int(length) > limit:
-                raise VisualArchiveError("이미지 크기가 허용 한도를 초과합니다.")
-        except ValueError:
-            pass
+            declared_length = int(length)
+        except (TypeError, ValueError):
+            declared_length = None
+        if declared_length is not None and declared_length > limit:
+            raise VisualArchiveError("이미지 크기가 허용 한도를 초과합니다.")
     chunks: list[bytes] = []
     total = 0
     while True:
@@ -192,7 +196,6 @@ def archive_selected_images(
     """Best-effort archive keyed by original URL; failures remain explicit."""
 
     run_dir = run_dir.expanduser().resolve()
-    archive_dir = run_dir / "evidence" / "images"
     remaining = MAX_TOTAL_BYTES
     results: dict[str, dict[str, Any]] = {}
     for image in images:
