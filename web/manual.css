@@ -50,6 +50,11 @@ textarea {
   padding: 16px;
   line-height: 1.55;
 }
+textarea[readonly] {
+  background: #f3f3ef;
+  color: #4f4f49;
+  cursor: default;
+}
 select {
   padding: 13px 44px 13px 14px;
 }
@@ -70,6 +75,7 @@ textarea:focus, select:focus { border-color: #5a5a53; box-shadow: 0 0 0 3px rgba
 
 .field-label { display: block; margin: 18px 0 10px; font-size: 14px; font-weight: 700; }
 .field-help { margin: 9px 0 20px; color: #6c6c65; font-size: 13px; line-height: 1.55; }
+.readonly-note { margin-left: 7px; color: #77776f; font-size: 12px; font-weight: 600; }
 .stage-callout {
   margin: -4px 0 20px;
   border-left: 3px solid #1c1c1a;
@@ -82,7 +88,7 @@ textarea:focus, select:focus { border-color: #5a5a53; box-shadow: 0 0 0 3px rgba
 
 .toolbar, .submit-row, .result-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .toolbar { margin-bottom: 12px; }
-.toolbar-actions, .result-actions { display: flex; gap: 8px; }
+.toolbar-actions, .result-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .run-id { font-family: monospace; color: #72726b; font-size: 12px; overflow-wrap: anywhere; }
 .divider { height: 1px; background: #e6e6df; margin: 26px 0; }
 .submit-row { margin-top: 16px; }
