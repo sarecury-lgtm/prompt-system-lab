@@ -49,12 +49,19 @@ def route_payload(*, selected="DIRECT", primary=None, secondary=None, constraint
     }
 
 
-def execution(status="completed", *, needed=None, handoff=None, limitations=None):
+def execution(
+    status="completed",
+    *,
+    result="완성 결과",
+    needed=None,
+    handoff=None,
+    limitations=None,
+):
     return {
         "execution": {
             "status": status,
             "summary": "결과",
-            "result_markdown": "완성 결과",
+            "result_markdown": result,
             "capabilities_used": [],
             "needed_capability": needed,
             "handoff": handoff,
@@ -94,6 +101,51 @@ class SemanticCoreFixTests(unittest.TestCase):
         self.assertIn("primary_route는 먼저 만들어야 하는 선행 결과", prompt)
         self.assertIn("첨부 이미지", prompt)
         self.assertIn("route_reason은 가능하면 같은", prompt)
+
+    def test_prompt_execution_contract_requires_only_the_final_prompt(self):
+        ledger = route_payload(selected="PROMPT")["goal_ledger"]
+        prompt = OS.build_execution_prompt(
+            "PROMPT",
+            "차트 분석 프롬프트를 만들어줘",
+            ledger,
+            "",
+            None,
+            self.capabilities,
+            self.profile,
+        )
+        self.assertIn(FIXES._PROMPT_OUTPUT_START, prompt)
+        self.assertIn(FIXES._PROMPT_OUTPUT_END, prompt)
+        self.assertIn("피드백, 개선점", prompt)
+        self.assertIn("검토 과정은 출력하지 않는다", prompt)
+
+    def test_prompt_execution_extracts_only_marked_prompt(self):
+        marked = (
+            f"{FIXES._PROMPT_OUTPUT_START}\n"
+            "# 최종 프롬프트\n\n완성된 지침"
+            f"\n{FIXES._PROMPT_OUTPUT_END}"
+        )
+        validated = OS.validate_execution_output(
+            execution(result=marked),
+            "PROMPT",
+            self.profile,
+            self.capabilities,
+        )
+        self.assertEqual(validated["result_markdown"], "# 최종 프롬프트\n\n완성된 지침")
+
+    def test_prompt_execution_rejects_feedback_after_prompt(self):
+        marked = (
+            f"{FIXES._PROMPT_OUTPUT_START}\n"
+            "# 최종 프롬프트\n\n완성된 지침"
+            f"\n{FIXES._PROMPT_OUTPUT_END}\n\n"
+            "지금 버전은 방향이 맞지만 개선점이 있습니다."
+        )
+        with self.assertRaises(OS.ProblemSolvingError):
+            OS.validate_execution_output(
+                execution(result=marked),
+                "PROMPT",
+                self.profile,
+                self.capabilities,
+            )
 
     def test_completed_execution_rejects_handoff(self):
         with self.assertRaises(OS.ProblemSolvingError):
