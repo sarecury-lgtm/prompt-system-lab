@@ -44,12 +44,20 @@ async function copyText(value, fallbackElement = null) {
     await navigator.clipboard.writeText(text);
     return;
   } catch (_error) {
-    if (!fallbackElement) throw new Error("클립보드에 복사하지 못했습니다.");
-    fallbackElement.focus();
-    fallbackElement.select();
-    if (!document.execCommand("copy")) {
-      throw new Error("클립보드에 복사하지 못했습니다.");
+    const element = fallbackElement || document.createElement("textarea");
+    const temporary = !fallbackElement;
+    if (temporary) {
+      element.value = text;
+      element.setAttribute("readonly", "");
+      element.style.position = "fixed";
+      element.style.opacity = "0";
+      document.body.appendChild(element);
     }
+    element.focus();
+    element.select();
+    const copied = document.execCommand("copy");
+    if (temporary) element.remove();
+    if (!copied) throw new Error("클립보드에 복사하지 못했습니다.");
   }
 }
 
@@ -177,7 +185,7 @@ function showSession(session) {
     handoffPanel.classList.add("hidden");
     startPanel.classList.add("hidden");
     resultPanel.classList.remove("hidden");
-    $("#result").textContent = session.result_markdown;
+    $("#result").textContent = session.output_markdown || session.result_markdown;
     $("#revision-research-mode").value = session.research_mode || "standard";
     $("#revision-mode").value = "preserve_route";
     updateRevisionModeHelp();
@@ -297,7 +305,7 @@ openChatGPTButton.addEventListener("click", () => {
 });
 
 copyResultButton.addEventListener("click", async () => {
-  const result = currentSession?.result_markdown || $("#result").textContent;
+  const result = currentSession?.output_markdown || currentSession?.result_markdown || $("#result").textContent;
   try {
     await copyText(result, null);
     setTemporaryLabel(copyResultButton, "결과 복사됨");
