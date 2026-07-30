@@ -67,6 +67,27 @@ class QualityWebTests(unittest.TestCase):
             ],
         }
 
+    def visual_payload(self, bundle_sha):
+        return {
+            "version": 1,
+            "bundle_sha256": bundle_sha,
+            "subject_label": "후보 A",
+            "source_kind": "seller",
+            "page_url": "https://shop.example.test/item/123",
+            "page_title": "후보 A 상품 페이지",
+            "captured_at": "2026-07-30T18:40:00+00:00",
+            "images": [
+                {
+                    "src": "https://cdn.example.test/product.jpg",
+                    "alt": "상품 단면",
+                    "width": 1000,
+                    "height": 800,
+                    "nearby_text": "상품 상세 이미지",
+                    "link_url": "https://shop.example.test/item/123",
+                }
+            ],
+        }
+
     def test_public_bundle_exposes_review_and_external_image_preview(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             run_dir, bundle_sha = FIXTURE.make_run(temp_dir)
@@ -79,6 +100,7 @@ class QualityWebTests(unittest.TestCase):
         self.assertEqual(bundle_sha, payload["bundle_sha256"])
         self.assertEqual("https://example.test/photo.jpg", image["preview_url"])
         self.assertEqual("pending", payload["review"]["review_status"])
+        self.assertEqual("후보 비교", image["subject_label"])
 
     def test_local_image_preview_is_bound_to_bundle_item(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -123,6 +145,25 @@ class QualityWebTests(unittest.TestCase):
         self.assertEqual("completed", result["review"]["review_status"])
         self.assertEqual(result["record"], route["evidence_review"])
         self.assertEqual(result["record"], route["run"]["evidence_review"])
+
+    def test_visual_import_updates_bundle_route_and_public_subject_label(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir, bundle_sha = FIXTURE.make_run(temp_dir)
+            self.bind_run(run_dir)
+            result = WEB.import_public_visual_evidence(
+                run_dir.name,
+                self.visual_payload(bundle_sha),
+            )
+            route = json.loads((run_dir / "route.json").read_text(encoding="utf-8"))
+
+        imported = next(item for item in result["bundle"]["items"] if item.get("capture"))
+        self.assertEqual("후보 A", imported["subject_label"])
+        self.assertEqual(result["bundle_sha256"], route["evidence_bundle"]["sha256"])
+        self.assertEqual(
+            result["import"]["import_id"],
+            route["visual_evidence_import"]["import_id"],
+        )
+        self.assertEqual(route["evidence_bundle"], route["run"]["evidence_bundle"])
 
     def test_revision_submission_creates_child_without_overwriting_parent_result(self):
         with tempfile.TemporaryDirectory() as temp_dir:
