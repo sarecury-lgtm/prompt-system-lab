@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "PSOS ChatGPT Bridge",
-  "version": "0.1.0",
-  "description": "Move pending PSOS manual prompts into ChatGPT and return the latest response to the local PSOS bridge.",
+  "version": "0.2.0",
+  "description": "Move one bound PSOS manual stage into ChatGPT and return only the new completed assistant response for that stage.",
   "permissions": ["activeTab", "storage"],
   "host_permissions": [
     "http://127.0.0.1:8766/*",
