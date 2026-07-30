@@ -1,0 +1,10 @@
+{
+  "name": "prompt-system-lab-browser-tests",
+  "private": true,
+  "scripts": {
+    "test:visual-e2e": "node tests/e2e/visual-evidence-flow.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.0"
+  }
+}
