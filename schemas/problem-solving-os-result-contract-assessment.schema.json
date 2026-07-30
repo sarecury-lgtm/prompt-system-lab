@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/problem-solving-os-result-contract-assessment.schema.json",
+  "title": "PSOS Result Contract Assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "contract_sha256",
+    "overall_status",
+    "requirements",
+    "evidence_check",
+    "missing_requirement_ids",
+    "missing_conditions"
+  ],
+  "properties": {
+    "version": {"const": 1},
+    "contract_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "overall_status": {
+      "enum": ["satisfied", "missing"]
+    },
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "finding", "evidence_refs"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$"
+          },
+          "status": {
+            "enum": ["satisfied", "missing", "unverifiable"]
+          },
+          "finding": {"type": "string", "minLength": 1},
+          "evidence_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "evidence_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "finding"],
+      "properties": {
+        "status": {
+          "enum": ["satisfied", "missing", "unverifiable"]
+        },
+        "finding": {"type": "string", "minLength": 1}
+      }
+    },
+    "missing_requirement_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[a-z0-9][a-z0-9._-]*$"
+      }
+    },
+    "missing_conditions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

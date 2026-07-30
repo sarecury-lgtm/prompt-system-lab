@@ -1,0 +1,167 @@
+[
+  {
+    "id": "current-product-research",
+    "request": "현재 판매 중인 후보를 찾아 구매할 수 있게 비교해 줘.",
+    "route": {"selected_route": "RESEARCH"},
+    "ledger": {
+      "fixed_constraints": ["현재 구매 가능해야 함", "핵심 선호 조건을 보존함"],
+      "completion_condition": "구매 가능한 개별 후보와 판단 근거가 연결된 추천이 제공됨",
+      "important_uncertainties": ["현재 판매 상태", "실제 품질 편차"]
+    },
+    "additional_outputs": [
+      {"id": "target-identity", "description": "각 후보를 정확히 식별할 수 있음", "verification": "evidence"},
+      {"id": "current-state", "description": "확인 시점의 판매 상태가 표시됨", "verification": "evidence"},
+      {"id": "direct-target-url", "description": "각 최종 후보의 직접 대상 URL이 있음", "verification": "url"},
+      {"id": "preference-evidence", "description": "핵심 선호 조건별 근거가 후보에 연결됨", "verification": "evidence"}
+    ],
+    "evidence": {
+      "minimum_sources": 3,
+      "source_roles": ["current_listing", "independent_fact", "user_experience"],
+      "claim_source_mapping": true
+    },
+    "review": {"needed": true, "evidence_types": ["web"]},
+    "failure_policy": "no_winner",
+    "expected": {"contract": true, "result_type": "research", "minimum_outputs": 5}
+  },
+  {
+    "id": "general-current-research",
+    "request": "최근 정책 변경을 공식 자료로 확인해 줘.",
+    "route": {"selected_route": "RESEARCH"},
+    "ledger": {
+      "fixed_constraints": ["최신 공식 자료를 우선함"],
+      "completion_condition": "현재 정책과 변경 내용을 출처와 함께 설명함",
+      "important_uncertainties": ["최종 시행일"]
+    },
+    "additional_outputs": [
+      {"id": "effective-date", "description": "시행일 또는 기준 시점이 표시됨", "verification": "evidence"}
+    ],
+    "evidence": {
+      "minimum_sources": 2,
+      "source_roles": ["official", "corroborating"],
+      "claim_source_mapping": true
+    },
+    "review": {"needed": false, "evidence_types": []},
+    "failure_policy": "partial",
+    "expected": {"contract": true, "result_type": "research", "minimum_outputs": 2}
+  },
+  {
+    "id": "simple-direct-explanation",
+    "request": "캐시가 무엇인지 쉽게 설명해 줘.",
+    "route": {"selected_route": "DIRECT"},
+    "ledger": {
+      "fixed_constraints": ["쉬운 말로 설명함"],
+      "completion_condition": "캐시의 의미와 쓰임을 이해할 수 있게 설명함",
+      "important_uncertainties": []
+    },
+    "additional_outputs": [],
+    "expected": {"contract": false}
+  },
+  {
+    "id": "existing-prompt-revision",
+    "request": "기존 프롬프트에 피드백을 실제로 반영해 전체본을 고쳐 줘.",
+    "route": {"selected_route": "PROMPT"},
+    "ledger": {
+      "fixed_constraints": ["기존 목적을 보존함", "수정된 전체본을 반환함"],
+      "completion_condition": "피드백이 반영된 완전한 최종 프롬프트가 제공됨",
+      "important_uncertainties": []
+    },
+    "additional_outputs": [
+      {"id": "feedback-application", "description": "교체·추가·삭제 피드백이 실제 본문에 반영됨", "verification": "text"},
+      {"id": "complete-revision", "description": "분석문이 아니라 수정된 전체본을 제공함", "verification": "text"}
+    ],
+    "expected": {"contract": true, "result_type": "reusable_prompt", "minimum_outputs": 3}
+  },
+  {
+    "id": "new-reusable-prompt",
+    "request": "다른 AI에서 반복 사용할 프롬프트를 만들어 줘.",
+    "route": {"selected_route": "PROMPT"},
+    "ledger": {
+      "fixed_constraints": ["복사해 바로 사용할 수 있어야 함"],
+      "completion_condition": "입력란과 출력 계약이 포함된 최종 프롬프트가 제공됨",
+      "important_uncertainties": []
+    },
+    "additional_outputs": [
+      {"id": "reusable-interface", "description": "반복 입력을 위한 명확한 인터페이스가 있음", "verification": "text"}
+    ],
+    "expected": {"contract": true, "result_type": "reusable_prompt", "minimum_outputs": 2}
+  },
+  {
+    "id": "local-asset-reuse",
+    "request": "기존 템플릿을 찾아 이번 작업에 적용해 줘.",
+    "route": {"selected_route": "REUSE"},
+    "ledger": {
+      "fixed_constraints": ["실제 존재하는 자산만 사용함"],
+      "completion_condition": "검증된 기존 자산과 적용 결과를 제공함",
+      "important_uncertainties": ["가장 적합한 기존 자산"]
+    },
+    "additional_outputs": [
+      {"id": "asset-fingerprint", "description": "사용한 자산의 실제 경로와 fingerprint가 확인됨", "verification": "receipt"}
+    ],
+    "expected": {"contract": true, "result_type": "asset_reuse", "minimum_outputs": 2}
+  },
+  {
+    "id": "small-code-change",
+    "request": "지정한 파일의 오류를 고치고 테스트해 줘.",
+    "route": {"selected_route": "CODE"},
+    "ledger": {
+      "fixed_constraints": ["승인된 파일만 변경함", "삭제하지 않음"],
+      "completion_condition": "실제 코드 변경과 검증 결과가 제공됨",
+      "important_uncertainties": ["오류 재현 여부"]
+    },
+    "additional_outputs": [
+      {"id": "approved-change", "description": "실제 변경이 승인 범위와 일치함", "verification": "receipt"},
+      {"id": "verification-run", "description": "관련 테스트 또는 실행 검증 결과가 있음", "verification": "artifact"}
+    ],
+    "expected": {"contract": true, "result_type": "code_change", "minimum_outputs": 3}
+  },
+  {
+    "id": "visual-evidence-decision",
+    "request": "후보별 실제 사진을 함께 보고 상태를 판단하고 싶어.",
+    "route": {"selected_route": "RESEARCH"},
+    "ledger": {
+      "fixed_constraints": ["사용자가 원본 사진을 직접 검토할 수 있어야 함"],
+      "completion_condition": "후보와 연결된 원본 이미지 및 판단 근거가 제공됨",
+      "important_uncertainties": ["사진과 실제 대상의 연결", "사진만으로 판단할 수 없는 특성"]
+    },
+    "additional_outputs": [
+      {"id": "visual-source", "description": "원본 이미지 또는 원본 페이지 위치가 있음", "verification": "visual"},
+      {"id": "subject-link", "description": "각 이미지가 어떤 후보 또는 주장에 연결되는지 표시됨", "verification": "evidence"},
+      {"id": "observation-boundary", "description": "관찰 사실과 AI 해석이 구분됨", "verification": "text"}
+    ],
+    "evidence": {
+      "minimum_sources": 1,
+      "source_roles": ["visual_observation"],
+      "claim_source_mapping": true
+    },
+    "review": {"needed": true, "evidence_types": ["image", "web"]},
+    "expected": {"contract": true, "result_type": "research", "minimum_outputs": 4}
+  },
+  {
+    "id": "capability-blocked",
+    "request": "현재 웹에서 확인해야 하지만 검색 능력이 없을 때 처리해 줘.",
+    "route": {"selected_route": "RESEARCH"},
+    "ledger": {
+      "fixed_constraints": ["확인하지 않은 최신 사실을 꾸미지 않음"],
+      "completion_condition": "검색이 가능할 때만 최신 결과를 완료함",
+      "important_uncertainties": ["웹 검색 capability"]
+    },
+    "additional_outputs": [],
+    "failure_policy": "blocked",
+    "expected": {"contract": true, "result_type": "research", "minimum_outputs": 1}
+  },
+  {
+    "id": "ambiguous-no-winner",
+    "request": "조건이 충돌하면 억지로 하나를 고르지 말아 줘.",
+    "route": {"selected_route": "RESEARCH"},
+    "ledger": {
+      "fixed_constraints": ["필수 조건을 만족하지 않으면 승자를 만들지 않음"],
+      "completion_condition": "조건 충족 후보 또는 확인 불가 결론을 근거와 함께 제공함",
+      "important_uncertainties": ["필수 조건 충족 후보 존재 여부"]
+    },
+    "additional_outputs": [
+      {"id": "eligibility-gate", "description": "필수 조건 충족 여부를 후보별로 판정함", "verification": "evidence"}
+    ],
+    "failure_policy": "no_winner",
+    "expected": {"contract": true, "result_type": "research", "minimum_outputs": 2}
+  }
+]

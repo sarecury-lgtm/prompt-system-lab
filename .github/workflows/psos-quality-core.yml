@@ -1,0 +1,90 @@
+name: PSOS quality core
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/problem_solving_contract.py"
+      - "scripts/problem_solving_contract_enforcement.py"
+      - "scripts/problem_solving_quality_semantic_fixes.py"
+      - "scripts/problem_solving_evidence_bundle.py"
+      - "scripts/problem_solving_evidence_review.py"
+      - "scripts/problem_solving_os_contract_runtime.py"
+      - "scripts/problem_solving_os_quality_runtime.py"
+      - "schemas/problem-solving-os-result-contract.schema.json"
+      - "schemas/problem-solving-os-result-contract-assessment.schema.json"
+      - "schemas/problem-solving-os-evidence-bundle.schema.json"
+      - "schemas/problem-solving-os-evidence-review.schema.json"
+      - "tests/fixtures/result-contract-cases.json"
+      - "tests/test_problem_solving_contract.py"
+      - "tests/test_problem_solving_contract_enforcement.py"
+      - "tests/test_problem_solving_quality_semantic_fixes.py"
+      - "tests/test_problem_solving_evidence_bundle.py"
+      - "tests/test_problem_solving_evidence_review.py"
+      - "tests/test_problem_solving_os_contract_runtime.py"
+      - "tests/test_problem_solving_os_quality_runtime.py"
+      - ".github/workflows/psos-quality-core.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/problem_solving_contract.py"
+      - "scripts/problem_solving_contract_enforcement.py"
+      - "scripts/problem_solving_quality_semantic_fixes.py"
+      - "scripts/problem_solving_evidence_bundle.py"
+      - "scripts/problem_solving_evidence_review.py"
+      - "scripts/problem_solving_os_contract_runtime.py"
+      - "scripts/problem_solving_os_quality_runtime.py"
+      - "schemas/problem-solving-os-result-contract.schema.json"
+      - "schemas/problem-solving-os-result-contract-assessment.schema.json"
+      - "schemas/problem-solving-os-evidence-bundle.schema.json"
+      - "schemas/problem-solving-os-evidence-review.schema.json"
+      - "tests/fixtures/result-contract-cases.json"
+      - "tests/test_problem_solving_contract.py"
+      - "tests/test_problem_solving_contract_enforcement.py"
+      - "tests/test_problem_solving_quality_semantic_fixes.py"
+      - "tests/test_problem_solving_evidence_bundle.py"
+      - "tests/test_problem_solving_evidence_review.py"
+      - "tests/test_problem_solving_os_contract_runtime.py"
+      - "tests/test_problem_solving_os_quality_runtime.py"
+      - ".github/workflows/psos-quality-core.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile quality core
+        run: |
+          python -m py_compile scripts/problem_solving_contract.py
+          python -m py_compile scripts/problem_solving_contract_enforcement.py
+          python -m py_compile scripts/problem_solving_quality_semantic_fixes.py
+          python -m py_compile scripts/problem_solving_evidence_bundle.py
+          python -m py_compile scripts/problem_solving_evidence_review.py
+          python -m py_compile scripts/problem_solving_os_contract_runtime.py
+          python -m py_compile scripts/problem_solving_os_quality_runtime.py
+      - name: Validate schemas and fixtures
+        run: |
+          python -m json.tool schemas/problem-solving-os-result-contract.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-os-result-contract-assessment.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-os-evidence-bundle.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-os-evidence-review.schema.json > /dev/null
+          python -m json.tool tests/fixtures/result-contract-cases.json > /dev/null
+      - name: Run quality core tests
+        run: >-
+          python -m unittest
+          tests.test_problem_solving_core_semantic_fixes
+          tests.test_problem_solving_quality_semantic_fixes
+          tests.test_problem_solving_contract
+          tests.test_problem_solving_contract_enforcement
+          tests.test_problem_solving_evidence_bundle
+          tests.test_problem_solving_evidence_review
+          tests.test_problem_solving_os_contract_runtime
+          tests.test_problem_solving_os_quality_runtime
+      - name: Run canonical PSOS regression suite
+        run: python -m unittest tests.test_problem_solving_os

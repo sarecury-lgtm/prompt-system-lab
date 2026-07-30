@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/problem-solving-os-evidence-bundle.schema.json",
+  "title": "PSOS Evidence Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "contract_sha256",
+    "result_status",
+    "subject_mapping",
+    "review_required",
+    "subjects",
+    "requirements",
+    "items",
+    "review"
+  ],
+  "properties": {
+    "version": {"enum": [1, 2]},
+    "contract_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "result_status": {
+      "enum": ["completed", "partial", "blocked_by_capability", "handoff"]
+    },
+    "subject_mapping": {"enum": ["result_only", "explicit"]},
+    "review_required": {"type": "boolean"},
+    "subjects": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "kind"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+          "label": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["result", "candidate"]}
+        }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "status", "evidence_item_ids"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1},
+          "status": {
+            "enum": ["satisfied", "missing", "unverifiable", "not_assessed"]
+          },
+          "evidence_item_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "subject_id",
+          "kind",
+          "source",
+          "finding",
+          "role",
+          "origin",
+          "reviewable",
+          "preview",
+          "integrity",
+          "review"
+        ],
+        "properties": {
+          "id": {"type": "string", "pattern": "^ev-[0-9]{3,}$|^result-text$"},
+          "subject_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+          "kind": {
+            "enum": [
+              "result_text",
+              "web",
+              "local",
+              "command_output",
+              "provided_context",
+              "image",
+              "artifact",
+              "receipt"
+            ]
+          },
+          "source": {"type": "string", "minLength": 1},
+          "finding": {"type": "string", "minLength": 1},
+          "role": {
+            "enum": [
+              "output",
+              "unclassified",
+              "reference",
+              "visual_observation",
+              "artifact",
+              "receipt"
+            ]
+          },
+          "origin": {"type": "string", "minLength": 1},
+          "reviewable": {"type": "boolean"},
+          "preview": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "source"],
+            "properties": {
+              "type": {"enum": ["none", "link", "image"]},
+              "source": {"type": ["string", "null"]}
+            }
+          },
+          "integrity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sha256"],
+            "properties": {
+              "sha256": {
+                "anyOf": [
+                  {"type": "null"},
+                  {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+                ]
+              }
+            }
+          },
+          "review": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["decision", "note"],
+            "properties": {
+              "decision": {"const": "unreviewed"},
+              "note": {"const": ""}
+            }
+          },
+          "capture": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_kind",
+              "page_url",
+              "page_title",
+              "captured_at",
+              "alt",
+              "nearby_text",
+              "link_url",
+              "width",
+              "height"
+            ],
+            "properties": {
+              "source_kind": {
+                "enum": ["seller", "buyer_review", "editorial", "unknown"]
+              },
+              "page_url": {"type": "string", "format": "uri"},
+              "page_title": {"type": "string"},
+              "captured_at": {"type": "string", "format": "date-time"},
+              "alt": {"type": "string"},
+              "nearby_text": {"type": "string"},
+              "link_url": {"type": ["string", "null"]},
+              "width": {"type": "integer", "minimum": 1},
+              "height": {"type": "integer", "minimum": 1}
+            }
+          }
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "allowed_decisions",
+        "decision_file",
+        "review_markdown"
+      ],
+      "properties": {
+        "status": {"enum": ["pending", "not_required", "unavailable"]},
+        "allowed_decisions": {
+          "const": ["keep", "question", "exclude"]
+        },
+        "decision_file": {"const": "evidence_review.json"},
+        "review_markdown": {"const": "evidence_review.md"}
+      }
+    }
+  }
+}
