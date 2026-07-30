@@ -1,0 +1,80 @@
+name: PSOS visual evidence
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/problem_solving_quality_web.py"
+      - "scripts/problem_solving_visual_archive.py"
+      - "scripts/problem_solving_visual_evidence.py"
+      - "schemas/problem-solving-os-visual-evidence-import.schema.json"
+      - "extensions/psos-visual-evidence/**"
+      - "web/quality-review.js"
+      - "web/quality-review.css"
+      - "tests/test_problem_solving_quality_web.py"
+      - "tests/test_problem_solving_visual_archive.py"
+      - "tests/test_problem_solving_visual_evidence.py"
+      - "tests/fixtures/visual_evidence_e2e_server.py"
+      - "tests/e2e/visual-evidence-flow.mjs"
+      - "package.json"
+      - ".github/workflows/psos-visual-evidence.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  focused-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile visual evidence modules
+        run: |
+          python -m py_compile scripts/problem_solving_quality_web.py
+          python -m py_compile scripts/problem_solving_visual_archive.py
+          python -m py_compile scripts/problem_solving_visual_evidence.py
+          python -m py_compile tests/fixtures/visual_evidence_e2e_server.py
+      - name: Validate extension and schema
+        run: |
+          python -m json.tool schemas/problem-solving-os-visual-evidence-import.schema.json > /dev/null
+          python -m json.tool extensions/psos-visual-evidence/manifest.json > /dev/null
+          node --check extensions/psos-visual-evidence/background.js
+          node --check extensions/psos-visual-evidence/content.js
+          node --check web/quality-review.js
+          node --check tests/e2e/visual-evidence-flow.mjs
+      - name: Run visual evidence tests
+        run: >-
+          python -m unittest
+          tests.test_problem_solving_quality_web
+          tests.test_problem_solving_visual_archive
+          tests.test_problem_solving_visual_evidence
+
+  browser-e2e:
+    needs: focused-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run extension to review gallery flow
+        env:
+          PYTHON: python
+        run: xvfb-run -a npm run test:visual-e2e
+      - name: Upload failure screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-evidence-e2e-failure
+          path: visual-evidence-e2e-failure.png
+          if-no-files-found: ignore
