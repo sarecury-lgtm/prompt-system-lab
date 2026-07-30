@@ -50,6 +50,40 @@ The bridge also writes:
 - normalized and raw responses
 - timestamps and SHA-256 values
 
+## Compare a completed PROMPT result
+
+A completed single-route `PROMPT` result includes **프롬프트 구조 비교**. This is a controlled diagnostic, not a normal revision.
+
+The original result is kept as the current baseline. The bridge then creates three alternative executor inputs:
+
+1. remove only the separately repeated raw user-request block;
+2. replace the full Goal Ledger with goal, fixed constraints, and completion condition;
+3. replace the parallel request/Ledger/baseline surfaces with one `Prompt Build Brief`.
+
+The page walks through three candidate-generation handoffs and one blind assessment handoff. Use a **new ChatGPT conversation for every handoff** so a previous candidate does not influence the next candidate.
+
+The blind assessment hides the internal variant names and compares:
+
+- requirement preservation;
+- clarity and priority of the core working procedure;
+- semantic repetition and format pressure;
+- practical reuse by another AI.
+
+Shorter output is not rewarded by itself. A compressed prompt that loses an important condition is marked down.
+
+The parent run is never overwritten. The child comparison run stores:
+
+```text
+prompt_ablation/inputs/*.md
+prompt_ablation/results/*.md
+prompt_ablation/results/*.json
+prompt_ablation/results/blind_assessment.json
+prompt_ablation/comparison.json
+prompt_ablation/comparison.md
+```
+
+The comparison evaluates the generated prompts themselves. Applying each candidate to the same chart images is a later experiment after the strongest candidates are identified.
+
 ## External-information modes
 
 | Mode | Behavior |
@@ -115,5 +149,6 @@ python -B -m unittest \
   tests.test_problem_solving_manual_web \
   tests.test_problem_solving_manual_revision \
   tests.test_problem_solving_manual_deep \
+  tests.test_problem_solving_manual_prompt_ablation \
   tests.test_problem_solving_manual_http
 ```
