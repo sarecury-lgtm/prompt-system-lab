@@ -99,7 +99,9 @@
   }
 
   function updateActionState() {
-    const reviewed = (review?.decisions || []).filter((item) => item.decision !== "unreviewed").length;
+    const reviewed = (review?.decisions || []).filter(
+      (item) => item.decision !== "unreviewed",
+    ).length;
     const total = review?.decisions?.length || 0;
     stateNode.textContent = `${reviewed} / ${total} 검토`;
     revisionButton.disabled = actionableCount() === 0;
@@ -109,11 +111,15 @@
     const target = review.decisions.find((item) => item.evidence_id === evidenceId);
     if (!target) return;
     target.decision = decision;
-    panel.querySelectorAll(`[data-evidence-id="${CSS.escape(evidenceId)}"] [data-decision]`).forEach((button) => {
-      const selected = button.dataset.decision === decision;
-      button.setAttribute("aria-pressed", String(selected));
-      button.classList.toggle("selected", selected);
-    });
+    panel
+      .querySelectorAll(
+        `[data-evidence-id="${CSS.escape(evidenceId)}"] [data-decision]`,
+      )
+      .forEach((button) => {
+        const selected = button.dataset.decision === decision;
+        button.setAttribute("aria-pressed", String(selected));
+        button.classList.toggle("selected", selected);
+      });
     updateActionState();
     message.textContent = "저장되지 않은 판정이 있습니다.";
   }
@@ -156,7 +162,8 @@
       image.src = item.preview_url;
       const fallback = document.createElement("p");
       fallback.hidden = true;
-      fallback.textContent = "미리보기를 불러오지 못했습니다. 원본 링크를 확인하세요.";
+      fallback.textContent =
+        "미리보기를 불러오지 못했습니다. 원본 링크를 확인하세요.";
       image.addEventListener("error", () => {
         image.hidden = true;
         fallback.hidden = false;
@@ -230,7 +237,9 @@
     note.placeholder = "이 판정의 이유나 다시 볼 점";
     note.value = savedDecision?.note || "";
     note.addEventListener("input", () => {
-      const target = review.decisions.find((entry) => entry.evidence_id === item.id);
+      const target = review.decisions.find(
+        (entry) => entry.evidence_id === item.id,
+      );
       if (target) target.note = note.value;
       message.textContent = "저장되지 않은 메모가 있습니다.";
     });
@@ -242,7 +251,8 @@
 
   function applyFilter() {
     gallery.querySelectorAll(".quality-card").forEach((card) => {
-      card.hidden = activeFilter !== "all" && card.dataset.category !== activeFilter;
+      card.hidden =
+        activeFilter !== "all" && card.dataset.category !== activeFilter;
     });
     filterButtons.forEach((button) => {
       const selected = button.dataset.filter === activeFilter;
@@ -261,7 +271,9 @@
       gallery.appendChild(empty);
       return;
     }
-    items.forEach((item) => gallery.appendChild(renderCard(item, decisions.get(item.id))));
+    items.forEach((item) =>
+      gallery.appendChild(renderCard(item, decisions.get(item.id))),
+    );
     applyFilter();
   }
 
@@ -285,7 +297,9 @@
     stateNode.textContent = "근거 불러오는 중";
     message.textContent = "";
     try {
-      const payload = await qRequestJson(`/api/runs/${encodeURIComponent(runId)}/evidence-review`);
+      const payload = await qRequestJson(
+        `/api/runs/${encodeURIComponent(runId)}/evidence-review`,
+      );
       if (loadingRunId !== runId) return;
       currentRunId = runId;
       bundleSha = payload.bundle_sha256;
@@ -298,11 +312,16 @@
       panel.hidden = false;
     } catch (error) {
       if (loadingRunId !== runId) return;
+      currentRunId = null;
+      bundleSha = null;
+      bundle = null;
+      review = null;
       panel.hidden = true;
       if (!String(error.message).includes("찾을 수 없습니다")) {
         console.warn("Evidence review unavailable:", error);
       }
     } finally {
+      if (loadingRunId === runId) loadingRunId = null;
       panel.classList.remove("loading");
     }
   }
