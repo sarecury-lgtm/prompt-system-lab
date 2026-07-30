@@ -135,9 +135,10 @@ prompt_generation_trace.json
 prompt_generation_trace.md
 prompt_generation_causal_audit.json
 prompt_generation_causal_audit.md
+prompt_ablation/manifest.json
 ```
 
-`trace`는 단계별 텍스트 크기·반복·형식 신호를 기록한다. `causal_audit`은 병렬 분기와 실행기 합류를 따로 모델링한다.
+`trace`는 단계별 텍스트 크기·반복·형식 신호를 기록한다. `causal_audit`은 병렬 분기와 실행기 합류를 따로 모델링한다. `prompt_ablation`은 원본을 덮어쓰지 않고 네 가지 통제 입력을 만든다.
 
 진단은 기존 `result_markdown`을 수정하지 않으며, 차트·상품·댓글 같은 도메인별 정답을 코어에 넣지 않는다.
 
@@ -155,21 +156,41 @@ prompt_generation_causal_audit.md
 
 따라서 지금 바로 `프롬프트를 30% 줄여라` 같은 출력 제한을 넣는 것은 원인 수정이 아니다.
 
-## 다음 비교 실험
+## 통제 비교
 
-다음은 입력 합류를 바꾼 통제 비교다.
+입력 합류를 다음 네 방식으로 바꾼다.
 
 1. 현재 방식: Ledger + 원문 + 원문 포함 baseline
 2. 원문 중복 제거: Ledger + baseline
-3. Ledger 최소화: route·목표 요약 + baseline
+3. Ledger 최소화: 목표·고정 조건·완료 조건 + baseline
 4. 대표 brief 사용: 핵심 목표·고정 조건·출력 계약을 한 번만 정규화
 
-각 변형으로 같은 요청의 최종 프롬프트를 생성해 다음을 비교한다.
+품질 run이 끝나면 네 입력 파일은 자동으로 생성된다. 실제 동일 모델 비교는 비용이 드는 명시적 명령으로만 실행한다.
+
+```powershell
+python -B .\scripts\problem_solving_prompt_ablation_run.py `
+  --run-dir .\runs\RUN_ID
+```
+
+실행기는 원래 PROMPT executor의 실제 모델·reasoning·sandbox 설정을 `route.json`에서 복원한다. 현재 결과는 다시 생성하지 않고 기준값으로 사용하며, 나머지 세 변형과 후보명을 가린 블라인드 평가를 실행한다. 결과는 다음에 저장한다.
+
+```text
+prompt_ablation/results/*.md
+prompt_ablation/results/*.json
+prompt_ablation/comparison.json
+prompt_ablation/comparison.md
+```
+
+비교 기준은 다음과 같다.
 
 - 요구 누락 여부
-- 핵심 판단 절차의 선명도
-- 제목·규칙·안전 문구 수
-- 실제 차트 적용 결과의 반복과 양식 채우기
-- 짧아졌지만 중요한 조건을 잃지는 않았는지
+- 핵심 작업 절차의 선명도
+- 제목·규칙·안전 문구와 의미 반복
+- 출력 형식이 작업을 압도하는지
+- 실제 재사용 가능성
 
-이 비교에서 원문 중복 제거만으로 개선되면 실행기 합류가 주원인이다. 그래도 규칙집 성향이 강하면 Ledger 위계와 Compiler 패턴을 다음 변수로 분리한다.
+짧다는 이유만으로 승자를 고르지 않는다. 토큰 겹침은 표면 신호로만 기록하고, 별도 블라인드 평가가 조건 보존과 절차 우선성을 판정한다.
+
+현재 비교는 **생성된 프롬프트 자체**까지다. 각 프롬프트를 실제 차트 이미지에 적용한 매매 판단 품질은 승자 후보를 좁힌 뒤 별도 적용 실험으로 확인한다.
+
+원문 중복 제거만으로 개선되면 실행기 합류가 주원인이다. 그래도 규칙집 성향이 강하면 Ledger 위계와 Compiler 패턴을 다음 변수로 분리한다.
