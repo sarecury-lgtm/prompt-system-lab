@@ -94,6 +94,7 @@ class QualityRuntimeTests(unittest.TestCase):
                 model_policy=self.policy,
                 run_id="quality-evidence-bundle",
             )
+            output_path = run_dir / "output.md"
             bundle_path = run_dir / "evidence_bundle.json"
             review_path = run_dir / "evidence_review.json"
             markdown_path = run_dir / "evidence_review.md"
@@ -102,6 +103,17 @@ class QualityRuntimeTests(unittest.TestCase):
             )
             bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
 
+            self.assertTrue(output_path.is_file())
+            self.assertEqual(
+                payload["execution"]["result_markdown"].strip(),
+                output_path.read_text(encoding="utf-8").strip(),
+            )
+            self.assertEqual(payload["output"], payload["run"]["output"])
+            self.assertEqual(payload["output"], route_record["output"])
+            self.assertEqual(
+                hashlib.sha256(output_path.read_bytes()).hexdigest(),
+                payload["output"]["sha256"],
+            )
             self.assertTrue(bundle_path.is_file())
             self.assertTrue(review_path.is_file())
             self.assertTrue(markdown_path.is_file())
@@ -166,8 +178,10 @@ class QualityRuntimeTests(unittest.TestCase):
                 model_policy=self.policy,
                 run_id="quality-simple-direct",
             )
+            self.assertTrue((run_dir / "output.md").is_file())
             self.assertFalse((run_dir / "evidence_bundle.json").exists())
             self.assertFalse((run_dir / "prompt_generation_trace.json").exists())
+            self.assertIn("output", payload)
             self.assertNotIn("evidence_bundle", payload)
             self.assertNotIn("prompt_generation_trace", payload)
 
