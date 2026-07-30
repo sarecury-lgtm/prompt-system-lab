@@ -58,7 +58,7 @@ class Handler(BaseHTTPRequestHandler):
             return True
         return False
 
-    def headers(self, status: int, kind: str, size: int) -> None:
+    def send_response_headers(self, status: int, kind: str, size: int) -> None:
         self.send_response(status)
         self.send_header("Content-Type", kind)
         self.send_header("Content-Length", str(size))
@@ -71,7 +71,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def send_json(self, status: int, value: Any) -> None:
         body = json.dumps(value, ensure_ascii=False).encode("utf-8")
-        self.headers(status, "application/json; charset=utf-8", len(body))
+        self.send_response_headers(
+            status,
+            "application/json; charset=utf-8",
+            len(body),
+        )
         self.wfile.write(body)
 
     def read_json(self) -> dict[str, Any]:
@@ -120,7 +124,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_error(HTTPStatus.NOT_FOUND)
                 return
             body = path.read_bytes()
-            self.headers(HTTPStatus.OK, kind, len(body))
+            self.send_response_headers(HTTPStatus.OK, kind, len(body))
             self.wfile.write(body)
             return
         try:
