@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
+import re
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +12,11 @@ import problem_solving_manual as manual
 import problem_solving_os as problem_os
 
 REVISION_MODES = {"preserve_route", "reroute"}
+URL_PATTERN = re.compile(r"https?://[^\s)\]>]+", re.I)
+LINK_FEEDBACK_PATTERN = re.compile(
+    r"(?:링크|url|구매\s*페이지|상품\s*페이지|판매\s*페이지)",
+    re.I,
+)
 
 
 def normalize_revision_mode(value: str | None) -> str:
@@ -29,6 +34,10 @@ def normalize_revision_mode(value: str | None) -> str:
 
 def copy_json(value: Any) -> Any:
     return json.loads(json.dumps(value, ensure_ascii=False))
+
+
+def feedback_requires_links(feedback: str) -> bool:
+    return bool(LINK_FEEDBACK_PATTERN.search(feedback))
 
 
 def revised_route_payload(
@@ -87,6 +96,15 @@ def revision_context(
         if preserve_route
         else "목표와 경로부터 다시 판단한다."
     )
+    link_rule = ""
+    if feedback_requires_links(feedback):
+        link_rule = (
+            "\n- 링크가 빠졌다는 피드백은 실제 결과 본문에 직접 사용할 수 있는 "
+            "전체 URL을 넣는 것으로 해결한다. evidence에만 숨기거나 번호 각주만 "
+            "남기지 않는다. 상품을 여러 개 추천하면 각 후보 바로 아래에 해당 "
+            "상품의 직접 구매·판매 페이지 링크를 각각 넣는다. 링크를 확인하지 "
+            "못한 후보는 구매 가능 후보처럼 단정하지 않는다."
+        )
     return f"""# 완료 결과 수정
 
 이 실행은 기존 결과를 덮어쓰지 않는 revision run이다.
@@ -111,7 +129,7 @@ def revision_context(
 - 교체 요청은 기존 문장을 교체하고, 추가 요청은 실제 규칙이나 항목으로 넣고, 삭제 요청은 결과에서 제거한다.
 - 서로 충돌하지 않는 지적은 빠짐없이 모두 반영한다.
 - 사용자에게는 수정된 전체 결과를 제공한다. 변경 제안이나 작업 예고만 반환하지 않는다.
-- 피드백이 산출물 유형 자체를 바꾸는 경우에만 목표 재판단 방식을 사용한다.
+- 피드백이 산출물 유형 자체를 바꾸는 경우에만 목표 재판단 방식을 사용한다.{link_rule}
 """
 
 
@@ -273,13 +291,20 @@ class ManualBridge(manual.ManualBridge):
             raise manual.ManualBridgeError(
                 f"수정 문맥을 읽을 수 없습니다: {exc}"
             ) from exc
+        route_rule = ""
+        if route == "RESEARCH":
+            route_rule = (
+                "\nRESEARCH 결과에서 현재 판매 상품을 추천한다면 각 후보마다 "
+                "사용자가 바로 열 수 있는 직접 상품 URL을 result_markdown 본문에 "
+                "표시한다. 링크는 evidence에만 넣거나 깨진 번호 각주로 대체하지 않는다."
+            )
         return f"""{base.rstrip()}
 
 [현재 단계: 같은 경로에서 완료 결과 직접 수정]
 아래 직전 결과를 초안으로 사용한다.
 사용자 피드백을 검토한 보고서가 아니라, 피드백이 실제로 적용된 수정 전체본을 만든다.
 피드백에서 지적하지 않은 유효한 구조와 목적은 보존한다.
-PROMPT 경로라면 수정된 최종 프롬프트 전체를 result_markdown에 넣는다.
+PROMPT 경로라면 수정된 최종 프롬프트 전체를 result_markdown에 넣는다.{route_rule}
 
 {context}
 """
@@ -312,6 +337,20 @@ PROMPT 경로라면 수정된 최종 프롬프트 전체를 result_markdown에 �
         state: dict[str, Any],
         execution: dict[str, Any],
     ) -> None:
+        feedback = state.get("revision_feedback") or ""
+        selected = state.get("route_payload", {}).get("route", {}).get(
+            "selected_route"
+        )
+        if (
+            state.get("revision_mode") == "preserve_route"
+            and selected in {"RESEARCH", "HYBRID"}
+            and feedback_requires_links(feedback)
+            and not URL_PATTERN.search(execution.get("result_markdown", ""))
+        ):
+            raise manual.ManualBridgeError(
+                "링크 누락 피드백이 반영되지 않았습니다. 추천 상품의 직접 URL을 "
+                "result_markdown 본문에 넣어 다시 반환하세요."
+            )
         super().finalize(run_dir, state, execution)
         revision_mode = state.get("revision_mode")
         if not revision_mode:
