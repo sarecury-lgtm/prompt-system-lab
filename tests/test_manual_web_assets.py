@@ -1,3 +1,5 @@
+# CI probe for the manual PROMPT structure comparison flow.
+
 import unittest
 from pathlib import Path
 
