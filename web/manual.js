@@ -69,6 +69,7 @@ function configureResponseArea(session) {
 function showSession(session) {
   currentSession = session;
   currentRunId = session.run_id;
+  localStorage.setItem("psos-current-run-id", currentRunId);
   $("#run-id").textContent = `${session.run_id} · ${researchModeLabel(session.research_mode)}`;
   $("#prompt").value = session.prompt || "";
   $("#response").value = "";
@@ -199,6 +200,7 @@ reviseButton.addEventListener("click", async () => {
 $("#new-run").addEventListener("click", () => {
   currentRunId = null;
   currentSession = null;
+  localStorage.removeItem("psos-current-run-id");
   $("#request").value = "";
   $("#revision-feedback").value = "";
   $("#revision-box").classList.add("hidden");
@@ -207,3 +209,26 @@ $("#new-run").addEventListener("click", () => {
   startPanel.classList.remove("hidden");
   $("#request").focus();
 });
+
+async function restoreLastSession() {
+  const savedRunId = localStorage.getItem("psos-current-run-id");
+  if (savedRunId) {
+    try {
+      const body = await api(`/api/manual/status?run_id=${encodeURIComponent(savedRunId)}`);
+      if (body.session) {
+        showSession(body.session);
+        return;
+      }
+    } catch (_error) {
+      localStorage.removeItem("psos-current-run-id");
+    }
+  }
+  try {
+    const body = await api("/api/manual/active");
+    if (body.session) showSession(body.session);
+  } catch (_error) {
+    // The start panel remains usable when no previous session can be restored.
+  }
+}
+
+restoreLastSession();
