@@ -1,0 +1,63 @@
+name: Manual ChatGPT bridge
+
+on:
+  pull_request:
+    paths:
+      - "scripts/problem_solving_core_semantic_fixes.py"
+      - "scripts/problem_solving_manual_semantic_fixes.py"
+      - "scripts/problem_solving_manual.py"
+      - "scripts/problem_solving_manual_revision.py"
+      - "scripts/problem_solving_manual_deep.py"
+      - "scripts/problem_solving_manual_web.py"
+      - "schemas/problem-solving-os-route.schema.json"
+      - "tests/test_problem_solving_core_semantic_fixes.py"
+      - "tests/test_manual_web_assets.py"
+      - "tests/test_manual_output_copy.py"
+      - "tests/test_problem_solving_manual_web.py"
+      - "tests/test_problem_solving_manual_revision.py"
+      - "tests/test_problem_solving_manual_deep.py"
+      - "tests/test_problem_solving_manual_http.py"
+      - "web/manual.*"
+      - "extensions/psos-chatgpt-bridge/**"
+      - ".github/workflows/manual-chatgpt-bridge.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile Python entrypoints
+        run: >-
+          python -m py_compile
+          scripts/problem_solving_core_semantic_fixes.py
+          scripts/problem_solving_manual_semantic_fixes.py
+          scripts/problem_solving_manual.py
+          scripts/problem_solving_manual_revision.py
+          scripts/problem_solving_manual_deep.py
+          scripts/problem_solving_manual_web.py
+      - name: Validate route schema
+        run: python -m json.tool schemas/problem-solving-os-route.schema.json > /dev/null
+      - name: Run focused unit tests
+        run: >-
+          python -B -m unittest
+          tests.test_problem_solving_core_semantic_fixes
+          tests.test_manual_web_assets
+          tests.test_manual_output_copy
+          tests.test_problem_solving_manual_web
+          tests.test_problem_solving_manual_revision
+          tests.test_problem_solving_manual_deep
+          tests.test_problem_solving_manual_http
+      - name: Check extension manifest
+        run: python -m json.tool extensions/psos-chatgpt-bridge/manifest.json > /dev/null
+      - name: Check JavaScript syntax
+        run: |
+          node --check web/manual.js
+          node --check extensions/psos-chatgpt-bridge/popup.js
+          node --check extensions/psos-chatgpt-bridge/content.js
