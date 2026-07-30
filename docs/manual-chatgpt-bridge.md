@@ -1,6 +1,6 @@
 # PSOS Manual ChatGPT Bridge
 
-The manual bridge keeps PSOS usable when the ChatGPT-authenticated Codex CLI is unavailable or its included usage is exhausted. It does **not** turn the ChatGPT website into an unofficial API. Instead, it pauses at each model stage, produces the prompt and return contract, accepts the response returned by the user, validates it with the canonical PSOS validators, and resumes the run.
+The manual bridge keeps PSOS usable when the ChatGPT-authenticated Codex CLI is unavailable or its included usage is exhausted. It does **not** turn the ChatGPT website into an unofficial API. It pauses at each model stage, shows the exact prompt for the current run, accepts the response returned by the user, validates it, and resumes the same run.
 
 ## Start
 
@@ -20,95 +20,100 @@ The server binds only to a loopback address.
 
 ## Basic flow
 
-1. Enter an ordinary request and choose a RESEARCH mode.
-2. Copy the generated router prompt into ChatGPT.
-3. Paste ChatGPT's router JSON into the bridge.
-4. The bridge validates it and replaces the prompt with the next stage.
-5. Send the new prompt to ChatGPT and return the new response.
-6. Repeat until the result is complete.
+1. Enter an ordinary request and choose how much external search is allowed.
+2. Press **현재 지시문 복사**.
+3. After copying succeeds, press **ChatGPT 열기** and paste the prompt.
+4. Return the complete ChatGPT response to the bridge.
+5. The bridge validates the response and advances the same run to the next stage.
+6. Repeat until the user-facing output is complete.
 
-The response box is cleared whenever the stage changes. A `HYBRID` route produces an additional execution handoff.
+Copying and opening ChatGPT are separate actions. This prevents a new tab from taking focus before the clipboard write finishes and leaving an older clipboard value in place.
 
-The bridge writes the normal PSOS records:
+The page restores only the run ID saved by that browser. It does not automatically replace the screen with an unrelated latest or completed run from the server.
+
+A `HYBRID` route produces primary and secondary execution handoffs in dependency order. The primary result is passed to the secondary stage, and limitations from both stages are retained.
+
+## Results and records
+
+The completed screen shows and copies the actual `execution.result_markdown`, saved as:
+
+- `output.md` — the user-facing answer, prompt, report, or other final output;
+- `result.md` — the full PSOS audit view containing the goal, route, output, and limitations.
+
+The bridge also writes:
 
 - `request.txt`
 - `goal_ledger.json`
 - `route.json`
-- `result.md`
+- `manual-handoff.json`
+- stage prompt files
+- normalized and raw responses
+- timestamps and SHA-256 values
 
-It also writes `manual-handoff.json`, prompt files, normalized responses, raw responses, timestamps, and SHA-256 values for the complete manual transfer history.
-
-## RESEARCH modes
+## External-information modes
 
 | Mode | Behavior |
 |---|---|
-| `none` | Router sees no web-search capability. |
-| `standard` | The RESEARCH execution prompt expects ordinary ChatGPT web search and an execution JSON response. |
-| `deep` | The bridge first asks for a complete Deep research Markdown report, saves it, and then creates a separate normalizer prompt that converts only that report into PSOS execution JSON. |
+| `none` | External web search is unavailable. Use for supplied-file or image analysis, writing, and prompt creation that does not require current facts. |
+| `standard` | The router still selects the route. If it selects `RESEARCH`, the execution prompt expects ordinary ChatGPT web search. |
+| `deep` | Deep research is used only if the selected route is `RESEARCH`; router and normalization stages remain ordinary ChatGPT stages. |
 
 For `deep` mode:
 
-1. Complete the router handoff normally.
-2. When the UI says **심층 리서치 실행**, enable Deep research in ChatGPT and send the displayed prompt.
-3. Paste the completed Markdown report into the bridge. Do not convert it to JSON.
-4. The bridge saves the report and displays a **보고서 정규화** prompt.
-5. Send that prompt through ordinary ChatGPT and return the execution JSON.
-
-The original report remains in the run directory and its path is recorded in `route.json`.
+1. Complete the router handoff in ordinary ChatGPT.
+2. At the Deep research report stage, enable Deep research and send the displayed prompt.
+3. Return the complete Markdown report without converting it to JSON.
+4. The bridge stores that report and creates a normalizer prompt.
+5. Send the normalizer through ordinary ChatGPT and return the execution JSON.
 
 ## Revise a completed result
 
 The completed-result panel includes **이 결과 수정**.
 
 1. Describe what was wrong or what should take priority instead.
-2. Choose whether the revision should use no search, ordinary search, or Deep research.
-3. Start the revision.
+2. Keep **같은 방식으로 결과만 고치기** unless the original goal or output type was misunderstood.
+3. Select the external-information mode for the revision.
+4. Start the revision.
 
-The bridge does not overwrite the original run. It creates a new child run containing:
-
-- `revision.json` with the parent run ID and user feedback;
-- `revision-context.md` with the prior Goal Ledger, prior result, and correction;
-- a new Goal Ledger and execution history.
-
-The child `route.json` records `parent_run_id`, `revision_feedback`, and `research_mode`.
+The original run is not overwritten. The child run records its parent, feedback, revision context, new Goal Ledger, and execution history.
 
 ## Optional Chrome extension
 
-The unpacked extension in `extensions/psos-chatgpt-bridge/` reduces the transfer to visible button presses:
+The unpacked extension in `extensions/psos-chatgpt-bridge/` reduces the visible transfer steps while retaining explicit user control.
 
-- **대기 중 작업 가져오기** inserts the latest pending prompt into the current `chatgpt.com` composer.
-- The user reviews it and presses ChatGPT's send button.
-- **마지막 답변 반환** extracts the latest assistant response, sends it to the local bridge, and inserts the next PSOS prompt automatically when another stage remains.
+- **현재 PSOS 작업 가져오기** stays bound to the same run until that run completes.
+- It refuses to overwrite text already being written in the ChatGPT composer.
+- At insertion time it records the current assistant-response baseline.
+- **이 작업의 새 답변 반환** accepts only a completed assistant response created after that insertion.
+- It refuses to return an older response, a user message, an arbitrary article, or a response that is still streaming.
+- When another PSOS stage remains, it inserts that stage but does not press ChatGPT's send button.
 
-The extension intentionally does not press ChatGPT's send button. Full DOM automation would be brittle, could send the wrong context, and would weaken the explicit handoff boundary.
+ChatGPT DOM selectors can still change independently of repository tests, so real-browser QA remains necessary after major ChatGPT UI changes.
+
+## Router and validation semantics
+
+The manual server applies the same transitional semantic corrections used by the quality runtime:
+
+- `fixed_constraints` may be empty when the user gave no fixed constraint;
+- supplied images or context do not imply `RESEARCH` unless external current facts are required;
+- single routes must have null primary and secondary routes;
+- HYBRID primary and secondary order must reflect an actual dependency;
+- `completed`, `partial`, `blocked_by_capability`, and `handoff` fields must be internally consistent;
+- HYBRID limitations from both stages are preserved.
 
 ## Trust boundary
 
-The manual bridge preserves:
-
-- Goal Ledger and route schema validation;
-- execution schema and route-specific completion validation;
-- rejection of `created` or `modified` file claims because the manual ChatGPT session has no local write capability;
-- rejection of completed `REUSE` claims because the browser session cannot independently prove local asset inspection;
-- prompt and response audit files with SHA-256 values;
-- normal PSOS result and route records.
-
-It cannot independently verify that the ChatGPT browser actually invoked web search, Deep research, or another browser-side tool. A manual run therefore records this limitation in the final result and sets `manual_bridge.independent_browser_tool_receipts` to `false` in `route.json`.
-
-## Supported routes
-
-| Route | Manual bridge behavior |
-|---|---|
-| `DIRECT` | Supported |
-| `RESEARCH` | Supported through ordinary web search or the report-plus-normalizer Deep research flow |
-| `PROMPT` | Supported and still uses the local Prompt Compiler baseline |
-| `CODE` | Supports code or patch proposals; rejects claims that local files were already changed |
-| `PROJECT` | Supports the closest read-only result or handoff; rejects local write claims |
-| `REUSE` | Must return `handoff` or `blocked_by_capability` |
-| `HYBRID` | Supported through primary and secondary manual stages |
+The manual bridge preserves schema validation, route-specific completion validation, rejection of false local-write claims, and prompt/response audit records. It cannot independently prove browser-side web-search or Deep research tool calls, so manual runs record that limitation.
 
 ## Tests
 
 ```powershell
-python -B -m unittest tests.test_problem_solving_manual_web tests.test_problem_solving_manual_http
+python -B -m unittest \
+  tests.test_problem_solving_core_semantic_fixes \
+  tests.test_manual_web_assets \
+  tests.test_manual_output_copy \
+  tests.test_problem_solving_manual_web \
+  tests.test_problem_solving_manual_revision \
+  tests.test_problem_solving_manual_deep \
+  tests.test_problem_solving_manual_http
 ```
