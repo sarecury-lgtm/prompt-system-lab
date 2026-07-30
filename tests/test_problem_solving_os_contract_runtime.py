@@ -112,13 +112,14 @@ class ContractRuntimeTests(unittest.TestCase):
                 run_id="research-contract",
             )
             contract_path = run_dir / "result_contract.json"
+            contract_exists = contract_path.is_file()
             route_record = json.loads(
                 (run_dir / "route.json").read_text(encoding="utf-8")
             )
             contract = json.loads(contract_path.read_text(encoding="utf-8"))
             digest = hashlib.sha256(contract_path.read_bytes()).hexdigest()
 
-        self.assertTrue(contract_path.is_file())
+        self.assertTrue(contract_exists)
         self.assertEqual("RESEARCH", contract["route"])
         self.assertEqual("research", contract["result_type"])
         self.assertIn("[Result Contract]", engine.calls[1]["prompt"])
@@ -140,11 +141,12 @@ class ContractRuntimeTests(unittest.TestCase):
                 model_policy=self.policy,
                 run_id="simple-direct",
             )
+            contract_exists = (run_dir / "result_contract.json").exists()
             route_record = json.loads(
                 (run_dir / "route.json").read_text(encoding="utf-8")
             )
 
-        self.assertFalse((run_dir / "result_contract.json").exists())
+        self.assertFalse(contract_exists)
         self.assertNotIn("[Result Contract]", engine.calls[1]["prompt"])
         self.assertNotIn("result_contract", payload)
         self.assertNotIn("result_contract", route_record)
