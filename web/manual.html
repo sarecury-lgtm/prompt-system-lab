@@ -11,62 +11,66 @@
     <header class="hero">
       <p class="eyebrow">PERSONAL PROBLEM-SOLVING OS</p>
       <h1>ChatGPT 수동 브리지</h1>
-      <p class="lede">PSOS가 단계별 지시문을 만들고, ChatGPT의 결과를 검증해 이어서 실행합니다. 만족하지 못한 결과는 원본을 보존한 채 수정 run으로 다시 돌릴 수 있습니다.</p>
+      <p class="lede">화면에 표시되는 현재 단계만 따라가면 됩니다. 내부 경로와 JSON 형식은 PSOS가 검사합니다.</p>
     </header>
 
     <section class="panel" id="start-panel">
       <div class="section-heading">
         <span class="step">1</span>
         <div>
-          <h2>요청</h2>
+          <h2>무엇을 해결할까요?</h2>
           <p>평소처럼 원하는 결과를 적으세요.</p>
         </div>
       </div>
       <textarea id="request" rows="7" placeholder="예: 현재 온라인에서 주문 가능한 복숭아 중 아주 달고 큰 백도 물복을 찾아줘."></textarea>
 
-      <label class="field-label" for="research-mode">RESEARCH 실행 방식</label>
+      <label class="field-label" for="research-mode">조사가 필요한 요청인가요?</label>
       <select id="research-mode">
-        <option value="standard">일반 웹 검색</option>
-        <option value="deep">심층 리서치</option>
-        <option value="none">웹 검색 없음</option>
+        <option value="standard">일반 조사 — 기본값</option>
+        <option value="deep">심층 조사 — 여러 상품·출처를 깊게 비교</option>
+        <option value="none">검색 없이 작성</option>
       </select>
-      <p class="field-help">라우터가 RESEARCH를 선택했을 때 적용됩니다. 심층 리서치는 보고서를 먼저 받은 뒤 JSON 정규화 단계를 한 번 더 거칩니다.</p>
+      <p class="field-help" id="research-mode-help">잘 모르겠으면 일반 조사를 고르면 됩니다.</p>
 
-      <button class="primary" id="start">수동 실행 시작</button>
+      <button class="primary wide" id="start">시작</button>
     </section>
 
     <section class="panel hidden" id="handoff-panel">
-      <div class="section-heading">
-        <span class="step">2</span>
+      <div class="guide-heading">
         <div>
-          <h2 id="phase-title">ChatGPT에 전달</h2>
-          <p id="phase-detail">아래 지시문을 현재 ChatGPT 대화에 넣으세요.</p>
+          <p class="phase-step" id="phase-step">현재 단계</p>
+          <h2 id="phase-title">ChatGPT에 보내기</h2>
+          <p id="phase-detail">화면에 적힌 한 가지만 하면 됩니다.</p>
+        </div>
+        <span class="mode-badge" id="chat-mode-badge">일반 ChatGPT</span>
+      </div>
+
+      <div class="action-card">
+        <strong id="action-title">지금 할 일</strong>
+        <p id="action-text"></p>
+        <button class="primary action-button" id="send-to-chatgpt">지시문 복사하고 ChatGPT 열기</button>
+        <p class="action-note" id="action-note"></p>
+      </div>
+
+      <details class="advanced-box" id="prompt-details">
+        <summary>보낼 지시문 직접 보기</summary>
+        <p class="field-help">이 내용은 읽기 전용입니다. 수정하거나 지울 필요가 없습니다.</p>
+        <textarea class="code-area" id="prompt" rows="14" readonly></textarea>
+      </details>
+
+      <div class="response-box">
+        <label class="field-label" id="response-label" for="response">ChatGPT 답변 전체 붙여넣기</label>
+        <p class="field-help" id="response-help">ChatGPT가 새로 답한 내용을 아래 칸에 붙이세요.</p>
+        <textarea class="code-area" id="response" rows="12" placeholder="ChatGPT 답변 전체를 여기에 붙여넣으세요."></textarea>
+        <div class="submit-row">
+          <p id="status">답변을 붙여넣으면 현재 단계에 맞게 검사합니다.</p>
+          <button class="primary" id="submit">붙여넣은 답변 확인</button>
         </div>
       </div>
 
-      <div class="stage-callout" id="stage-callout"></div>
-
-      <div class="toolbar">
+      <div class="bottom-toolbar">
+        <button class="quiet" id="abandon-run">현재 작업 닫기</button>
         <span class="run-id" id="run-id"></span>
-        <div class="toolbar-actions">
-          <button class="quiet" id="abandon-run">이 작업 닫기</button>
-          <button class="quiet" id="copy-prompt">지시문 복사</button>
-          <button class="quiet" id="open-chatgpt">ChatGPT 열기</button>
-        </div>
-      </div>
-
-      <label class="field-label" for="prompt">① ChatGPT에 보낼 지시문 <span class="readonly-note">읽기 전용</span></label>
-      <p class="field-help">이 칸은 PSOS가 만든 작업지시서라 직접 수정하거나 지우는 칸이 아닙니다. 복사해서 ChatGPT에 보내세요.</p>
-      <textarea class="code-area" id="prompt" rows="14" readonly></textarea>
-
-      <div class="divider"></div>
-
-      <label class="field-label" id="response-label" for="response">② ChatGPT가 반환한 JSON 붙여넣기</label>
-      <p class="field-help" id="response-help">아래 칸만 사용자가 입력하는 칸입니다.</p>
-      <textarea class="code-area" id="response" rows="12" placeholder="ChatGPT의 전체 응답을 여기에 붙여넣으세요."></textarea>
-      <div class="submit-row">
-        <p id="status">응답을 붙여넣으면 기존 PSOS validator로 검사합니다.</p>
-        <button class="primary" id="submit">검증하고 계속</button>
       </div>
     </section>
 
@@ -75,7 +79,7 @@
         <span class="step done">✓</span>
         <div>
           <h2>완료</h2>
-          <p id="result-detail">결과와 수동 인계 기록이 run 디렉터리에 저장됐습니다.</p>
+          <p id="result-detail">결과가 저장됐습니다.</p>
         </div>
       </div>
       <pre id="result"></pre>
@@ -86,38 +90,41 @@
 
       <div class="revision-box hidden" id="revision-box">
         <div class="divider"></div>
-        <h3>무엇이 아쉬웠나요?</h3>
-        <p>원래 결과는 그대로 보존합니다. 구체적인 평가문이나 수정 지시를 넣으면 기존 결과에 직접 반영한 전체본을 다시 만듭니다.</p>
-
-        <label class="field-label" for="revision-mode">수정 방식</label>
-        <select id="revision-mode">
-          <option value="preserve_route">같은 경로에서 결과만 고치기</option>
-          <option value="reroute">목표와 경로부터 다시 판단하기</option>
-        </select>
-        <p class="field-help" id="revision-mode-help">문장 교체·규칙 추가·항목 삭제처럼 기존 산출물을 개선하는 피드백은 이 기본값을 사용합니다.</p>
+        <h3>어떻게 고칠까요?</h3>
+        <p>아쉬운 점을 그대로 적으면 기존 결과에 반영한 새 전체본을 만듭니다.</p>
 
         <label class="field-label" for="revision-feedback">수정 피드백</label>
-        <textarea id="revision-feedback" rows="8" placeholder="예: 상대 논리를 과도하게 보충하지 않도록 문구를 교체하고, 사용자의 실제 말투를 보존하는 규칙을 추가해라. 답글만 출력하는 옵션도 넣고, 브리지 잔여 문장은 삭제해라."></textarea>
+        <textarea id="revision-feedback" rows="8" placeholder="예: 실제 상품 링크가 없어서 구매할 수 없다. 후보마다 가격, 판매 상태, 판매자와 직접 구매 링크를 넣어 다시 조사해라."></textarea>
         <label class="file-row" for="revision-file">
           <span>텍스트 피드백 파일 불러오기</span>
           <input id="revision-file" type="file" accept=".txt,.md,text/plain,text/markdown">
         </label>
-        <p class="field-help" id="revision-file-status">TXT·MD 파일을 고르면 내용이 위 피드백 칸에 들어갑니다.</p>
+        <p class="field-help" id="revision-file-status">TXT·MD 파일을 고르면 내용이 위 칸에 들어갑니다.</p>
 
-        <label class="field-label" for="revision-research-mode">필요한 경우 검색 방식</label>
-        <select id="revision-research-mode">
-          <option value="standard">일반 웹 검색</option>
-          <option value="deep">심층 리서치</option>
-          <option value="none">웹 검색 없음</option>
-        </select>
-        <p class="field-help">PROMPT처럼 검색이 필요 없는 결과 수정에서는 이 선택이 사용되지 않습니다. RESEARCH 결과를 다시 조사할 때만 적용됩니다.</p>
-        <button class="primary" id="revise">수정 실행 시작</button>
+        <details class="advanced-box revision-advanced">
+          <summary>수정 방식 바꾸기 — 대부분 열 필요 없음</summary>
+          <label class="field-label" for="revision-mode">수정 방식</label>
+          <select id="revision-mode">
+            <option value="preserve_route">같은 방식으로 결과만 고치기</option>
+            <option value="reroute">목표와 해결 방식부터 다시 판단하기</option>
+          </select>
+          <p class="field-help" id="revision-mode-help"></p>
+
+          <label class="field-label" for="revision-research-mode">다시 조사할 때 사용할 방식</label>
+          <select id="revision-research-mode">
+            <option value="standard">일반 조사</option>
+            <option value="deep">심층 조사</option>
+            <option value="none">검색 없음</option>
+          </select>
+        </details>
+
+        <button class="primary wide" id="revise">피드백 반영 시작</button>
       </div>
     </section>
 
     <aside class="note">
-      <strong>신뢰 경계</strong>
-      <p>이 모드는 ChatGPT 브라우저 내부의 실제 검색·도구 호출을 독립 receipt로 확인하지 못합니다. 대신 JSON 구조, 경로별 완료 조건, 로컬 쓰기 주장 금지, 응답 hash와 전체 왕복 기록을 검증합니다.</p>
+      <strong>기록과 검증</strong>
+      <p>PSOS는 각 단계의 응답 구조와 완료 조건을 검사하고 전체 왕복 기록을 run 디렉터리에 남깁니다.</p>
     </aside>
   </main>
   <script src="/manual.js"></script>
