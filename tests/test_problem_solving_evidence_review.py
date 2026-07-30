@@ -17,14 +17,20 @@ SPEC.loader.exec_module(REVIEW)
 
 
 def write_json(path, payload):
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def make_run(root):
     run_dir = Path(root) / "psos-review-test"
     run_dir.mkdir()
     (run_dir / "request.txt").write_text("현재 후보를 비교해 줘\n", encoding="utf-8")
-    (run_dir / "result.md").write_text("# 원래 결과\n\n후보 A를 추천합니다.\n", encoding="utf-8")
+    (run_dir / "result.md").write_text(
+        "# 원래 결과\n\n후보 A를 추천합니다.\n",
+        encoding="utf-8",
+    )
     write_json(
         run_dir / "goal_ledger.json",
         {
@@ -60,7 +66,10 @@ def make_run(root):
                 "source_roles": ["current_listing"],
                 "claim_source_mapping": True,
             },
-            "user_review": {"needed": True, "evidence_types": ["web", "image"]},
+            "user_review": {
+                "needed": True,
+                "evidence_types": ["web", "image"],
+            },
             "failure_policy": "no_winner",
         },
     )
@@ -89,7 +98,10 @@ def make_run(root):
                 "role": "unclassified",
                 "origin": "execution.evidence:0",
                 "reviewable": True,
-                "preview": {"type": "link", "source": "https://example.test/product"},
+                "preview": {
+                    "type": "link",
+                    "source": "https://example.test/product",
+                },
                 "integrity": {"sha256": None},
                 "review": {"decision": "unreviewed", "note": ""},
             },
@@ -102,7 +114,10 @@ def make_run(root):
                 "role": "visual_observation",
                 "origin": "execution.evidence:1",
                 "reviewable": True,
-                "preview": {"type": "image", "source": "https://example.test/photo.jpg"},
+                "preview": {
+                    "type": "image",
+                    "source": "https://example.test/photo.jpg",
+                },
                 "integrity": {"sha256": None},
                 "review": {"decision": "unreviewed", "note": ""},
             },
@@ -128,7 +143,9 @@ def make_run(root):
         },
     }
     write_json(run_dir / "evidence_bundle.json", bundle)
-    bundle_sha = hashlib.sha256((run_dir / "evidence_bundle.json").read_bytes()).hexdigest()
+    bundle_sha = hashlib.sha256(
+        (run_dir / "evidence_bundle.json").read_bytes()
+    ).hexdigest()
     write_json(
         run_dir / "evidence_review.json",
         {
@@ -136,8 +153,16 @@ def make_run(root):
             "bundle_sha256": bundle_sha,
             "allowed_decisions": ["keep", "question", "exclude"],
             "decisions": [
-                {"evidence_id": "ev-web", "decision": "unreviewed", "note": ""},
-                {"evidence_id": "ev-image", "decision": "unreviewed", "note": ""},
+                {
+                    "evidence_id": "ev-web",
+                    "decision": "unreviewed",
+                    "note": "",
+                },
+                {
+                    "evidence_id": "ev-image",
+                    "decision": "unreviewed",
+                    "note": "",
+                },
             ],
         },
     )
@@ -154,19 +179,25 @@ class EvidenceReviewTests(unittest.TestCase):
                     "bundle_sha256": bundle_sha,
                     "reviewer_note": "사진은 옵션이 달라 보임",
                     "decisions": [
-                        {"evidence_id": "ev-web", "decision": "keep", "note": "현재 페이지"},
-                        {"evidence_id": "ev-image", "decision": "question", "note": "옵션 확인"},
+                        {
+                            "evidence_id": "ev-web",
+                            "decision": "keep",
+                            "note": "현재 페이지",
+                        },
+                        {
+                            "evidence_id": "ev-image",
+                            "decision": "question",
+                            "note": "옵션 확인",
+                        },
                     ],
                 },
             )
-            saved = json.loads((run_dir / "evidence_review.json").read_text(encoding="utf-8"))
+            saved_bytes = (run_dir / "evidence_review.json").read_bytes()
+            saved = json.loads(saved_bytes.decode("utf-8"))
 
         self.assertEqual("completed", review["review_status"])
         self.assertEqual(review, saved)
-        self.assertEqual(
-            hashlib.sha256(json.dumps(saved, ensure_ascii=False, indent=2).encode("utf-8") + b"\n").hexdigest(),
-            review_sha,
-        )
+        self.assertEqual(hashlib.sha256(saved_bytes).hexdigest(), review_sha)
 
     def test_save_review_rejects_stale_hash_unknown_id_and_partial_payload(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -204,16 +235,25 @@ class EvidenceReviewTests(unittest.TestCase):
                     "bundle_sha256": bundle_sha,
                     "reviewer_note": "의심 사진 없이 다시 판단",
                     "decisions": [
-                        {"evidence_id": "ev-web", "decision": "keep", "note": "판매 페이지 유지"},
-                        {"evidence_id": "ev-image", "decision": "exclude", "note": "다른 옵션 사진"},
+                        {
+                            "evidence_id": "ev-web",
+                            "decision": "keep",
+                            "note": "판매 페이지 유지",
+                        },
+                        {
+                            "evidence_id": "ev-image",
+                            "decision": "exclude",
+                            "note": "다른 옵션 사진",
+                        },
                     ],
                 },
             )
             record = REVIEW.build_revision_context(run_dir)
             context = (run_dir / record["path"]).read_text(encoding="utf-8")
             request = REVIEW.build_revision_request(record["path"], run_dir.name)
+            parent_after = (run_dir / "result.md").read_text(encoding="utf-8")
 
-        self.assertEqual(original, (run_dir / "result.md").read_text(encoding="utf-8"))
+        self.assertEqual(original, parent_after)
         self.assertIn("keep", context)
         self.assertIn("question", context)
         self.assertIn("exclude", context)
