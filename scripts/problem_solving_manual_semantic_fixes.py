@@ -25,6 +25,17 @@ def apply(manual_module: Any) -> Any:
             if output_path.is_file()
             else ""
         )
+        payload["session_kind"] = state.get("session_kind", "psos")
+        route_payload = state.get("route_payload")
+        route = (
+            route_payload.get("route")
+            if isinstance(route_payload, dict)
+            and isinstance(route_payload.get("route"), dict)
+            else {}
+        )
+        payload["selected_route"] = (
+            state.get("selected_route") or route.get("selected_route")
+        )
         return payload
 
     def finalize(
