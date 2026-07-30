@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "PSOS Visual Evidence Collector",
+  "version": "0.1.0",
+  "description": "Select visible web images and attach them to a PSOS run with an explicit candidate label.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "http://127.0.0.1:8765/*",
+    "http://localhost:8765/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "PSOS 사진 근거 수집"
+  }
+}
