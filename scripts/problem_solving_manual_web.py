@@ -18,6 +18,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import problem_solving_manual as manual
+import problem_solving_manual_revision as revision_manual
 import problem_solving_os as problem_os
 
 ROOT = SCRIPT_DIR.parent
@@ -215,6 +216,7 @@ class Handler(BaseHTTPRequestHandler):
                     str(value.get("parent_run_id", "")),
                     str(value.get("feedback", "")),
                     value.get("research_mode"),
+                    value.get("revision_mode"),
                 )
                 self.send_json(HTTPStatus.CREATED, {"session": session})
                 return
@@ -251,7 +253,7 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
-    bridge = manual.ManualBridge(args.runs_dir, args.model_policy)
+    bridge = revision_manual.ManualBridge(args.runs_dir, args.model_policy)
     configured = type("ConfiguredHandler", (Handler,), {"bridge": bridge})
     server = ThreadingHTTPServer((args.host, args.port), configured)
     print(f"PSOS manual ChatGPT bridge: http://{args.host}:{args.port}")
