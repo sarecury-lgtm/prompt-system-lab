@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run PSOS with Result Contract enforcement and a reviewable Evidence Bundle."""
+"""Run PSOS with corrected routing, Result Contract enforcement, and evidence review."""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_os_contract_runtime.py"
 EVIDENCE_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_evidence_bundle.py"
+CORE_FIXES_PATH = ROOT / "scripts" / "problem_solving_core_semantic_fixes.py"
+QUALITY_FIXES_PATH = ROOT / "scripts" / "problem_solving_quality_semantic_fixes.py"
 
 
 def _load_local_module(name: str, path: Path) -> Any:
@@ -33,7 +35,17 @@ EVIDENCE = _load_local_module(
     "psos_evidence_bundle_runtime",
     EVIDENCE_RUNTIME_PATH,
 )
+CORE_FIXES = _load_local_module(
+    "psos_core_semantic_fixes",
+    CORE_FIXES_PATH,
+)
+QUALITY_FIXES = _load_local_module(
+    "psos_quality_semantic_fixes",
+    QUALITY_FIXES_PATH,
+)
 OS = CONTRACT_RUNTIME.OS
+CORE_FIXES.apply(OS)
+QUALITY_FIXES.apply(CONTRACT_RUNTIME, EVIDENCE)
 
 
 def _persist_bundle_record(
@@ -43,6 +55,8 @@ def _persist_bundle_record(
 ) -> None:
     if record is None:
         return
+    if isinstance(payload.get("run"), dict):
+        payload["run"]["evidence_bundle"] = record
     route_path = run_dir / "route.json"
     route_record = json.loads(route_path.read_text(encoding="utf-8"))
     route_record["evidence_bundle"] = record
@@ -70,6 +84,7 @@ def run_request(
         model_policy_path=model_policy_path,
         run_id=run_id,
     )
+    QUALITY_FIXES.set_workspace_root(EVIDENCE, engine)
     record = EVIDENCE.attach_evidence_bundle(run_dir, payload)
     _persist_bundle_record(run_dir, payload, record)
     return run_dir, payload
