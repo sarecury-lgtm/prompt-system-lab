@@ -174,10 +174,11 @@ class QualityWebTests(unittest.TestCase):
             public = WEB.load_public_evidence(run_dir.name)
             item_id = imported["import"]["archived_item_ids"][0]
             resolved = WEB.safe_evidence_image(run_dir.name, item_id)
+            resolved_bytes = resolved.read_bytes()
 
         item = next(entry for entry in public["bundle"]["items"] if entry["id"] == item_id)
         self.assertTrue(item["preview_url"].endswith(f"/evidence-items/{item_id}"))
-        self.assertEqual(PNG, resolved.read_bytes())
+        self.assertEqual(PNG, resolved_bytes)
         self.assertEqual("archived", item["archive"]["status"])
 
     def test_save_review_updates_route_anchor(self):
