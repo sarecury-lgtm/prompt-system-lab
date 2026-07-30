@@ -42,6 +42,62 @@ def route_result(route="DIRECT"):
     }
 
 
+def compiled_contract(route="RESEARCH", *, detailed=True):
+    outputs = [
+        {
+            "id": "goal-completion",
+            "description": "사용 가능한 결과가 생성됨",
+            "verification": "evidence" if route == "RESEARCH" else "text",
+        }
+    ]
+    if detailed:
+        outputs.extend(
+            [
+                {
+                    "id": "target-identity",
+                    "description": "각 최종 후보를 정확히 식별할 수 있음",
+                    "verification": "evidence",
+                },
+                {
+                    "id": "direct-target-url",
+                    "description": "각 최종 후보의 직접 대상 URL이 있음",
+                    "verification": "url",
+                },
+                {
+                    "id": "current-state",
+                    "description": "확인 시점의 상태와 비용 조건이 표시됨",
+                    "verification": "evidence",
+                },
+                {
+                    "id": "decision-evidence",
+                    "description": "사용자 판단 기준별 근거가 후보에 연결됨",
+                    "verification": "evidence",
+                },
+            ]
+        )
+    return {
+        "version": 1,
+        "route": route,
+        "result_type": "research" if route == "RESEARCH" else "answer",
+        "must_preserve": ["요청의 범위를 바꾸지 않음"],
+        "required_outputs": outputs,
+        "evidence_requirements": {
+            "minimum_sources": 3 if detailed else 1,
+            "source_roles": (
+                ["current_target", "independent_fact", "user_experience"]
+                if detailed
+                else ["fact"]
+            ),
+            "claim_source_mapping": True,
+        },
+        "user_review": {
+            "needed": detailed,
+            "evidence_types": ["web"] if detailed else [],
+        },
+        "failure_policy": "no_winner" if detailed else "partial",
+    }
+
+
 def execution_result(route="DIRECT"):
     evidence = []
     if route == "RESEARCH":
@@ -84,7 +140,10 @@ class FakeEngine:
 
     def execute(self, prompt, run_dir, invocation):
         self.calls.append({"prompt": prompt, "invocation": invocation})
-        return json.loads(json.dumps(self.responses.pop(0)))
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return json.loads(json.dumps(response))
 
     def trace(self):
         return [
@@ -101,11 +160,27 @@ class ContractRuntimeTests(unittest.TestCase):
     def setUp(self):
         self.policy = OS.load_model_policy()
 
-    def test_research_contract_is_written_delivered_and_anchored(self):
-        engine = FakeEngine([route_result("RESEARCH"), execution_result("RESEARCH")])
+    def test_contract_prompt_is_domain_neutral_and_transaction_capable(self):
+        prompt = RUNTIME.build_contract_prompt(
+            "현재 구매 가능한 개별 대상을 비교해 줘.",
+            route_result("RESEARCH"),
+        )
+        self.assertIn("직접 대상 URL", prompt)
+        self.assertIn("시각 정보가 판단을 바꾸면", prompt)
+        self.assertIn("실제 수정된 전체본", prompt)
+        self.assertNotIn("복숭아", prompt)
+
+    def test_research_contract_is_compiled_written_delivered_and_anchored(self):
+        engine = FakeEngine(
+            [
+                route_result("RESEARCH"),
+                compiled_contract("RESEARCH"),
+                execution_result("RESEARCH"),
+            ]
+        )
         with tempfile.TemporaryDirectory() as temp_dir:
             run_dir, payload = RUNTIME.run_request(
-                "현재 사실을 조사해 줘.",
+                "현재 구매 가능한 개별 대상을 비교해 줘.",
                 output_root=Path(temp_dir),
                 engine=engine,
                 model_policy=self.policy,
@@ -121,17 +196,79 @@ class ContractRuntimeTests(unittest.TestCase):
 
         self.assertTrue(contract_exists)
         self.assertEqual("RESEARCH", contract["route"])
-        self.assertEqual("research", contract["result_type"])
-        self.assertIn("[Result Contract]", engine.calls[1]["prompt"])
-        self.assertIn("사용 가능한 결과가 생성됨", engine.calls[1]["prompt"])
+        self.assertIn(
+            "direct-target-url",
+            [item["id"] for item in contract["required_outputs"]],
+        )
+        self.assertEqual("contract", engine.calls[1]["invocation"].phase)
+        self.assertIn("[Result Contract]", engine.calls[2]["prompt"])
+        self.assertIn("direct-target-url", engine.calls[2]["prompt"])
         self.assertEqual(digest, route_record["result_contract"]["sha256"])
+        self.assertEqual("model_compiled", payload["result_contract"]["generation"])
         self.assertEqual(
             "prompt_only_phase_a",
             payload["result_contract"]["enforcement"],
         )
-        self.assertTrue(payload["result_contract"]["delivered_to_executor"])
 
-    def test_simple_direct_keeps_existing_flow_without_contract(self):
+    def test_invalid_compiled_contract_uses_second_profile(self):
+        invalid = compiled_contract("RESEARCH")
+        invalid["must_preserve"] = ["모델이 임의로 만든 제약"]
+        engine = FakeEngine(
+            [
+                route_result("RESEARCH"),
+                invalid,
+                compiled_contract("RESEARCH"),
+                execution_result("RESEARCH"),
+            ]
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            _run_dir, payload = RUNTIME.run_request(
+                "최근 사실을 조사해 줘.",
+                output_root=Path(temp_dir),
+                engine=engine,
+                model_policy=self.policy,
+                run_id="contract-fallback-profile",
+            )
+
+        trace = payload["result_contract"]["generation_trace"]
+        self.assertEqual(4, len(engine.calls))
+        self.assertEqual(["rejected", "accepted"], [item["outcome"] for item in trace])
+        self.assertEqual("model_compiled", payload["result_contract"]["generation"])
+
+    def test_two_invalid_contracts_fall_back_to_minimal_contract(self):
+        invalid_one = compiled_contract("RESEARCH")
+        invalid_one["route"] = "DIRECT"
+        invalid_one["result_type"] = "answer"
+        invalid_two = compiled_contract("RESEARCH")
+        invalid_two["required_outputs"][0]["description"] = "다른 완료 조건"
+        engine = FakeEngine(
+            [
+                route_result("RESEARCH"),
+                invalid_one,
+                invalid_two,
+                execution_result("RESEARCH"),
+            ]
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir, payload = RUNTIME.run_request(
+                "최근 사실을 조사해 줘.",
+                output_root=Path(temp_dir),
+                engine=engine,
+                model_policy=self.policy,
+                run_id="minimal-contract-fallback",
+            )
+            contract = json.loads(
+                (run_dir / "result_contract.json").read_text(encoding="utf-8")
+            )
+
+        self.assertEqual("minimal_fallback", payload["result_contract"]["generation"])
+        self.assertEqual(
+            ["goal-completion"],
+            [item["id"] for item in contract["required_outputs"]],
+        )
+        self.assertIn("[Result Contract]", engine.calls[3]["prompt"])
+
+    def test_simple_direct_keeps_existing_flow_without_contract_compiler(self):
         engine = FakeEngine([route_result("DIRECT"), execution_result("DIRECT")])
         with tempfile.TemporaryDirectory() as temp_dir:
             run_dir, payload = RUNTIME.run_request(
@@ -146,6 +283,7 @@ class ContractRuntimeTests(unittest.TestCase):
                 (run_dir / "route.json").read_text(encoding="utf-8")
             )
 
+        self.assertEqual(2, len(engine.calls))
         self.assertFalse(contract_exists)
         self.assertNotIn("[Result Contract]", engine.calls[1]["prompt"])
         self.assertNotIn("result_contract", payload)
@@ -153,7 +291,12 @@ class ContractRuntimeTests(unittest.TestCase):
 
     def test_invalid_first_router_attempt_does_not_create_stale_contract(self):
         engine = FakeEngine(
-            [{}, route_result("RESEARCH"), execution_result("RESEARCH")]
+            [
+                {},
+                route_result("RESEARCH"),
+                compiled_contract("RESEARCH", detailed=False),
+                execution_result("RESEARCH"),
+            ]
         )
         with tempfile.TemporaryDirectory() as temp_dir:
             run_dir, _payload = RUNTIME.run_request(
@@ -167,9 +310,10 @@ class ContractRuntimeTests(unittest.TestCase):
                 (run_dir / "result_contract.json").read_text(encoding="utf-8")
             )
 
-        self.assertEqual(3, len(engine.calls))
+        self.assertEqual(4, len(engine.calls))
         self.assertEqual("RESEARCH", contract["route"])
-        self.assertIn("[Result Contract]", engine.calls[2]["prompt"])
+        self.assertEqual("contract", engine.calls[2]["invocation"].phase)
+        self.assertIn("[Result Contract]", engine.calls[3]["prompt"])
 
 
 if __name__ == "__main__":
