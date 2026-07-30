@@ -435,7 +435,10 @@ def _structural_findings(
     return findings
 
 
-def build_prompt_generation_trace(run_dir: Path) -> dict[str, Any] | None:
+def build_prompt_generation_trace(
+    run_dir: Path,
+    execution_override: Mapping[str, Any] | None = None,
+) -> dict[str, Any] | None:
     run_dir = run_dir.expanduser().resolve()
     route = _read_json(run_dir / "route.json", "route.json")
     selected = route.get("selected_route")
@@ -459,6 +462,11 @@ def build_prompt_generation_trace(run_dir: Path) -> dict[str, Any] | None:
     if not isinstance(baseline_prompt, str) or not baseline_prompt.strip():
         raise PromptTraceError("Prompt Compiler baseline에 final_prompt가 없습니다.")
     output_path, execution = _find_execution_output(run_dir, executor_path)
+    if (
+        isinstance(execution_override, Mapping)
+        and isinstance(execution_override.get("result_markdown"), str)
+    ):
+        execution = dict(execution_override)
     final_prompt = str(execution["result_markdown"]).strip()
     ledger_rendered = _ledger_text(ledger)
 
@@ -659,7 +667,10 @@ def attach_prompt_generation_trace(
     run_dir: Path,
     payload: dict[str, Any],
 ) -> dict[str, Any] | None:
-    trace = build_prompt_generation_trace(run_dir)
+    trace = build_prompt_generation_trace(
+        run_dir,
+        payload.get("execution") if isinstance(payload.get("execution"), Mapping) else None,
+    )
     if trace is None:
         return None
     record = write_prompt_generation_trace(run_dir, trace)
