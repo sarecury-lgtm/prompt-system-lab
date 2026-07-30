@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "scripts/problem_solving_core_semantic_fixes.py"
+      - "scripts/problem_solving_manual_semantic_fixes.py"
       - "scripts/problem_solving_manual.py"
       - "scripts/problem_solving_manual_revision.py"
       - "scripts/problem_solving_manual_deep.py"
@@ -11,6 +12,7 @@ on:
       - "schemas/problem-solving-os-route.schema.json"
       - "tests/test_problem_solving_core_semantic_fixes.py"
       - "tests/test_manual_web_assets.py"
+      - "tests/test_manual_output_copy.py"
       - "tests/test_problem_solving_manual_web.py"
       - "tests/test_problem_solving_manual_revision.py"
       - "tests/test_problem_solving_manual_deep.py"
@@ -35,6 +37,7 @@ jobs:
         run: >-
           python -m py_compile
           scripts/problem_solving_core_semantic_fixes.py
+          scripts/problem_solving_manual_semantic_fixes.py
           scripts/problem_solving_manual.py
           scripts/problem_solving_manual_revision.py
           scripts/problem_solving_manual_deep.py
@@ -46,6 +49,7 @@ jobs:
           python -B -m unittest
           tests.test_problem_solving_core_semantic_fixes
           tests.test_manual_web_assets
+          tests.test_manual_output_copy
           tests.test_problem_solving_manual_web
           tests.test_problem_solving_manual_revision
           tests.test_problem_solving_manual_deep
