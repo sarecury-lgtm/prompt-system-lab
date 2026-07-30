@@ -31,9 +31,40 @@ python -B .\scripts\problem_solving_os_quality_runtime.py --request "해결할 �
 → 계약 검증
 → 안전한 경로만 최대 1회 보충
 → Evidence Bundle 생성
+→ PROMPT 경로이면 생성 단계 진단
 → 사용자 검토
 → 필요할 때 원본을 보존한 새 수정 실행
 ```
+
+## PROMPT 생성 경로 진단
+
+PROMPT가 포함된 실행은 최종 프롬프트를 바로 고치는 대신 다음 생성 단계를 비교한다.
+
+```text
+사용자 원문
+→ Goal Ledger
+→ Prompt Compiler baseline
+→ PROMPT 실행기 입력
+→ 최종 프롬프트
+```
+
+run 디렉터리에 다음 파일이 생성된다.
+
+```text
+prompt_generation_trace.json
+prompt_generation_trace.md
+```
+
+기록에는 단계별 크기, 구간별 팽창, 최종 프롬프트의 유사 규칙 쌍, 평면 Ledger·additive baseline·중복 입력·형식 압력 신호가 포함된다. 이 진단은 기존 결과를 수정하지 않고 원인을 찾기 위한 자료만 남긴다.
+
+기존 run을 따로 진단할 때는 다음을 사용한다.
+
+```powershell
+cd "C:\Users\jeong\prompt-system-lab"
+python -B .\scripts\problem_solving_prompt_trace.py --run-dir .\runs\RUN_ID
+```
+
+구조적 원인과 비교 실험 기준은 `docs/prompt-generation-causal-audit.md`에 정리돼 있다.
 
 ## 웹 근거 검토
 
@@ -58,6 +89,7 @@ evidence_revision_request.json
 
 ## 현재 경계
 
+- PROMPT 진단은 구조와 반복을 추적하며, 프롬프트의 도메인 정확성 자체를 판정하지 않는다.
 - 페이지를 돌아다니며 사진을 새로 수집하는 기능은 아직 없다. 실행 결과나 evidence에 들어온 사진만 검토한다.
 - 근거를 후보별·주장별로 자동 연결하지 않고 우선 결과 전체에 연결한다.
 - 외부 이미지 서버가 미리보기를 막으면 원본 링크로 직접 확인해야 한다.
