@@ -25,7 +25,7 @@
         "current_goal_hypothesis": {"type": "string", "minLength": 1},
         "fixed_constraints": {
           "type": "array",
-          "minItems": 1,
+          "uniqueItems": true,
           "items": {"type": "string", "minLength": 1}
         },
         "current_position": {"type": "string", "minLength": 1},
@@ -43,6 +43,7 @@
         "important_uncertainties": {
           "type": "array",
           "maxItems": 3,
+          "uniqueItems": true,
           "items": {"type": "string", "minLength": 1}
         }
       }
