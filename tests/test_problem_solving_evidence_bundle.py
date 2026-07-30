@@ -143,7 +143,8 @@ class EvidenceBundleTests(unittest.TestCase):
                 record["sha256"],
             )
             self.assertEqual(record["sha256"], review["bundle_sha256"])
-            self.assertIn("구매자 단면 사진", markdown)
+            self.assertIn(image_url, markdown)
+            self.assertIn("![ev-", markdown)
             self.assertIn("[ ] 유지", markdown)
 
     def test_bundle_does_not_invent_semantic_roles(self):
