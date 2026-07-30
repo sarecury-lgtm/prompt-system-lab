@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""Run canonical PSOS with an AI-compiled request-specific Result Contract.
-
-The adapter wraps the canonical runtime instead of copying its orchestration. After
-an accepted router result, it skips trivial DIRECT requests, asks a bounded contract
-compiler to turn the request and Goal Ledger into observable completion conditions,
-persists ``result_contract.json``, appends the contract to executor prompts, and
-anchors the contract path and hash in the run record.
-
-Contract enforcement and focused repair remain Phase B concerns. This adapter
-establishes contract compilation, persistence, and prompt delivery without changing
-the canonical backup, receipt, rollback, or model-policy lifecycle.
-"""
+"""Run canonical PSOS with an AI-compiled and enforced Result Contract."""
 
 from __future__ import annotations
 
@@ -22,11 +11,14 @@ import sys
 from pathlib import Path
 from typing import Any, Protocol, Sequence
 
-
 ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_os.py"
 CONTRACT_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_contract.py"
+ENFORCEMENT_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_contract_enforcement.py"
 CONTRACT_SCHEMA_PATH = ROOT / "schemas" / "problem-solving-os-result-contract.schema.json"
+ASSESSMENT_SCHEMA_PATH = (
+    ROOT / "schemas" / "problem-solving-os-result-contract-assessment.schema.json"
+)
 
 
 def _load_local_module(name: str, path: Path) -> Any:
@@ -41,6 +33,10 @@ def _load_local_module(name: str, path: Path) -> Any:
 
 OS = _load_local_module("psos_canonical_runtime", CANONICAL_RUNTIME_PATH)
 CONTRACT = _load_local_module("psos_result_contract_runtime", CONTRACT_RUNTIME_PATH)
+ENFORCEMENT = _load_local_module(
+    "psos_result_contract_enforcement_runtime",
+    ENFORCEMENT_RUNTIME_PATH,
+)
 
 
 class CompatibleEngine(Protocol):
@@ -304,6 +300,9 @@ class ContractAwareEngine:
         self._contract_path = path
         self._contract_sha256 = digest
 
+    def contract_payload(self) -> dict[str, Any] | None:
+        return copy.deepcopy(self._contract_payload)
+
     def contract_record(self) -> dict[str, Any] | None:
         if (
             self._contract_payload is None
@@ -320,28 +319,277 @@ class ContractAwareEngine:
             "delivered_to_executor": True,
             "generation": self._contract_generation,
             "generation_trace": copy.deepcopy(self._contract_trace),
-            "enforcement": "prompt_only_phase_a",
+            "enforcement": "pending_phase_b",
         }
 
 
-def _attach_contract_record(
+def _assessment_name(label: str, index: int) -> str:
+    base = "result-contract-assessment"
+    if label:
+        base += f"-{label}"
+    return base if index == 0 else f"{base}-fallback-{index}"
+
+
+def assess_execution(
+    engine: CompatibleEngine,
+    profiles: Sequence[Any],
+    run_dir: Path,
+    contract: dict[str, Any],
+    contract_sha256: str,
+    execution: dict[str, Any],
+    *,
+    label: str = "",
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    observations = ENFORCEMENT.collect_observations(run_dir, execution)
+    prompt = ENFORCEMENT.build_assessment_prompt(
+        contract,
+        contract_sha256,
+        execution,
+        observations,
+    )
+    trace: list[dict[str, Any]] = []
+    assessment: dict[str, Any] | None = None
+    generation = "model_assessed"
+    last_error = ""
+    for index, profile in enumerate(profiles):
+        invocation = OS.InvocationSpec(
+            name=_assessment_name(label, index),
+            phase="assessment",
+            route=None,
+            profile=profile,
+            schema_path=ASSESSMENT_SCHEMA_PATH,
+        )
+        try:
+            candidate = engine.execute(prompt, run_dir, invocation)
+            assessment = ENFORCEMENT.validate_assessment(
+                candidate,
+                contract,
+                contract_sha256,
+                observations,
+            )
+        except (OS.ProblemSolvingError, ENFORCEMENT.ContractEnforcementError) as exc:
+            last_error = str(exc)
+            trace.append(
+                {
+                    "name": invocation.name,
+                    "model": profile.model,
+                    "reasoning_effort": profile.reasoning_effort,
+                    "outcome": "rejected",
+                    "error": last_error,
+                }
+            )
+            continue
+        trace.append(
+            {
+                "name": invocation.name,
+                "model": profile.model,
+                "reasoning_effort": profile.reasoning_effort,
+                "outcome": "accepted",
+            }
+        )
+        break
+
+    if assessment is None:
+        generation = "deterministic_fallback"
+        assessment = ENFORCEMENT.deterministic_fallback_assessment(
+            contract,
+            contract_sha256,
+            observations,
+            last_error or "계약 검증 모델이 유효한 판정을 반환하지 못했습니다.",
+        )
+
+    suffix = f"-{label}" if label else ""
+    path = ENFORCEMENT.write_json_atomic(
+        run_dir / f"result_contract_assessment{suffix}.json",
+        assessment,
+    )
+    record = {
+        "path": path.name,
+        "sha256": ENFORCEMENT.sha256_file(path),
+        "generation": generation,
+        "trace": trace,
+        "overall_status": assessment["overall_status"],
+        "missing_requirement_ids": assessment["missing_requirement_ids"],
+        "missing_conditions": assessment["missing_conditions"],
+        "observations": observations,
+    }
+    return assessment, record
+
+
+def _repair_target(
+    payload: dict[str, Any],
+    policy: dict[str, Any],
+) -> tuple[str, Any] | None:
+    route_record = payload["route"]
+    selected = route_record["selected_route"]
+    if selected == "HYBRID":
+        routes = [route_record["primary_route"], route_record["secondary_route"]]
+        if any(route in {"CODE", "PROJECT"} for route in routes):
+            return None
+        repair_route = route_record["secondary_route"]
+    else:
+        if selected in {"CODE", "PROJECT"}:
+            return None
+        repair_route = selected
+    if repair_route not in OS.SINGLE_ROUTES:
+        return None
+    route_policy = policy["routes"][repair_route]
+    profile = route_policy["fallback"] or route_policy["primary"]
+    return repair_route, profile
+
+
+def _persist_runtime_state(
     run_dir: Path,
     payload: dict[str, Any],
-    record: dict[str, Any] | None,
+    engine: CompatibleEngine,
 ) -> None:
-    if record is None:
-        return
-    payload["result_contract"] = record
     run_record = payload.get("run")
     if isinstance(run_record, dict):
-        run_record["result_contract"] = record
+        run_record["engine_trace"] = engine.trace()
 
     route_path = run_dir / "route.json"
     route_record = json.loads(route_path.read_text(encoding="utf-8"))
-    route_record["result_contract"] = record
-    if isinstance(route_record.get("run"), dict):
-        route_record["run"]["result_contract"] = record
+    execution = payload["execution"]
+    route_record.update(
+        {
+            "execution_status": execution["status"],
+            "capabilities_used": execution["capabilities_used"],
+            "needed_capability": execution["needed_capability"],
+            "handoff": execution["handoff"],
+            "artifacts": execution["artifacts"],
+            "evidence": execution["evidence"],
+            "limitations": execution["limitations"],
+            "run": payload["run"],
+        }
+    )
+    if "result_contract" in payload:
+        route_record["result_contract"] = payload["result_contract"]
     OS.write_json(route_path, route_record)
+    (run_dir / "result.md").write_text(OS.result_markdown(payload), encoding="utf-8")
+
+
+def enforce_result_contract(
+    request: str,
+    run_dir: Path,
+    payload: dict[str, Any],
+    engine: CompatibleEngine,
+    policy: dict[str, Any],
+    contract: dict[str, Any],
+    record: dict[str, Any],
+) -> None:
+    validation: dict[str, Any] = {
+        "version": 1,
+        "initial_assessment": None,
+        "repair_allowed": False,
+        "repair_attempted": False,
+        "repair": None,
+        "final_assessment": None,
+        "outcome": "not_assessed",
+    }
+    execution = payload["execution"]
+    if execution["status"] != "completed":
+        validation["outcome"] = "skipped_non_completed"
+        record["enforcement"] = "validated_phase_b"
+        record["validation"] = validation
+        return
+
+    initial, initial_record = assess_execution(
+        engine,
+        contract_profiles(policy),
+        run_dir,
+        contract,
+        record["sha256"],
+        execution,
+    )
+    validation["initial_assessment"] = initial_record
+    if initial["overall_status"] == "satisfied":
+        validation["final_assessment"] = initial_record
+        validation["outcome"] = "satisfied_initially"
+        record["enforcement"] = "validated_phase_b"
+        record["validation"] = validation
+        return
+
+    ENFORCEMENT.write_json_atomic(
+        run_dir / "result_contract_original_execution.json",
+        {"execution": execution},
+    )
+    repair_target = _repair_target(payload, policy)
+    validation["repair_allowed"] = repair_target is not None
+    candidate_execution = execution
+    final_assessment = initial
+    final_record = initial_record
+
+    if repair_target is not None:
+        validation["repair_attempted"] = True
+        repair_route, repair_profile = repair_target
+        repair_prompt = ENFORCEMENT.build_repair_prompt(
+            request,
+            payload["goal_ledger"],
+            contract,
+            initial,
+            execution,
+        )
+        repair_invocation = OS.InvocationSpec(
+            name="result-contract-repair",
+            phase="repair",
+            route=repair_route,
+            profile=repair_profile,
+            schema_path=OS.EXECUTION_SCHEMA_PATH,
+        )
+        repair_record: dict[str, Any] = {
+            "route": repair_route,
+            "model": repair_profile.model,
+            "reasoning_effort": repair_profile.reasoning_effort,
+            "outcome": "failed",
+        }
+        try:
+            repair_payload = engine.execute(repair_prompt, run_dir, repair_invocation)
+            candidate_execution = OS.validate_execution_output(
+                copy.deepcopy(repair_payload),
+                repair_route,
+                repair_profile,
+                engine.capabilities(),
+            )
+            repair_record["outcome"] = "completed"
+            repaired_assessment, repaired_record = assess_execution(
+                engine,
+                contract_profiles(policy),
+                run_dir,
+                contract,
+                record["sha256"],
+                candidate_execution,
+                label="after-repair",
+            )
+            final_assessment = repaired_assessment
+            final_record = repaired_record
+        except (OS.ProblemSolvingError, ENFORCEMENT.ContractEnforcementError) as exc:
+            repair_record["error"] = str(exc)
+        validation["repair"] = repair_record
+
+    validation["final_assessment"] = final_record
+    if (
+        validation["repair_attempted"]
+        and validation["repair"]
+        and validation["repair"]["outcome"] == "completed"
+        and final_assessment["overall_status"] == "satisfied"
+        and candidate_execution["status"] == "completed"
+    ):
+        payload["execution"] = candidate_execution
+        validation["outcome"] = "satisfied_after_repair"
+    else:
+        payload["execution"] = ENFORCEMENT.apply_failure_policy(
+            candidate_execution,
+            contract,
+            final_assessment,
+        )
+        validation["outcome"] = (
+            "downgraded_after_repair"
+            if validation["repair_attempted"]
+            else "downgraded_without_repair"
+        )
+
+    record["enforcement"] = "validated_phase_b"
+    record["validation"] = validation
 
 
 def run_request(
@@ -369,7 +617,20 @@ def run_request(
         model_policy_path=model_policy_path,
         run_id=run_id,
     )
-    _attach_contract_record(run_dir, payload, wrapped.contract_record())
+    contract = wrapped.contract_payload()
+    record = wrapped.contract_record()
+    if contract is not None and record is not None:
+        payload["result_contract"] = record
+        enforce_result_contract(
+            request,
+            run_dir,
+            payload,
+            engine,
+            policy,
+            contract,
+            record,
+        )
+    _persist_runtime_state(run_dir, payload, engine)
     return run_dir, payload
 
 
