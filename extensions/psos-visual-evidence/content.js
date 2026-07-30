@@ -119,8 +119,8 @@
             <button class="close" type="button" aria-label="닫기">×</button>
           </header>
           <div class="fields">
-            <label>PSOS 실행 ID<input id="run-id" value="${cleanText(defaults?.runId, 120)}" placeholder="psos-..."></label>
-            <label>후보명<input id="subject-label" value="${cleanText(defaults?.subjectLabel, 160)}" placeholder="예: 후보 A 또는 상품명"></label>
+            <label>PSOS 실행 ID<input id="run-id" placeholder="psos-..."></label>
+            <label>후보명<input id="subject-label" placeholder="예: 후보 A 또는 상품명"></label>
             <label>사진 출처<select id="source-kind">
               <option value="unknown">미확인</option>
               <option value="seller">판매자 제공</option>
@@ -139,6 +139,8 @@
     `;
     document.documentElement.appendChild(host);
 
+    root.querySelector("#run-id").value = cleanText(defaults?.runId, 120);
+    root.querySelector("#subject-label").value = cleanText(defaults?.subjectLabel, 160);
     const sourceKind = root.querySelector("#source-kind");
     sourceKind.value = ["seller", "buyer_review", "editorial", "unknown"].includes(defaults?.sourceKind)
       ? defaults.sourceKind
