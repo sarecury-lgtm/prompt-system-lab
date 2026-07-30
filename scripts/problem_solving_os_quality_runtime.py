@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run PSOS with corrected routing, Result Contract enforcement, and evidence review."""
+"""Run PSOS with corrected routing, Result Contract enforcement, evidence review, and PROMPT trace."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_os_contract_runtime.py"
 EVIDENCE_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_evidence_bundle.py"
+PROMPT_TRACE_PATH = ROOT / "scripts" / "problem_solving_prompt_trace.py"
 CORE_FIXES_PATH = ROOT / "scripts" / "problem_solving_core_semantic_fixes.py"
 QUALITY_FIXES_PATH = ROOT / "scripts" / "problem_solving_quality_semantic_fixes.py"
 
@@ -35,6 +36,10 @@ EVIDENCE = _load_local_module(
     "psos_evidence_bundle_runtime",
     EVIDENCE_RUNTIME_PATH,
 )
+PROMPT_TRACE = _load_local_module(
+    "psos_prompt_generation_trace",
+    PROMPT_TRACE_PATH,
+)
 CORE_FIXES = _load_local_module(
     "psos_core_semantic_fixes",
     CORE_FIXES_PATH,
@@ -48,21 +53,41 @@ CORE_FIXES.apply(OS)
 QUALITY_FIXES.apply(CONTRACT_RUNTIME, EVIDENCE)
 
 
-def _persist_bundle_record(
+def _persist_quality_record(
     run_dir: Path,
     payload: dict[str, Any],
+    key: str,
     record: dict[str, Any] | None,
 ) -> None:
     if record is None:
         return
+    payload[key] = record
     if isinstance(payload.get("run"), dict):
-        payload["run"]["evidence_bundle"] = record
+        payload["run"][key] = record
     route_path = run_dir / "route.json"
     route_record = json.loads(route_path.read_text(encoding="utf-8"))
-    route_record["evidence_bundle"] = record
+    route_record[key] = record
     if isinstance(route_record.get("run"), dict):
-        route_record["run"]["evidence_bundle"] = record
+        route_record["run"][key] = record
     OS.write_json(route_path, route_record)
+
+
+def _attach_prompt_trace(
+    run_dir: Path,
+    payload: dict[str, Any],
+) -> dict[str, Any] | None:
+    try:
+        record = PROMPT_TRACE.attach_prompt_generation_trace(run_dir, payload)
+    except PROMPT_TRACE.PromptTraceError as exc:
+        record = {
+            "version": 1,
+            "status": "unavailable",
+            "error": str(exc),
+            "error_path": "prompt_generation_trace_error.json",
+        }
+        OS.write_json(run_dir / record["error_path"], record)
+    _persist_quality_record(run_dir, payload, "prompt_generation_trace", record)
+    return record
 
 
 def run_request(
@@ -85,8 +110,9 @@ def run_request(
         run_id=run_id,
     )
     QUALITY_FIXES.set_workspace_root(EVIDENCE, engine)
-    record = EVIDENCE.attach_evidence_bundle(run_dir, payload)
-    _persist_bundle_record(run_dir, payload, record)
+    evidence_record = EVIDENCE.attach_evidence_bundle(run_dir, payload)
+    _persist_quality_record(run_dir, payload, "evidence_bundle", evidence_record)
+    _attach_prompt_trace(run_dir, payload)
     return run_dir, payload
 
 
@@ -145,6 +171,9 @@ def main(argv: list[str] | None = None) -> int:
     print((run_dir / "result.md").read_text(encoding="utf-8").rstrip())
     if "evidence_bundle" in payload:
         print(f"\n근거 검토: {run_dir / payload['evidence_bundle']['review_markdown']}")
+    prompt_trace = payload.get("prompt_generation_trace")
+    if isinstance(prompt_trace, dict) and prompt_trace.get("markdown_path"):
+        print(f"\nPROMPT 생성 진단: {run_dir / prompt_trace['markdown_path']}")
     print(f"\n실행 기록: {run_dir}")
     return 2 if payload["execution"]["status"] == "blocked_by_capability" else 0
 
