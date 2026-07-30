@@ -12,6 +12,8 @@ on:
       - "scripts/problem_solving_evidence_review.py"
       - "scripts/problem_solving_visual_evidence.py"
       - "scripts/problem_solving_visual_archive.py"
+      - "scripts/problem_solving_prompt_build_brief.py"
+      - "scripts/problem_solving_prompt_brief_trace.py"
       - "scripts/problem_solving_prompt_trace.py"
       - "scripts/problem_solving_prompt_causal_audit.py"
       - "scripts/problem_solving_prompt_ablation.py"
@@ -28,6 +30,7 @@ on:
       - "schemas/problem-solving-os-evidence-review.schema.json"
       - "schemas/problem-solving-os-visual-evidence-import.schema.json"
       - "schemas/problem-solving-prompt-ablation-assessment.schema.json"
+      - "schemas/problem-solving-prompt-build-brief.schema.json"
       - "tests/test_problem_solving_core_semantic_fixes.py"
       - "tests/test_problem_solving_quality_semantic_fixes.py"
       - "tests/test_problem_solving_contract.py"
@@ -36,6 +39,8 @@ on:
       - "tests/test_problem_solving_evidence_review.py"
       - "tests/test_problem_solving_visual_evidence.py"
       - "tests/test_problem_solving_visual_archive.py"
+      - "tests/test_problem_solving_prompt_build_brief.py"
+      - "tests/test_problem_solving_prompt_brief_trace.py"
       - "tests/test_problem_solving_prompt_trace.py"
       - "tests/test_prompt_generation_chart_case.py"
       - "tests/test_prompt_generation_causal_audit.py"
@@ -67,6 +72,8 @@ on:
       - "scripts/problem_solving_evidence_review.py"
       - "scripts/problem_solving_visual_evidence.py"
       - "scripts/problem_solving_visual_archive.py"
+      - "scripts/problem_solving_prompt_build_brief.py"
+      - "scripts/problem_solving_prompt_brief_trace.py"
       - "scripts/problem_solving_prompt_trace.py"
       - "scripts/problem_solving_prompt_causal_audit.py"
       - "scripts/problem_solving_prompt_ablation.py"
@@ -83,6 +90,7 @@ on:
       - "schemas/problem-solving-os-evidence-review.schema.json"
       - "schemas/problem-solving-os-visual-evidence-import.schema.json"
       - "schemas/problem-solving-prompt-ablation-assessment.schema.json"
+      - "schemas/problem-solving-prompt-build-brief.schema.json"
       - "tests/test_problem_solving_core_semantic_fixes.py"
       - "tests/test_problem_solving_quality_semantic_fixes.py"
       - "tests/test_problem_solving_contract.py"
@@ -91,6 +99,8 @@ on:
       - "tests/test_problem_solving_evidence_review.py"
       - "tests/test_problem_solving_visual_evidence.py"
       - "tests/test_problem_solving_visual_archive.py"
+      - "tests/test_problem_solving_prompt_build_brief.py"
+      - "tests/test_problem_solving_prompt_brief_trace.py"
       - "tests/test_problem_solving_prompt_trace.py"
       - "tests/test_prompt_generation_chart_case.py"
       - "tests/test_prompt_generation_causal_audit.py"
@@ -132,6 +142,8 @@ jobs:
           python -m py_compile scripts/problem_solving_evidence_review.py
           python -m py_compile scripts/problem_solving_visual_evidence.py
           python -m py_compile scripts/problem_solving_visual_archive.py
+          python -m py_compile scripts/problem_solving_prompt_build_brief.py
+          python -m py_compile scripts/problem_solving_prompt_brief_trace.py
           python -m py_compile scripts/problem_solving_prompt_trace.py
           python -m py_compile scripts/problem_solving_prompt_causal_audit.py
           python -m py_compile scripts/problem_solving_prompt_ablation.py
@@ -151,6 +163,7 @@ jobs:
           python -m json.tool schemas/problem-solving-os-evidence-review.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-visual-evidence-import.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-prompt-ablation-assessment.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-prompt-build-brief.schema.json > /dev/null
           python -m json.tool extensions/psos-visual-evidence/manifest.json > /dev/null
       - name: Check browser scripts
         run: |
@@ -170,6 +183,8 @@ jobs:
           tests.test_problem_solving_evidence_review
           tests.test_problem_solving_visual_evidence
           tests.test_problem_solving_visual_archive
+          tests.test_problem_solving_prompt_build_brief
+          tests.test_problem_solving_prompt_brief_trace
           tests.test_problem_solving_prompt_trace
           tests.test_prompt_generation_chart_case
           tests.test_prompt_generation_causal_audit
