@@ -9,7 +9,7 @@ import json
 import re
 import tempfile
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 from urllib.parse import urlsplit, urlunsplit
 
 
@@ -17,6 +17,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 
 import problem_solving_evidence_bundle as evidence_bundle
 import problem_solving_evidence_review as evidence_review
+import problem_solving_visual_archive as visual_archive
 
 
 SOURCE_KINDS = {"seller", "buyer_review", "editorial", "unknown"}
@@ -27,6 +28,7 @@ MAX_ALT = 300
 MAX_NEARBY_TEXT = 800
 MAX_URL = 4000
 ITEM_ID_PATTERN = re.compile(r"^ev-(\d+)$")
+ArchiveFunction = Callable[[Path, list[Mapping[str, Any]]], dict[str, dict[str, Any]]]
 
 
 class VisualEvidenceError(ValueError):
@@ -56,13 +58,8 @@ def _atomic_bytes(path: Path, content: bytes) -> Path:
     try:
         temp_path.replace(path)
     finally:
-        if temp_path.exists():
-            temp_path.unlink()
+        temp_path.unlink(missing_ok=True)
     return path
-
-
-def _atomic_json(path: Path, payload: Any) -> Path:
-    return _atomic_bytes(path, _json_bytes(payload))
 
 
 def _clean_text(
@@ -225,6 +222,51 @@ def _source_kind_label(value: str) -> str:
     }[value]
 
 
+def _original_source(item: Mapping[str, Any]) -> str:
+    archive = item.get("archive")
+    if isinstance(archive, Mapping) and isinstance(archive.get("original_url"), str):
+        return str(archive["original_url"])
+    return str(item.get("source") or "")
+
+
+def _validate_archive(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise VisualEvidenceError("시각 근거 archive가 객체가 아닙니다.")
+    expected = {
+        "status",
+        "original_url",
+        "final_url",
+        "path",
+        "sha256",
+        "media_type",
+        "byte_count",
+        "error",
+    }
+    if set(value) != expected or value.get("status") not in {"archived", "unavailable"}:
+        raise VisualEvidenceError("시각 근거 archive 필드가 올바르지 않습니다.")
+    _http_url(value.get("original_url"), "archive original_url")
+    if value.get("status") == "archived":
+        _http_url(value.get("final_url"), "archive final_url")
+        path = _clean_text(value.get("path"), "archive path", limit=500, required=True)
+        if Path(path).is_absolute() or ".." in Path(path).parts:
+            raise VisualEvidenceError("archive path는 run 내부 상대 경로여야 합니다.")
+        if not isinstance(value.get("sha256"), str) or re.fullmatch(
+            r"[a-f0-9]{64}", str(value.get("sha256"))
+        ) is None:
+            raise VisualEvidenceError("archive sha256이 올바르지 않습니다.")
+        if value.get("media_type") not in visual_archive.ALLOWED_MEDIA_TYPES:
+            raise VisualEvidenceError("archive media_type이 올바르지 않습니다.")
+        if isinstance(value.get("byte_count"), bool) or not isinstance(value.get("byte_count"), int):
+            raise VisualEvidenceError("archive byte_count가 올바르지 않습니다.")
+        if value.get("byte_count") <= 0 or value.get("error") is not None:
+            raise VisualEvidenceError("보존된 archive 상태가 모순됩니다.")
+    else:
+        if any(value.get(key) is not None for key in ("final_url", "path", "sha256", "media_type", "byte_count")):
+            raise VisualEvidenceError("보존 실패 archive에는 로컬 파일 정보를 넣을 수 없습니다.")
+        _clean_text(value.get("error"), "archive error", limit=300, required=True)
+    return dict(value)
+
+
 def _validate_extended_bundle(bundle: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(bundle, Mapping):
         raise VisualEvidenceError("Evidence Bundle이 JSON 객체가 아닙니다.")
@@ -279,7 +321,7 @@ def _validate_extended_bundle(bundle: Mapping[str, Any]) -> dict[str, Any]:
             "integrity",
             "review",
         }
-        allowed = {*required, "capture"}
+        allowed = {*required, "capture", "archive"}
         if not required.issubset(item) or not set(item).issubset(allowed):
             raise VisualEvidenceError("Evidence Bundle item 필드가 올바르지 않습니다.")
         item_id = item.get("id")
@@ -305,6 +347,14 @@ def _validate_extended_bundle(bundle: Mapping[str, Any]) -> dict[str, Any]:
                 raise VisualEvidenceError("시각 근거 capture 필드가 올바르지 않습니다.")
             if capture.get("source_kind") not in SOURCE_KINDS:
                 raise VisualEvidenceError("시각 근거 source_kind가 올바르지 않습니다.")
+        archive = item.get("archive")
+        if archive is not None:
+            normalized_archive = _validate_archive(archive)
+            if normalized_archive["status"] == "archived":
+                if item.get("source") != normalized_archive["path"]:
+                    raise VisualEvidenceError("보존된 이미지 source와 archive path가 다릅니다.")
+                if item.get("integrity", {}).get("sha256") != normalized_archive["sha256"]:
+                    raise VisualEvidenceError("보존된 이미지 SHA-256 연결이 다릅니다.")
     for requirement in bundle.get("requirements", []):
         if any(item_id not in item_ids for item_id in requirement.get("evidence_item_ids", [])):
             raise VisualEvidenceError("완료 조건이 알 수 없는 evidence item을 가리킵니다.")
@@ -338,12 +388,22 @@ def _render_extended_review_markdown(bundle: Mapping[str, Any]) -> str:
             if item.get("subject_id") == subject.get("id")
         ]
         for item in subject_items:
-            source = item["source"]
             capture = item.get("capture") or {}
-            lines.append(f"#### {item['id']} · {_source_kind_label(capture.get('source_kind', 'unknown'))}")
+            archive = item.get("archive") or {}
+            original = archive.get("original_url") or item["source"]
+            lines.append(
+                f"#### {item['id']} · {_source_kind_label(capture.get('source_kind', 'unknown'))}"
+            )
             lines.append("")
-            lines.append(f"원본 이미지: [{source}]({source})")
+            lines.append(f"원본 이미지: [{original}]({original})")
             lines.append(f"원본 페이지: [{capture.get('page_url')}]({capture.get('page_url')})")
+            if archive.get("status") == "archived":
+                lines.append(
+                    f"로컬 보존: `{archive.get('path')}` · `{archive.get('media_type')}` · "
+                    f"{archive.get('byte_count')} bytes · SHA-256 `{archive.get('sha256')}`"
+                )
+            elif archive.get("status") == "unavailable":
+                lines.append(f"로컬 보존 실패: {archive.get('error')}")
             lines.append(f"관찰/문맥: {item['finding']}")
             lines.append(f"후보 연결: `{subject_by_id[item['subject_id']]['label']}`")
             lines.extend(["", "판정: [ ] 유지  [ ] 의심  [ ] 제외", ""])
@@ -369,12 +429,23 @@ def _bundle_record(bundle: Mapping[str, Any], bundle_sha: str) -> dict[str, Any]
         ),
         "image_count": sum(1 for item in bundle.get("items", []) if item.get("kind") == "image"),
         "subject_count": len(bundle.get("subjects", [])),
+        "archived_image_count": sum(
+            1
+            for item in bundle.get("items", [])
+            if item.get("archive", {}).get("status") == "archived"
+        ),
         "review_status": bundle.get("review", {}).get("status"),
     }
 
 
-def import_visual_evidence(run_dir: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
-    """Append explicitly selected images and preserve decisions for unchanged evidence IDs."""
+def import_visual_evidence(
+    run_dir: Path,
+    payload: Mapping[str, Any],
+    *,
+    archive: bool = True,
+    archiver: ArchiveFunction = visual_archive.archive_selected_images,
+) -> dict[str, Any]:
+    """Append selected images, preserving existing decisions and source provenance."""
 
     run_dir = run_dir.expanduser().resolve()
     cleaned = validate_import_payload(payload)
@@ -387,9 +458,12 @@ def import_visual_evidence(run_dir: Path, payload: Mapping[str, Any]) -> dict[st
 
     if bundle.get("version") == 1:
         evidence_bundle.validate_evidence_bundle(bundle)
-    elif bundle.get("version") != 2:
+    elif bundle.get("version") == 2:
+        _validate_extended_bundle(bundle)
+    else:
         raise VisualEvidenceError("지원하지 않는 Evidence Bundle 버전입니다.")
 
+    archive_results = archiver(run_dir, cleaned["images"]) if archive else {}
     updated = json.loads(json.dumps(bundle, ensure_ascii=False))
     updated["version"] = 2
     updated["subject_mapping"] = "explicit"
@@ -424,11 +498,13 @@ def import_visual_evidence(run_dir: Path, payload: Mapping[str, Any]) -> dict[st
     items = updated.setdefault("items", [])
     next_number = _next_item_number(items)
     existing = {
-        (str(item.get("subject_id")), str(item.get("source")))
+        (str(item.get("subject_id")), _original_source(item))
         for item in items
         if isinstance(item, Mapping)
     }
     added_ids: list[str] = []
+    archived_ids: list[str] = []
+    archive_unavailable_ids: list[str] = []
     duplicate_sources: list[str] = []
     source_label = _source_kind_label(cleaned["source_kind"])
     for image in cleaned["images"]:
@@ -441,32 +517,55 @@ def import_visual_evidence(run_dir: Path, payload: Mapping[str, Any]) -> dict[st
         finding = f"[{subject['label']}] {source_label} · {context}"
         item_id = f"ev-{next_number:03d}"
         next_number += 1
-        items.append(
-            {
-                "id": item_id,
-                "subject_id": subject["id"],
-                "kind": "image",
-                "source": image["src"],
-                "finding": finding,
-                "role": "visual_observation",
-                "origin": "browser_visual_collector",
-                "reviewable": True,
-                "preview": {"type": "image", "source": image["src"]},
-                "integrity": {"sha256": None},
-                "review": {"decision": "unreviewed", "note": ""},
-                "capture": {
-                    "source_kind": cleaned["source_kind"],
-                    "page_url": cleaned["page_url"],
-                    "page_title": cleaned["page_title"],
-                    "captured_at": cleaned["captured_at"],
-                    "alt": image["alt"],
-                    "nearby_text": image["nearby_text"],
-                    "link_url": image["link_url"],
-                    "width": image["width"],
-                    "height": image["height"],
-                },
+        archive_result = archive_results.get(image["src"])
+        archive_record: dict[str, Any] | None = None
+        source = image["src"]
+        integrity = None
+        if archive_result is not None:
+            archive_record = {
+                "status": archive_result.get("status"),
+                "original_url": image["src"],
+                "final_url": archive_result.get("final_url"),
+                "path": archive_result.get("path"),
+                "sha256": archive_result.get("sha256"),
+                "media_type": archive_result.get("media_type"),
+                "byte_count": archive_result.get("byte_count"),
+                "error": archive_result.get("error"),
             }
-        )
+            _validate_archive(archive_record)
+            if archive_record["status"] == "archived":
+                source = str(archive_record["path"])
+                integrity = archive_record["sha256"]
+                archived_ids.append(item_id)
+            else:
+                archive_unavailable_ids.append(item_id)
+        item = {
+            "id": item_id,
+            "subject_id": subject["id"],
+            "kind": "image",
+            "source": source,
+            "finding": finding,
+            "role": "visual_observation",
+            "origin": "browser_visual_collector",
+            "reviewable": True,
+            "preview": {"type": "image", "source": source},
+            "integrity": {"sha256": integrity},
+            "review": {"decision": "unreviewed", "note": ""},
+            "capture": {
+                "source_kind": cleaned["source_kind"],
+                "page_url": cleaned["page_url"],
+                "page_title": cleaned["page_title"],
+                "captured_at": cleaned["captured_at"],
+                "alt": image["alt"],
+                "nearby_text": image["nearby_text"],
+                "link_url": image["link_url"],
+                "width": image["width"],
+                "height": image["height"],
+            },
+        }
+        if archive_record is not None:
+            item["archive"] = archive_record
+        items.append(item)
         added_ids.append(item_id)
     if not added_ids:
         raise VisualEvidenceError("선택한 사진이 모두 이 후보에 이미 추가돼 있습니다.")
@@ -508,12 +607,17 @@ def import_visual_evidence(run_dir: Path, payload: Mapping[str, Any]) -> dict[st
             history = json.loads(history_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
             raise VisualEvidenceError(f"기존 시각 근거 기록을 읽을 수 없습니다: {exc}") from exc
-        if not isinstance(history, dict) or history.get("version") != 1 or not isinstance(history.get("imports"), list):
+        if (
+            not isinstance(history, dict)
+            or history.get("version") != 1
+            or not isinstance(history.get("imports"), list)
+        ):
             raise VisualEvidenceError("기존 시각 근거 기록 구조가 올바르지 않습니다.")
     else:
         history = {"version": 1, "imports": []}
     import_seed = (
-        f"{current_sha}:{new_bundle_sha}:{subject['id']}:{cleaned['captured_at']}:{','.join(added_ids)}"
+        f"{current_sha}:{new_bundle_sha}:{subject['id']}:{cleaned['captured_at']}:"
+        f"{','.join(added_ids)}"
     )
     import_record = {
         "version": 1,
@@ -528,6 +632,13 @@ def import_visual_evidence(run_dir: Path, payload: Mapping[str, Any]) -> dict[st
         "captured_at": cleaned["captured_at"],
         "imported_at": utc_now(),
         "added_item_ids": added_ids,
+        "archived_item_ids": archived_ids,
+        "archive_unavailable_item_ids": archive_unavailable_ids,
+        "archive_byte_count": sum(
+            int(item.get("archive", {}).get("byte_count") or 0)
+            for item in validated["items"]
+            if item["id"] in archived_ids
+        ),
         "duplicate_sources": duplicate_sources,
     }
     history["imports"].append(import_record)
@@ -561,7 +672,7 @@ def import_visual_evidence(run_dir: Path, payload: Mapping[str, Any]) -> dict[st
 
 
 def enrich_revision_context(run_dir: Path, context_record: Mapping[str, Any]) -> dict[str, Any]:
-    """Append candidate and capture metadata to an existing immutable revision context."""
+    """Append candidate, capture, and archive metadata to an immutable revision context."""
 
     run_dir = run_dir.expanduser().resolve()
     bundle, _bundle_sha = evidence_review.load_bundle(run_dir)
@@ -581,8 +692,10 @@ def enrich_revision_context(run_dir: Path, context_record: Mapping[str, Any]) ->
             "subject_id": item.get("subject_id"),
             "subject_label": subject_by_id.get(item.get("subject_id"), "결과 전체"),
             "source": item.get("source"),
+            "original_url": _original_source(item),
             "finding": item.get("finding"),
             "capture": item.get("capture"),
+            "archive": item.get("archive"),
         }
         for item in bundle.get("items", [])
         if isinstance(item, Mapping) and item.get("capture") is not None
@@ -592,7 +705,8 @@ def enrich_revision_context(run_dir: Path, context_record: Mapping[str, Any]) ->
     addition = (
         "\n\n## 후보별 시각 근거 연결\n\n"
         "아래 연결은 사용자가 브라우저에서 직접 후보명을 지정해 수집한 것이다. "
-        "다른 후보로 임의 재분류하지 않는다.\n\n```json\n"
+        "다른 후보로 임의 재분류하지 않는다. 로컬 보존본이 있으면 SHA-256으로 식별하고, "
+        "보존 실패를 실제 이미지 확인으로 꾸미지 않는다.\n\n```json\n"
         + json.dumps(visual_items, ensure_ascii=False, indent=2)
         + "\n```\n"
     )
@@ -603,4 +717,7 @@ def enrich_revision_context(run_dir: Path, context_record: Mapping[str, Any]) ->
         {item["subject_id"] for item in visual_items if item.get("subject_id")}
     )
     enriched["visual_item_count"] = len(visual_items)
+    enriched["archived_visual_item_count"] = sum(
+        1 for item in visual_items if item.get("archive", {}).get("status") == "archived"
+    )
     return enriched
