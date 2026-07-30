@@ -14,6 +14,7 @@ on:
       - "scripts/problem_solving_prompt_trace.py"
       - "scripts/problem_solving_prompt_causal_audit.py"
       - "scripts/problem_solving_prompt_ablation.py"
+      - "scripts/problem_solving_prompt_ablation_run.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os_quality_runtime.py"
       - "scripts/problem_solving_quality_web.py"
@@ -25,6 +26,7 @@ on:
       - "schemas/problem-solving-os-evidence-bundle.schema.json"
       - "schemas/problem-solving-os-evidence-review.schema.json"
       - "schemas/problem-solving-os-visual-evidence-import.schema.json"
+      - "schemas/problem-solving-prompt-ablation-assessment.schema.json"
       - "tests/test_problem_solving_core_semantic_fixes.py"
       - "tests/test_problem_solving_quality_semantic_fixes.py"
       - "tests/test_problem_solving_contract.py"
@@ -36,6 +38,7 @@ on:
       - "tests/test_prompt_generation_chart_case.py"
       - "tests/test_prompt_generation_causal_audit.py"
       - "tests/test_prompt_generation_ablation.py"
+      - "tests/test_problem_solving_prompt_ablation_run.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
       - "tests/test_problem_solving_quality_web.py"
@@ -61,6 +64,7 @@ on:
       - "scripts/problem_solving_prompt_trace.py"
       - "scripts/problem_solving_prompt_causal_audit.py"
       - "scripts/problem_solving_prompt_ablation.py"
+      - "scripts/problem_solving_prompt_ablation_run.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os_quality_runtime.py"
       - "scripts/problem_solving_quality_web.py"
@@ -72,6 +76,7 @@ on:
       - "schemas/problem-solving-os-evidence-bundle.schema.json"
       - "schemas/problem-solving-os-evidence-review.schema.json"
       - "schemas/problem-solving-os-visual-evidence-import.schema.json"
+      - "schemas/problem-solving-prompt-ablation-assessment.schema.json"
       - "tests/test_problem_solving_core_semantic_fixes.py"
       - "tests/test_problem_solving_quality_semantic_fixes.py"
       - "tests/test_problem_solving_contract.py"
@@ -83,6 +88,7 @@ on:
       - "tests/test_prompt_generation_chart_case.py"
       - "tests/test_prompt_generation_causal_audit.py"
       - "tests/test_prompt_generation_ablation.py"
+      - "tests/test_problem_solving_prompt_ablation_run.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
       - "tests/test_problem_solving_quality_web.py"
@@ -118,6 +124,7 @@ jobs:
           python -m py_compile scripts/problem_solving_prompt_trace.py
           python -m py_compile scripts/problem_solving_prompt_causal_audit.py
           python -m py_compile scripts/problem_solving_prompt_ablation.py
+          python -m py_compile scripts/problem_solving_prompt_ablation_run.py
           python -m py_compile scripts/problem_solving_os_contract_runtime.py
           python -m py_compile scripts/problem_solving_os_quality_runtime.py
           python -m py_compile scripts/problem_solving_quality_web.py
@@ -131,6 +138,7 @@ jobs:
           python -m json.tool schemas/problem-solving-os-evidence-bundle.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-evidence-review.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-visual-evidence-import.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-prompt-ablation-assessment.schema.json > /dev/null
           python -m json.tool extensions/psos-visual-evidence/manifest.json > /dev/null
       - name: Check browser scripts
         run: |
@@ -152,6 +160,7 @@ jobs:
           tests.test_prompt_generation_chart_case
           tests.test_prompt_generation_causal_audit
           tests.test_prompt_generation_ablation
+          tests.test_problem_solving_prompt_ablation_run
           tests.test_problem_solving_os_contract_runtime
           tests.test_problem_solving_os_quality_runtime
           tests.test_problem_solving_quality_web
