@@ -53,6 +53,7 @@ on:
   push:
     branches:
       - main
+      - agent/psos-quality-core
     paths:
       - "scripts/problem_solving_contract.py"
       - "scripts/problem_solving_contract_enforcement.py"
