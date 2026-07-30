@@ -18,6 +18,8 @@ BASELINE_MARKER = "[기존 Prompt Compiler baseline]"
 PRIMARY_MARKER = "[주 경로의 실제 결과]"
 CONTRACT_MARKER = "[Result Contract]"
 BRIEF_MARKER = "[Prompt Build Brief]"
+PROMPT_OUTPUT_START = "<!-- PSOS_PROMPT_START -->"
+PROMPT_OUTPUT_END = "<!-- PSOS_PROMPT_END -->"
 BRIEF_FIELDS = {
     "version",
     "goal",
@@ -29,10 +31,10 @@ BRIEF_FIELDS = {
     "exclusions",
     "upstream_context",
 }
-LIST_LIMITS = {
+LIST_LIMITS: dict[str, tuple[int, int | None]] = {
     "core_procedure": (1, 8),
     "supporting_inputs": (0, 8),
-    "fixed_constraints": (0, 12),
+    "fixed_constraints": (0, None),
     "output_contract": (1, 8),
     "defaults_and_exceptions": (0, 6),
     "exclusions": (0, 6),
@@ -67,9 +69,12 @@ def _validated_string_list(value: Any, field: str) -> list[str]:
     normalized = _deduplicated_strings(value)
     if len(normalized) != len(value):
         raise PromptBuildBriefError(f"{field}에 빈 값이나 중복 값이 있습니다.")
-    if not minimum <= len(normalized) <= maximum:
+    if len(normalized) < minimum or (
+        maximum is not None and len(normalized) > maximum
+    ):
+        maximum_text = str(maximum) if maximum is not None else "제한 없음"
         raise PromptBuildBriefError(
-            f"{field} 항목 수는 {minimum}~{maximum}개여야 합니다."
+            f"{field} 항목 수는 {minimum}~{maximum_text}개여야 합니다."
         )
     return normalized
 
@@ -171,7 +176,7 @@ Prompt Compiler baseline과 선택적 주 경로 결과를 하나의 짧은 작�
 8. exclusions에는 사용자가 원하지 않거나 목표를 벗어나는 작업만 둔다.
 9. upstream_context에는 주 경로 결과 중 최종 프롬프트가 실제로 사용해야 할 검증된 내용만 압축한다.
 10. 사용자 원문이나 baseline 전체를 어느 필드에도 그대로 복사하지 않는다.
-11. 차트·상품·댓글 등 특정 도메인의 일반 상식을 새로 추가하지 않는다.
+11. 특정 도메인의 일반 상식을 새로 추가하지 않는다.
 12. 내부 추론을 노출하지 말고 schema에 맞는 JSON 객체 하나만 반환한다.
 
 [사용자 요청]
@@ -261,9 +266,18 @@ def build_prompt_executor_from_brief(
 5. 출력 형식은 실제 사용자가 판단하거나 행동하는 데 필요한 최소 구조만 둔다.
 6. 글자 수나 섹션 수를 목표로 삼지 않는다. 짧게 만들기 위해 고정 조건을 버리지도 않는다.
 7. 없는 사실·수치·도구 사용을 만들지 않는다.
-8. result_markdown에는 설명이나 개선점이 아니라 복사해 바로 쓸 최종 프롬프트 전체만 넣는다.
-9. limitations에는 최종 프롬프트 자체에 실제로 남은 한계만 쓴다.
-10. 내부 시스템·브리지·receipt·생성 과정 설명을 사용자용 프롬프트에 넣지 않는다.
+8. limitations에는 최종 프롬프트 자체에 실제로 남은 한계만 쓴다.
+9. 내부 시스템·브리지·receipt·생성 과정 설명을 사용자용 프롬프트에 넣지 않는다.
+
+[PROMPT 결과 전용 계약]
+1. 내부에서 초안을 점검하고 필요하면 수정하되 그 검토 과정은 출력하지 않는다.
+2. execution.result_markdown에는 아래 시작·종료 표식을 정확히 한 번씩 넣는다.
+3. 표식 사이에는 복사해 바로 쓸 완성된 프롬프트 하나만 넣는다.
+4. 표식 앞뒤에는 평가, 설명, 개선점, 사용법, 선택 기록을 붙이지 않는다.
+
+{PROMPT_OUTPUT_START}
+[완성된 프롬프트 하나]
+{PROMPT_OUTPUT_END}
 
 {BRIEF_MARKER}
 {json.dumps(dict(brief), ensure_ascii=False, indent=2)}
