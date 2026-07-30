@@ -16,12 +16,12 @@
     "review"
   ],
   "properties": {
-    "version": {"const": 1},
+    "version": {"enum": [1, 2]},
     "contract_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "result_status": {
       "enum": ["completed", "partial", "blocked_by_capability", "handoff"]
     },
-    "subject_mapping": {"const": "result_only"},
+    "subject_mapping": {"enum": ["result_only", "explicit"]},
     "review_required": {"type": "boolean"},
     "subjects": {
       "type": "array",
@@ -33,7 +33,7 @@
         "properties": {
           "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
           "label": {"type": "string", "minLength": 1},
-          "kind": {"const": "result"}
+          "kind": {"enum": ["result", "candidate"]}
         }
       }
     },
@@ -76,8 +76,8 @@
           "review"
         ],
         "properties": {
-          "id": {"type": "string", "pattern": "^ev-[0-9]{3}$|^result-text$"},
-          "subject_id": {"const": "result"},
+          "id": {"type": "string", "pattern": "^ev-[0-9]{3,}$|^result-text$"},
+          "subject_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
           "kind": {
             "enum": [
               "result_text",
@@ -133,6 +133,34 @@
             "properties": {
               "decision": {"const": "unreviewed"},
               "note": {"const": ""}
+            }
+          },
+          "capture": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_kind",
+              "page_url",
+              "page_title",
+              "captured_at",
+              "alt",
+              "nearby_text",
+              "link_url",
+              "width",
+              "height"
+            ],
+            "properties": {
+              "source_kind": {
+                "enum": ["seller", "buyer_review", "editorial", "unknown"]
+              },
+              "page_url": {"type": "string", "format": "uri"},
+              "page_title": {"type": "string"},
+              "captured_at": {"type": "string", "format": "date-time"},
+              "alt": {"type": "string"},
+              "nearby_text": {"type": "string"},
+              "link_url": {"type": ["string", "null"]},
+              "width": {"type": "integer", "minimum": 1},
+              "height": {"type": "integer", "minimum": 1}
             }
           }
         }
