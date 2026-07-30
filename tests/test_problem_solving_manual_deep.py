@@ -45,6 +45,65 @@ def route_result():
     }
 
 
+def good_report():
+    return """# 현재 판매 복숭아 조사
+
+조사 기준: 2026년 7월 30일 오후 8시
+
+## 후보 1
+- 상품: A 제왕황도
+- 판매자: A농원
+- 현재 가격: 32,300원
+- 구성: 3kg
+- 판매 상태: 주문 가능
+- 직접 URL: https://shop-a.example/product/peach-a
+
+## 후보 2
+- 상품: B 백도
+- 판매처: B스토어
+- 현재 가격: 41,000원
+- 구성: 4kg
+- 구매 가능 상태: 판매 중
+- 직접 URL: https://shop-b.example/goods/peach-b
+
+## 후보 3
+- 상품: C 황도
+- 판매자: C과수원
+- 현재 가격: 29,900원
+- 구성: 2kg
+- 판매 상태: 구매 버튼 확인
+- 직접 URL: https://shop-c.example/item/peach-c
+
+확인 사실과 판매자 주장을 분리해 비교했으며 A를 최종 추천한다.
+공식 품종 참고: https://official.example/research/peach-texture
+"""
+
+
+def weak_normalized_response():
+    return json.dumps(
+        {
+            "execution": {
+                "status": "completed",
+                "summary": "보고서 정규화",
+                "result_markdown": "신비복숭아와 납작복숭아가 유력하다.",
+                "capabilities_used": ["analysis", "provided_context"],
+                "needed_capability": None,
+                "handoff": None,
+                "artifacts": [],
+                "evidence": [
+                    {
+                        "source": "provided_context",
+                        "finding": "품종 설명이 제공되었다.",
+                        "kind": "provided_context",
+                    }
+                ],
+                "limitations": [],
+            }
+        },
+        ensure_ascii=False,
+    )
+
+
 class DeepResearchBridgeTests(unittest.TestCase):
     def make_bridge(self, directory):
         return DEEP.ManualBridge(runs_dir=Path(directory) / "runs")
@@ -87,45 +146,47 @@ class DeepResearchBridgeTests(unittest.TestCase):
             self.assertIn("실제 출처 URL", str(raised.exception))
             self.assertEqual(bridge.get("deep-bad")["response_kind"], "markdown")
 
-    def test_listing_report_passes_to_normalizer(self):
+    def test_listing_report_passes_to_normalizer_with_preservation_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             bridge = self.make_bridge(directory)
             self.start_product_research(bridge, "deep-good")
-            report = """# 현재 판매 복숭아 조사
-
-조사 기준: 2026년 7월 30일 오후 8시
-
-## 후보 1
-- 상품: A 제왕황도
-- 판매자: A농원
-- 현재 가격: 32,300원
-- 구성: 3kg
-- 판매 상태: 주문 가능
-- 직접 URL: https://shop-a.example/product/peach-a
-
-## 후보 2
-- 상품: B 백도
-- 판매처: B스토어
-- 현재 가격: 41,000원
-- 구성: 4kg
-- 구매 가능 상태: 판매 중
-- 직접 URL: https://shop-b.example/goods/peach-b
-
-## 후보 3
-- 상품: C 황도
-- 판매자: C과수원
-- 현재 가격: 29,900원
-- 구성: 2kg
-- 판매 상태: 구매 버튼 확인
-- 직접 URL: https://shop-c.example/item/peach-c
-
-확인 사실과 판매자 주장을 분리해 비교했으며 A를 최종 추천한다.
-공식 품종 참고: https://official.example/research/peach-texture
-"""
-            stage = bridge.submit("deep-good", report)
+            stage = bridge.submit("deep-good", good_report())
             self.assertEqual(stage["state"], "awaiting_primary")
             self.assertEqual(stage["response_kind"], "json")
             self.assertIn("심층 리서치 결과 정규화기", stage["prompt"])
+            self.assertIn("정규화 보존 계약", stage["prompt"])
+            self.assertIn("provided_context", stage["prompt"])
+
+    def test_normalizer_cannot_drop_product_links(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bridge = self.make_bridge(directory)
+            self.start_product_research(bridge, "deep-normalize-bad")
+            bridge.submit("deep-normalize-bad", good_report())
+            with self.assertRaises(DEEP.manual.ManualBridgeError) as raised:
+                bridge.submit("deep-normalize-bad", weak_normalized_response())
+            self.assertIn("구매 정보를 보존하지 못했습니다", str(raised.exception))
+            session = bridge.get("deep-normalize-bad")
+            self.assertEqual(session["response_kind"], "json")
+            self.assertIn("직접 판매·상품 URL", session["error"])
+
+    def test_legacy_bad_report_is_revalidated_and_rewound(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bridge = self.make_bridge(directory)
+            self.start_product_research(bridge, "deep-legacy")
+            bridge.submit("deep-legacy", good_report())
+
+            run_dir = Path(directory) / "runs" / "deep-legacy"
+            state = DEEP.manual.read_state(run_dir)
+            report_path = run_dir / state["deep_research_reports"]["primary"]
+            report_path.write_text(
+                "# 약한 보고서\n\n신비복숭아와 납작복숭아가 좋다고 알려져 있다.",
+                encoding="utf-8",
+            )
+
+            rewound = bridge.submit("deep-legacy", weak_normalized_response())
+            self.assertEqual(rewound["response_kind"], "markdown")
+            self.assertIn("보고서 단계로 되돌렸습니다", rewound["error"])
+            self.assertIn("개별 판매 상품", rewound["prompt"])
 
 
 if __name__ == "__main__":
