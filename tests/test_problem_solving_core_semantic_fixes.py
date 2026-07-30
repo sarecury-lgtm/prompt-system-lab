@@ -78,6 +78,12 @@ class SemanticCoreFixTests(unittest.TestCase):
         with self.assertRaises(OS.ProblemSolvingError):
             OS.validate_route_output(route_payload(primary="DIRECT"))
 
+    def test_router_rejects_mismatched_route_reason(self):
+        payload = route_payload()
+        payload["goal_ledger"]["route_reason"] = "다른 이유"
+        with self.assertRaises(OS.ProblemSolvingError):
+            OS.validate_route_output(payload)
+
     def test_router_prompt_explains_empty_constraints_and_hybrid_order(self):
         prompt = OS.build_router_prompt("첨부 차트를 분석해줘", "", None, self.capabilities)
         self.assertIn("fixed_constraints는 빈 배열", prompt)
