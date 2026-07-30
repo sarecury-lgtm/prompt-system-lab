@@ -54,8 +54,16 @@ class QualityWebTests(unittest.TestCase):
             "reviewer_note": "사진 근거를 다시 확인",
             "search_enabled": search,
             "decisions": [
-                {"evidence_id": "ev-web", "decision": "keep", "note": "페이지 유지"},
-                {"evidence_id": "ev-image", "decision": image_decision, "note": "옵션 의심"},
+                {
+                    "evidence_id": "ev-web",
+                    "decision": "keep",
+                    "note": "페이지 유지",
+                },
+                {
+                    "evidence_id": "ev-image",
+                    "decision": image_decision,
+                    "note": "옵션 의심",
+                },
             ],
         }
 
@@ -65,7 +73,9 @@ class QualityWebTests(unittest.TestCase):
             self.bind_run(run_dir)
             payload = WEB.load_public_evidence(run_dir.name)
 
-        image = next(item for item in payload["bundle"]["items"] if item["id"] == "ev-image")
+        image = next(
+            item for item in payload["bundle"]["items"] if item["id"] == "ev-image"
+        )
         self.assertEqual(bundle_sha, payload["bundle_sha256"])
         self.assertEqual("https://example.test/photo.jpg", image["preview_url"])
         self.assertEqual("pending", payload["review"]["review_status"])
@@ -90,10 +100,15 @@ class QualityWebTests(unittest.TestCase):
 
             public = WEB.load_public_evidence(run_dir.name)
             resolved = WEB.safe_evidence_image(run_dir.name, "ev-image")
+            expected_image_path = image_path.resolve()
 
-        public_image = next(item for item in public["bundle"]["items"] if item["id"] == "ev-image")
-        self.assertTrue(public_image["preview_url"].endswith("/evidence-items/ev-image"))
-        self.assertEqual(image_path.resolve(), resolved)
+        public_image = next(
+            item for item in public["bundle"]["items"] if item["id"] == "ev-image"
+        )
+        self.assertTrue(
+            public_image["preview_url"].endswith("/evidence-items/ev-image")
+        )
+        self.assertEqual(expected_image_path, resolved)
 
     def test_save_review_updates_route_anchor(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -122,6 +137,8 @@ class QualityWebTests(unittest.TestCase):
             )
             route = json.loads((run_dir / "route.json").read_text(encoding="utf-8"))
             parent_after = (run_dir / "result.md").read_text(encoding="utf-8")
+            context_exists = (run_dir / "evidence_revision_context.md").is_file()
+            request_exists = (run_dir / "evidence_revision_request.json").is_file()
 
         self.assertEqual(original, parent_after)
         self.assertEqual(1, len(jobs.calls))
@@ -129,14 +146,17 @@ class QualityWebTests(unittest.TestCase):
         self.assertIn("원본 실행", jobs.calls[0][0])
         self.assertEqual("psos-child", payload["job"]["run_id"])
         self.assertEqual("psos-child", route["evidence_revision"]["child_run_id"])
-        self.assertTrue((run_dir / "evidence_revision_context.md").is_file())
-        self.assertTrue((run_dir / "evidence_revision_request.json").is_file())
+        self.assertTrue(context_exists)
+        self.assertTrue(request_exists)
 
     def test_revision_rejects_all_keep_review(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             run_dir, bundle_sha = FIXTURE.make_run(temp_dir)
             self.bind_run(run_dir)
-            with self.assertRaisesRegex(WEB.evidence_review.EvidenceReviewError, "의심.*제외"):
+            with self.assertRaisesRegex(
+                WEB.evidence_review.EvidenceReviewError,
+                "의심.*제외",
+            ):
                 WEB.submit_review_revision(
                     FakeJobs(),
                     run_dir.name,
