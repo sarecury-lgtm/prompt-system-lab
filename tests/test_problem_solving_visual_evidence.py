@@ -123,9 +123,12 @@ class VisualEvidenceTests(unittest.TestCase):
             )
             imported = next(item for item in result["bundle"]["items"] if item.get("capture"))
             archived_path = run_dir / imported["source"]
+            archived_exists = archived_path.is_file()
+            archived_bytes = archived_path.read_bytes()
             markdown = (run_dir / "evidence_review.md").read_text(encoding="utf-8")
 
-        self.assertTrue(archived_path.is_file())
+        self.assertTrue(archived_exists)
+        self.assertEqual(PNG, archived_bytes)
         self.assertEqual("archived", imported["archive"]["status"])
         self.assertEqual(original_url, imported["archive"]["original_url"])
         self.assertEqual(imported["archive"]["sha256"], imported["integrity"]["sha256"])
