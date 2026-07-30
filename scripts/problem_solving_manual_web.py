@@ -17,9 +17,12 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+import problem_solving_core_semantic_fixes as core_fixes
 import problem_solving_manual as manual
 import problem_solving_manual_deep as deep_manual
 import problem_solving_os as problem_os
+
+core_fixes.apply(problem_os)
 
 ROOT = SCRIPT_DIR.parent
 WEB_DIR = ROOT / "web"
@@ -58,7 +61,7 @@ def strip_trailing_markdown_references(raw: str) -> str:
 
 
 def latest_session(bridge: manual.ManualBridge) -> dict[str, Any] | None:
-    """Return the newest manual run, including completed runs."""
+    """Return the newest manual run, including completed runs, on explicit API request."""
 
     with bridge.lock:
         candidates: list[tuple[str, Path, dict[str, Any]]] = []
