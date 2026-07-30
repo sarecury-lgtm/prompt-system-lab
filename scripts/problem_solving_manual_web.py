@@ -20,9 +20,11 @@ if str(SCRIPT_DIR) not in sys.path:
 import problem_solving_core_semantic_fixes as core_fixes
 import problem_solving_manual as manual
 import problem_solving_manual_deep as deep_manual
+import problem_solving_manual_semantic_fixes as manual_fixes
 import problem_solving_os as problem_os
 
 core_fixes.apply(problem_os)
+manual_fixes.apply(manual)
 
 ROOT = SCRIPT_DIR.parent
 WEB_DIR = ROOT / "web"
