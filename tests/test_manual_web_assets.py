@@ -12,13 +12,17 @@ class ManualWebAssetTests(unittest.TestCase):
         actions = (ROOT / "web" / "manual_result_actions.js").read_text(
             encoding="utf-8"
         )
+        action_styles = (ROOT / "web" / "manual_result_actions.css").read_text(
+            encoding="utf-8"
+        )
         self.assertIn('id="copy-prompt"', html)
         self.assertIn('id="open-chatgpt"', html)
         self.assertIn('id="copy-result"', html)
         self.assertIn("copyPromptButton.addEventListener", script)
         self.assertIn("copyResultButton.addEventListener", script)
         self.assertIn("output_markdown", script)
-        self.assertIn("result-copy-card", actions)
+        self.assertIn("result-copy-card", action_styles)
+        self.assertIn("result-copy", actions)
         self.assertNotIn("send-to-chatgpt", script)
 
     def test_page_does_not_auto_restore_unselected_latest_completed_run(self):
