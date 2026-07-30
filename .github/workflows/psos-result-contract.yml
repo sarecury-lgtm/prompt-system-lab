@@ -12,6 +12,7 @@ on:
       - "scripts/problem_solving_evidence_review.py"
       - "scripts/problem_solving_visual_evidence.py"
       - "scripts/problem_solving_prompt_trace.py"
+      - "scripts/problem_solving_prompt_causal_audit.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os_quality_runtime.py"
       - "scripts/problem_solving_quality_web.py"
@@ -32,6 +33,7 @@ on:
       - "tests/test_problem_solving_visual_evidence.py"
       - "tests/test_problem_solving_prompt_trace.py"
       - "tests/test_prompt_generation_chart_case.py"
+      - "tests/test_prompt_generation_causal_audit.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
       - "tests/test_problem_solving_quality_web.py"
@@ -55,6 +57,7 @@ on:
       - "scripts/problem_solving_evidence_review.py"
       - "scripts/problem_solving_visual_evidence.py"
       - "scripts/problem_solving_prompt_trace.py"
+      - "scripts/problem_solving_prompt_causal_audit.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os_quality_runtime.py"
       - "scripts/problem_solving_quality_web.py"
@@ -75,6 +78,7 @@ on:
       - "tests/test_problem_solving_visual_evidence.py"
       - "tests/test_problem_solving_prompt_trace.py"
       - "tests/test_prompt_generation_chart_case.py"
+      - "tests/test_prompt_generation_causal_audit.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
       - "tests/test_problem_solving_quality_web.py"
@@ -108,6 +112,7 @@ jobs:
           python -m py_compile scripts/problem_solving_evidence_review.py
           python -m py_compile scripts/problem_solving_visual_evidence.py
           python -m py_compile scripts/problem_solving_prompt_trace.py
+          python -m py_compile scripts/problem_solving_prompt_causal_audit.py
           python -m py_compile scripts/problem_solving_os_contract_runtime.py
           python -m py_compile scripts/problem_solving_os_quality_runtime.py
           python -m py_compile scripts/problem_solving_quality_web.py
@@ -140,6 +145,7 @@ jobs:
           tests.test_problem_solving_visual_evidence
           tests.test_problem_solving_prompt_trace
           tests.test_prompt_generation_chart_case
+          tests.test_prompt_generation_causal_audit
           tests.test_problem_solving_os_contract_runtime
           tests.test_problem_solving_os_quality_runtime
           tests.test_problem_solving_quality_web
