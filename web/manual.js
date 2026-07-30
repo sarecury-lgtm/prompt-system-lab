@@ -6,6 +6,9 @@ const resultPanel = $("#result-panel");
 const startButton = $("#start");
 const submitButton = $("#submit");
 const reviseButton = $("#revise");
+const copyPromptButton = $("#copy-prompt");
+const openChatGPTButton = $("#open-chatgpt");
+const copyResultButton = $("#copy-result");
 const statusText = $("#status");
 let currentRunId = null;
 let currentSession = null;
@@ -24,6 +27,30 @@ function setBusy(button, busy) {
   button.disabled = busy;
   button.dataset.label ||= button.textContent;
   button.textContent = busy ? "처리 중…" : button.dataset.label;
+}
+
+function setTemporaryLabel(button, label, duration = 1800) {
+  const original = button.dataset.label || button.textContent;
+  button.textContent = label;
+  window.setTimeout(() => {
+    button.textContent = original;
+  }, duration);
+}
+
+async function copyText(value, fallbackElement = null) {
+  const text = typeof value === "string" ? value : "";
+  if (!text.trim()) throw new Error("복사할 내용이 없습니다.");
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch (_error) {
+    if (!fallbackElement) throw new Error("클립보드에 복사하지 못했습니다.");
+    fallbackElement.focus();
+    fallbackElement.select();
+    if (!document.execCommand("copy")) {
+      throw new Error("클립보드에 복사하지 못했습니다.");
+    }
+  }
 }
 
 function researchModeLabel(mode) {
@@ -49,12 +76,13 @@ function stagePresentation(session) {
       detail: "아직 실제 조사나 결과 작성은 하지 않습니다.",
       badge: "일반 ChatGPT",
       badgeKind: "normal",
-      action: "버튼을 누르면 지시문이 복사되고 ChatGPT가 열립니다. 일반 채팅에 그대로 보내고, 받은 답변 전체를 아래 칸에 붙이세요.",
-      note: "이 단계에서는 심층 리서치를 켜지 않습니다.",
+      action: "먼저 현재 라우터 지시문을 복사하세요. 그다음 ChatGPT를 열어 일반 채팅에 붙여넣고, 받은 답변 전체를 아래 칸에 넣습니다.",
+      note: "이 단계에서는 심층 리서치를 켜지 않습니다. 복사와 ChatGPT 열기는 서로 다른 버튼입니다.",
       responseLabel: "ChatGPT 답변 전체 붙여넣기",
       responseHelp: "ChatGPT가 준 내용을 수정하지 말고 그대로 붙이세요.",
       responsePlaceholder: "ChatGPT 답변 전체를 여기에 붙여넣으세요.",
       submitLabel: "답변 확인하고 다음",
+      copyLabel: "1. 라우터 지시문 복사",
     };
   }
 
@@ -65,12 +93,13 @@ function stagePresentation(session) {
       detail: "이번 단계에서만 ChatGPT의 심층 리서치를 사용합니다.",
       badge: "심층 리서치 켜기",
       badgeKind: "deep",
-      action: "버튼을 누른 뒤 열린 ChatGPT에서 ‘+’ 메뉴의 심층 리서치를 선택해 전송하세요. 조사가 끝나면 완성된 보고서 전체를 아래 칸에 붙이세요.",
-      note: "JSON으로 바꾸지 말고 보고서 원문을 처음부터 끝까지 붙입니다.",
+      action: "현재 조사 지시문을 복사한 뒤 ChatGPT를 열고 ‘+’ 메뉴에서 심층 리서치를 선택해 전송하세요. 조사가 끝나면 보고서 전체를 아래 칸에 붙입니다.",
+      note: "JSON으로 바꾸지 말고 인용과 출처 링크가 포함된 보고서 원문을 그대로 사용합니다.",
       responseLabel: "심층 리서치 보고서 전체 붙여넣기",
-      responseHelp: "인용과 출처 링크가 포함된 완성 보고서를 그대로 붙이세요.",
+      responseHelp: "완성된 보고서를 처음부터 끝까지 그대로 붙이세요.",
       responsePlaceholder: "심층 리서치가 완성한 보고서 전체를 여기에 붙여넣으세요.",
       submitLabel: "보고서 확인하고 다음",
+      copyLabel: "1. 심층 조사 지시문 복사",
     };
   }
 
@@ -81,12 +110,13 @@ function stagePresentation(session) {
       detail: "조사 보고서를 PSOS 결과 형식으로 정리하는 마지막 단계입니다.",
       badge: "일반 ChatGPT",
       badgeKind: "normal",
-      action: "버튼을 눌러 이번 지시문을 일반 ChatGPT에 보내세요. 받은 답변 전체를 아래 칸에 붙이면 완료됩니다.",
-      note: "이번에는 심층 리서치를 끄고 일반 채팅으로 보냅니다.",
+      action: "현재 정리 지시문을 복사한 뒤 일반 ChatGPT에 보내세요. 이번에는 심층 리서치를 끄고 받은 JSON 전체를 아래 칸에 붙입니다.",
+      note: "새 조사를 시키는 단계가 아니라 이미 완성된 보고서를 보존해 정리하는 단계입니다.",
       responseLabel: "정리된 답변 전체 붙여넣기",
       responseHelp: "ChatGPT가 반환한 JSON 전체를 그대로 붙이세요.",
       responsePlaceholder: "ChatGPT가 정리한 답변 전체를 여기에 붙여넣으세요.",
       submitLabel: "최종 결과 확인",
+      copyLabel: "1. 정리 지시문 복사",
     };
   }
 
@@ -100,14 +130,15 @@ function stagePresentation(session) {
       : "선택된 해결 방식으로 실제 결과를 만듭니다.",
     badge: isResearch ? "일반 ChatGPT · 웹 검색" : "일반 ChatGPT",
     badgeKind: "normal",
-    action: "버튼을 눌러 지시문을 일반 ChatGPT에 보내고, 받은 답변 전체를 아래 칸에 붙이세요.",
+    action: "현재 단계의 지시문을 먼저 복사한 뒤 ChatGPT를 열어 보내고, 받은 답변 전체를 아래 칸에 붙이세요.",
     note: isResearch
-      ? "ChatGPT가 필요한 웹 검색을 수행합니다. 별도로 심층 리서치를 켤 필요는 없습니다."
-      : "화면에 나온 지시문을 수정하지 않고 그대로 보내면 됩니다.",
+      ? "필요한 웹 검색은 일반 ChatGPT에서 수행합니다. 별도로 심층 리서치를 켤 필요는 없습니다."
+      : "화면에 표시된 현재 단계의 지시문인지 확인한 뒤 그대로 보내면 됩니다.",
     responseLabel: "ChatGPT 답변 전체 붙여넣기",
     responseHelp: "ChatGPT가 새로 답한 내용을 수정하지 말고 그대로 붙이세요.",
     responsePlaceholder: "ChatGPT 답변 전체를 여기에 붙여넣으세요.",
     submitLabel: session.phase === "secondary" ? "최종 결과 확인" : "답변 확인하고 계속",
+    copyLabel: "1. 현재 지시문 복사",
   };
 }
 
@@ -125,18 +156,17 @@ function applyPresentation(session) {
   $("#response").placeholder = view.responsePlaceholder;
   submitButton.textContent = view.submitLabel;
   submitButton.dataset.label = view.submitLabel;
-  $("#send-to-chatgpt").textContent = view.badgeKind === "deep"
-    ? "복사하고 ChatGPT 열기 · 심층 리서치 사용"
-    : "지시문 복사하고 ChatGPT 열기";
-  $("#send-to-chatgpt").dataset.label = $("#send-to-chatgpt").textContent;
+  copyPromptButton.textContent = view.copyLabel;
+  copyPromptButton.dataset.label = view.copyLabel;
+  openChatGPTButton.textContent = "2. ChatGPT 열기";
+  openChatGPTButton.dataset.label = openChatGPTButton.textContent;
 }
 
 function showSession(session) {
   currentSession = session;
   currentRunId = session.run_id;
   localStorage.setItem("psos-current-run-id", currentRunId);
-  localStorage.removeItem("psos-skip-latest");
-  $("#run-id").textContent = `${session.run_id} · ${researchModeLabel(session.research_mode)}`;
+  $("#run-id").textContent = `${session.run_id} · ${researchModeLabel(session.research_mode)} · ${session.phase || session.state}`;
   $("#prompt").value = session.prompt || "";
   $("#prompt-details").open = false;
   $("#response").value = "";
@@ -155,6 +185,7 @@ function showSession(session) {
     $("#revision-feedback").value = "";
     $("#revision-file").value = "";
     $("#revision-file-status").textContent = "TXT·MD 파일을 고르면 내용이 위 칸에 들어갑니다.";
+    $("#result-copy-status").textContent = "";
     $("#result-detail").textContent = session.parent_run_id
       ? "원본을 보존한 수정 결과입니다."
       : "결과와 작업 기록이 저장됐습니다.";
@@ -173,7 +204,6 @@ function returnToStart({ preserveCurrentRequest = false } = {}) {
   currentRunId = null;
   currentSession = null;
   localStorage.removeItem("psos-current-run-id");
-  localStorage.setItem("psos-skip-latest", "1");
   $("#request").value = previousRequest;
   $("#research-mode").value = previousMode;
   updateResearchModeHelp();
@@ -189,9 +219,9 @@ function returnToStart({ preserveCurrentRequest = false } = {}) {
 function updateResearchModeHelp() {
   const mode = $("#research-mode").value;
   $("#research-mode-help").textContent = {
-    standard: "잘 모르겠으면 이 기본값을 사용하세요. 필요한 웹 검색은 실제 결과 단계에서 ChatGPT가 수행합니다.",
-    deep: "첫 단계는 여전히 일반 ChatGPT입니다. 실제 조사 단계가 되면 화면에 ‘심층 리서치 켜기’라고 크게 표시됩니다.",
-    none: "최신 정보나 외부 출처가 필요 없는 작성·분석 요청에 사용합니다.",
+    standard: "잘 모르겠으면 기본값을 사용하세요. 실제 경로는 라우터가 정하고, RESEARCH일 때만 일반 웹 검색을 사용합니다.",
+    deep: "라우터 단계는 일반 ChatGPT입니다. 실제 경로가 RESEARCH일 때만 별도의 심층 조사 단계가 생깁니다.",
+    none: "첨부 자료 분석, 글쓰기, 프롬프트 제작처럼 최신 외부 정보가 필요 없는 요청에 사용합니다.",
   }[mode];
 }
 
@@ -244,28 +274,37 @@ submitButton.addEventListener("click", async () => {
   }
 });
 
-$("#send-to-chatgpt").addEventListener("click", async () => {
-  const button = $("#send-to-chatgpt");
-  const original = button.dataset.label || button.textContent;
-  const opened = window.open("https://chatgpt.com/", "_blank");
-  if (opened) opened.opener = null;
-
-  let copied = false;
+copyPromptButton.addEventListener("click", async () => {
+  const prompt = currentSession?.prompt || $("#prompt").value;
   try {
-    await navigator.clipboard.writeText($("#prompt").value);
-    copied = true;
-  } catch (_error) {
+    await copyText(prompt, $("#prompt"));
+    setTemporaryLabel(copyPromptButton, "복사됨 · 현재 단계 지시문");
+    statusText.textContent = `${currentSession?.phase || "현재"} 단계 지시문을 복사했습니다. 이제 ChatGPT를 여세요.`;
+    statusText.classList.remove("error");
+  } catch (error) {
     $("#prompt-details").open = true;
-    $("#prompt").focus();
-    $("#prompt").select();
-    copied = document.execCommand("copy");
+    statusText.textContent = `${error.message} 아래 지시문을 직접 복사하세요.`;
+    statusText.classList.add("error");
   }
+});
 
-  button.textContent = copied
-    ? "복사됨 · ChatGPT에 붙여넣으세요"
-    : "복사 실패 · 아래 지시문을 직접 복사하세요";
-  if (!copied) $("#prompt-details").open = true;
-  setTimeout(() => { button.textContent = original; }, 1800);
+openChatGPTButton.addEventListener("click", () => {
+  const opened = window.open("https://chatgpt.com/", "_blank", "noopener");
+  if (!opened) {
+    statusText.textContent = "새 탭이 차단됐습니다. 브라우저의 팝업 허용 후 다시 누르세요.";
+    statusText.classList.add("error");
+  }
+});
+
+copyResultButton.addEventListener("click", async () => {
+  const result = currentSession?.result_markdown || $("#result").textContent;
+  try {
+    await copyText(result, null);
+    setTemporaryLabel(copyResultButton, "결과 복사됨");
+    $("#result-copy-status").textContent = "화면에 표시된 최종 결과 전체를 복사했습니다.";
+  } catch (error) {
+    $("#result-copy-status").textContent = `${error.message} 결과 본문을 직접 선택해 복사하세요.`;
+  }
 });
 
 $("#abandon-run").addEventListener("click", () => {
@@ -325,33 +364,17 @@ $("#new-run").addEventListener("click", () => {
   returnToStart();
 });
 
-async function restoreLastSession() {
+async function restoreSavedSession() {
   const savedRunId = localStorage.getItem("psos-current-run-id");
-  if (savedRunId) {
-    try {
-      const body = await api(`/api/manual/status?run_id=${encodeURIComponent(savedRunId)}`);
-      if (body.session) {
-        showSession(body.session);
-        return;
-      }
-    } catch (_error) {
-      localStorage.removeItem("psos-current-run-id");
-    }
-  }
-  if (localStorage.getItem("psos-skip-latest") === "1") return;
+  if (!savedRunId) return;
   try {
-    const active = await api("/api/manual/active");
-    if (active.session) {
-      showSession(active.session);
-      return;
-    }
-    const latest = await api("/api/manual/latest");
-    if (latest.session) showSession(latest.session);
+    const body = await api(`/api/manual/status?run_id=${encodeURIComponent(savedRunId)}`);
+    if (body.session) showSession(body.session);
   } catch (_error) {
-    // No saved session: keep the start panel visible.
+    localStorage.removeItem("psos-current-run-id");
   }
 }
 
 updateResearchModeHelp();
 updateRevisionModeHelp();
-restoreLastSession();
+restoreSavedSession();
