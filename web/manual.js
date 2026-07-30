@@ -37,10 +37,12 @@ function researchModeLabel(mode) {
 function configureResponseArea(session) {
   const label = $("#response-label");
   const response = $("#response");
+  const responseHelp = $("#response-help");
   const callout = $("#stage-callout");
 
   if (session.response_kind === "markdown") {
-    label.textContent = "심층 리서치가 완성한 보고서 전체";
+    label.textContent = "② 심층 리서치가 완성한 보고서 전체 붙여넣기";
+    responseHelp.textContent = "이번 단계에서는 JSON이 아니라 Deep research가 만든 보고서 전체를 아래 입력칸에 붙입니다.";
     response.placeholder = "Deep research가 완성한 Markdown 보고서를 처음부터 끝까지 붙여넣으세요. JSON으로 바꾸지 마세요.";
     callout.textContent = "ChatGPT에서 Deep research를 직접 켠 뒤 위 지시문을 보내세요. 이번 반환값은 JSON이 아니라 완성된 보고서입니다.";
     submitButton.textContent = "보고서 저장하고 계속";
@@ -48,7 +50,8 @@ function configureResponseArea(session) {
     return;
   }
 
-  label.textContent = "ChatGPT가 반환한 JSON";
+  label.textContent = "② ChatGPT가 반환한 JSON 붙여넣기";
+  responseHelp.textContent = "위의 읽기 전용 지시문이 아니라, ChatGPT가 새로 답한 내용을 이 아래 칸에 붙여넣습니다.";
   response.placeholder = "ChatGPT의 전체 JSON 응답을 여기에 붙여넣으세요. 코드 펜스와 뒤쪽 링크 각주는 자동 정리합니다.";
   submitButton.textContent = "검증하고 계속";
   submitButton.dataset.label = "검증하고 계속";
@@ -62,7 +65,7 @@ function configureResponseArea(session) {
   } else if (session.phase === "router") {
     callout.textContent = "첫 왕복입니다. 라우터 JSON이 통과하면 위 지시문과 아래 입력칸이 자동으로 다음 단계로 바뀝니다.";
   } else {
-    callout.textContent = "위 지시문은 이전 단계와 다른 새 작업입니다. 새 답변을 받아 아래 칸에 붙여넣으세요.";
+    callout.textContent = "위 지시문은 이전 단계와 다른 새 작업입니다. 지시문을 ChatGPT에 보내 새 답변을 받은 뒤, 화면 아래쪽 ② 입력칸에 붙여넣으세요. 결과 수정은 이 run이 완료된 뒤 나타납니다.";
   }
 }
 
@@ -114,6 +117,23 @@ function showSession(session) {
   startPanel.classList.add("hidden");
   resultPanel.classList.add("hidden");
   handoffPanel.classList.remove("hidden");
+}
+
+function returnToStart({ preserveCurrentRequest = false } = {}) {
+  const previousRequest = preserveCurrentRequest ? currentSession?.request || "" : "";
+  const previousMode = preserveCurrentRequest ? currentSession?.research_mode || "standard" : "standard";
+  currentRunId = null;
+  currentSession = null;
+  localStorage.removeItem("psos-current-run-id");
+  localStorage.setItem("psos-skip-latest", "1");
+  $("#request").value = previousRequest;
+  $("#research-mode").value = previousMode;
+  $("#revision-feedback").value = "";
+  $("#revision-box").classList.add("hidden");
+  resultPanel.classList.add("hidden");
+  handoffPanel.classList.add("hidden");
+  startPanel.classList.remove("hidden");
+  $("#request").focus();
 }
 
 startButton.addEventListener("click", async () => {
@@ -170,6 +190,11 @@ $("#open-chatgpt").addEventListener("click", () => {
   window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
 });
 
+$("#abandon-run").addEventListener("click", () => {
+  const leave = window.confirm("현재 작업 화면을 닫고 새 요청으로 돌아갈까요? 기존 run 기록은 삭제되지 않습니다.");
+  if (leave) returnToStart({ preserveCurrentRequest: true });
+});
+
 $("#show-revision").addEventListener("click", () => {
   $("#revision-box").classList.toggle("hidden");
   if (!$("#revision-box").classList.contains("hidden")) {
@@ -199,17 +224,7 @@ reviseButton.addEventListener("click", async () => {
 });
 
 $("#new-run").addEventListener("click", () => {
-  currentRunId = null;
-  currentSession = null;
-  localStorage.removeItem("psos-current-run-id");
-  localStorage.setItem("psos-skip-latest", "1");
-  $("#request").value = "";
-  $("#revision-feedback").value = "";
-  $("#revision-box").classList.add("hidden");
-  resultPanel.classList.add("hidden");
-  handoffPanel.classList.add("hidden");
-  startPanel.classList.remove("hidden");
-  $("#request").focus();
+  returnToStart();
 });
 
 async function restoreLastSession() {
