@@ -20,6 +20,7 @@ if str(SCRIPT_DIR) not in sys.path:
 import problem_solving_core_semantic_fixes as core_fixes
 import problem_solving_manual as manual
 import problem_solving_manual_deep as deep_manual
+import problem_solving_manual_prompt_ablation as prompt_ablation
 import problem_solving_manual_semantic_fixes as manual_fixes
 import problem_solving_os as problem_os
 
@@ -83,6 +84,7 @@ def latest_session(bridge: manual.ManualBridge) -> dict[str, Any] | None:
 
 class Handler(BaseHTTPRequestHandler):
     bridge: manual.ManualBridge
+    prompt_ablation: prompt_ablation.ManualPromptAblation
 
     def log_message(self, format: str, *args: Any) -> None:
         sys.stderr.write(
@@ -235,7 +237,26 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 self.send_json(HTTPStatus.OK, {"session": session})
                 return
-        except manual.ManualBridgeError as exc:
+            if self.path == "/api/manual/prompt-ablation/start":
+                session = self.prompt_ablation.start(
+                    str(value.get("parent_run_id", ""))
+                )
+                self.send_json(HTTPStatus.CREATED, {"session": session})
+                return
+            if self.path == "/api/manual/prompt-ablation/submit":
+                response = strip_trailing_markdown_references(
+                    str(value.get("response", ""))
+                )
+                session = self.prompt_ablation.submit(
+                    str(value.get("run_id", "")),
+                    response,
+                )
+                self.send_json(HTTPStatus.OK, {"session": session})
+                return
+        except (
+            manual.ManualBridgeError,
+            prompt_ablation.ManualPromptAblationError,
+        ) as exc:
             self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
             return
         self.send_error(HTTPStatus.NOT_FOUND)
@@ -259,7 +280,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
     bridge = deep_manual.ManualBridge(args.runs_dir, args.model_policy)
-    configured = type("ConfiguredHandler", (Handler,), {"bridge": bridge})
+    comparison = prompt_ablation.ManualPromptAblation(bridge, manual, problem_os)
+    configured = type(
+        "ConfiguredHandler",
+        (Handler,),
+        {"bridge": bridge, "prompt_ablation": comparison},
+    )
     server = ThreadingHTTPServer((args.host, args.port), configured)
     print(f"PSOS manual ChatGPT bridge: http://{args.host}:{args.port}")
     print("종료: Ctrl+C")
