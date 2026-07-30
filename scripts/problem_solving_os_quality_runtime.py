@@ -16,6 +16,7 @@ CONTRACT_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_os_contract_runtime.
 EVIDENCE_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_evidence_bundle.py"
 PROMPT_TRACE_PATH = ROOT / "scripts" / "problem_solving_prompt_trace.py"
 PROMPT_CAUSAL_AUDIT_PATH = ROOT / "scripts" / "problem_solving_prompt_causal_audit.py"
+PROMPT_ABLATION_PATH = ROOT / "scripts" / "problem_solving_prompt_ablation.py"
 CORE_FIXES_PATH = ROOT / "scripts" / "problem_solving_core_semantic_fixes.py"
 QUALITY_FIXES_PATH = ROOT / "scripts" / "problem_solving_quality_semantic_fixes.py"
 
@@ -45,6 +46,10 @@ PROMPT_TRACE = _load_local_module(
 PROMPT_CAUSAL_AUDIT = _load_local_module(
     "psos_prompt_generation_causal_audit",
     PROMPT_CAUSAL_AUDIT_PATH,
+)
+PROMPT_ABLATION = _load_local_module(
+    "psos_prompt_generation_ablation",
+    PROMPT_ABLATION_PATH,
 )
 CORE_FIXES = _load_local_module(
     "psos_core_semantic_fixes",
@@ -144,6 +149,30 @@ def _attach_prompt_causal_audit(
     return record
 
 
+def _attach_prompt_ablation(
+    run_dir: Path,
+    payload: dict[str, Any],
+) -> dict[str, Any] | None:
+    try:
+        record = PROMPT_ABLATION.attach_prompt_ablation_variants(
+            run_dir,
+            payload,
+        )
+    except (
+        PROMPT_ABLATION.PromptAblationError,
+        PROMPT_ABLATION.TRACE.PromptTraceError,
+    ) as exc:
+        record = {
+            "version": 1,
+            "status": "unavailable",
+            "error": str(exc),
+            "error_path": "prompt_ablation_error.json",
+        }
+        OS.write_json(run_dir / record["error_path"], record)
+    _persist_quality_record(run_dir, payload, "prompt_ablation", record)
+    return record
+
+
 def run_request(
     request: str,
     *,
@@ -169,6 +198,7 @@ def run_request(
     _persist_quality_record(run_dir, payload, "evidence_bundle", evidence_record)
     _attach_prompt_trace(run_dir, payload)
     _attach_prompt_causal_audit(run_dir, payload)
+    _attach_prompt_ablation(run_dir, payload)
     return run_dir, payload
 
 
@@ -233,6 +263,9 @@ def main(argv: list[str] | None = None) -> int:
     causal_audit = payload.get("prompt_generation_causal_audit")
     if isinstance(causal_audit, dict) and causal_audit.get("markdown_path"):
         print(f"\nPROMPT 인과 감사: {run_dir / causal_audit['markdown_path']}")
+    ablation = payload.get("prompt_ablation")
+    if isinstance(ablation, dict) and ablation.get("manifest_path"):
+        print(f"\nPROMPT 비교 입력: {run_dir / ablation['manifest_path']}")
     print(f"\n실행 기록: {run_dir}")
     return 2 if payload["execution"]["status"] == "blocked_by_capability" else 0
 
