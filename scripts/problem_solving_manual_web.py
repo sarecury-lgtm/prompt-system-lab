@@ -80,7 +80,10 @@ class Handler(BaseHTTPRequestHandler):
     def reject_disallowed_origin(self) -> bool:
         origin = self.headers.get("Origin")
         if origin and self.allowed_origin() is None:
-            self.send_error(HTTPStatus.FORBIDDEN, "Cross-origin bridge request rejected")
+            self.send_error(
+                HTTPStatus.FORBIDDEN,
+                "Cross-origin bridge request rejected",
+            )
             return True
         return False
 
@@ -178,6 +181,15 @@ class Handler(BaseHTTPRequestHandler):
                 session = self.bridge.start(
                     str(value.get("request", "")),
                     value.get("search_enabled", False),
+                    value.get("research_mode"),
+                )
+                self.send_json(HTTPStatus.CREATED, {"session": session})
+                return
+            if self.path == "/api/manual/revise":
+                session = self.bridge.revise(
+                    str(value.get("parent_run_id", "")),
+                    str(value.get("feedback", "")),
+                    value.get("research_mode"),
                 )
                 self.send_json(HTTPStatus.CREATED, {"session": session})
                 return
