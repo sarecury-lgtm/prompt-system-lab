@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run PSOS with corrected routing, Result Contract enforcement, evidence review, and PROMPT trace."""
+"""Run PSOS with corrected routing, Result Contract enforcement, evidence review, and PROMPT diagnostics."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_os_contract_runtime.py"
 EVIDENCE_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_evidence_bundle.py"
 PROMPT_TRACE_PATH = ROOT / "scripts" / "problem_solving_prompt_trace.py"
+PROMPT_CAUSAL_AUDIT_PATH = ROOT / "scripts" / "problem_solving_prompt_causal_audit.py"
 CORE_FIXES_PATH = ROOT / "scripts" / "problem_solving_core_semantic_fixes.py"
 QUALITY_FIXES_PATH = ROOT / "scripts" / "problem_solving_quality_semantic_fixes.py"
 
@@ -40,6 +41,10 @@ EVIDENCE = _load_local_module(
 PROMPT_TRACE = _load_local_module(
     "psos_prompt_generation_trace",
     PROMPT_TRACE_PATH,
+)
+PROMPT_CAUSAL_AUDIT = _load_local_module(
+    "psos_prompt_generation_causal_audit",
+    PROMPT_CAUSAL_AUDIT_PATH,
 )
 CORE_FIXES = _load_local_module(
     "psos_core_semantic_fixes",
@@ -110,6 +115,35 @@ def _attach_prompt_trace(
     return record
 
 
+def _attach_prompt_causal_audit(
+    run_dir: Path,
+    payload: dict[str, Any],
+) -> dict[str, Any] | None:
+    try:
+        record = PROMPT_CAUSAL_AUDIT.attach_prompt_generation_causal_audit(
+            run_dir,
+            payload,
+        )
+    except (
+        PROMPT_CAUSAL_AUDIT.PromptCausalAuditError,
+        PROMPT_CAUSAL_AUDIT.TRACE.PromptTraceError,
+    ) as exc:
+        record = {
+            "version": 1,
+            "status": "unavailable",
+            "error": str(exc),
+            "error_path": "prompt_generation_causal_audit_error.json",
+        }
+        OS.write_json(run_dir / record["error_path"], record)
+    _persist_quality_record(
+        run_dir,
+        payload,
+        "prompt_generation_causal_audit",
+        record,
+    )
+    return record
+
+
 def run_request(
     request: str,
     *,
@@ -134,6 +168,7 @@ def run_request(
     evidence_record = EVIDENCE.attach_evidence_bundle(run_dir, payload)
     _persist_quality_record(run_dir, payload, "evidence_bundle", evidence_record)
     _attach_prompt_trace(run_dir, payload)
+    _attach_prompt_causal_audit(run_dir, payload)
     return run_dir, payload
 
 
@@ -195,6 +230,9 @@ def main(argv: list[str] | None = None) -> int:
     prompt_trace = payload.get("prompt_generation_trace")
     if isinstance(prompt_trace, dict) and prompt_trace.get("markdown_path"):
         print(f"\nPROMPT 생성 진단: {run_dir / prompt_trace['markdown_path']}")
+    causal_audit = payload.get("prompt_generation_causal_audit")
+    if isinstance(causal_audit, dict) and causal_audit.get("markdown_path"):
+        print(f"\nPROMPT 인과 감사: {run_dir / causal_audit['markdown_path']}")
     print(f"\n실행 기록: {run_dir}")
     return 2 if payload["execution"]["status"] == "blocked_by_capability" else 0
 
