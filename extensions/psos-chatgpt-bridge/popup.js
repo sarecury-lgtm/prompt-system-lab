@@ -42,15 +42,20 @@ chrome.storage.local.get("psosServer").then(({ psosServer }) => {
 });
 serverInput.addEventListener("change", saveServer);
 
-async function saveLinkedSession(session) {
+async function saveLinkedSession(session, assistantBaseline) {
   await chrome.storage.local.set({
     psosRunId: session.run_id,
     psosPhase: session.phase || "",
+    psosAssistantBaseline: assistantBaseline,
   });
 }
 
 async function clearLinkedSession() {
-  await chrome.storage.local.remove(["psosRunId", "psosPhase"]);
+  await chrome.storage.local.remove([
+    "psosRunId",
+    "psosPhase",
+    "psosAssistantBaseline",
+  ]);
 }
 
 async function linkedPendingSession() {
@@ -70,9 +75,15 @@ async function insertSession(session) {
   if (!session?.state?.startsWith("awaiting_")) {
     throw new Error("전송할 대기 단계가 없습니다.");
   }
-  await sendToTab({ type: "PSOS_INSERT_PROMPT", prompt: session.prompt });
-  await saveLinkedSession(session);
-  setStatus(`${session.phase || "다음"} 지시문을 입력했습니다.\n내용을 확인한 뒤 ChatGPT 전송 버튼을 누르세요.`);
+  const inserted = await sendToTab({
+    type: "PSOS_INSERT_PROMPT",
+    prompt: session.prompt,
+  });
+  await saveLinkedSession(session, inserted.assistantBaseline);
+  setStatus(
+    `${session.run_id}\n${session.phase || "다음"} 지시문을 입력했습니다.\n` +
+    "내용을 확인한 뒤 ChatGPT 전송 버튼을 누르세요.",
+  );
 }
 
 document.querySelector("#insert").addEventListener("click", async () => {
@@ -97,14 +108,23 @@ document.querySelector("#return").addEventListener("click", async () => {
     await saveServer();
     const session = await linkedPendingSession();
     if (!session) throw new Error("연결된 대기 run이 없습니다. 먼저 작업을 가져오세요.");
-    const extracted = await sendToTab({ type: "PSOS_EXTRACT_LAST_RESPONSE" });
+    const { psosAssistantBaseline } = await chrome.storage.local.get(
+      "psosAssistantBaseline",
+    );
+    const extracted = await sendToTab({
+      type: "PSOS_EXTRACT_LAST_RESPONSE",
+      assistantBaseline: psosAssistantBaseline,
+    });
     const body = await bridge("/api/manual/submit", {
       method: "POST",
       body: JSON.stringify({ run_id: session.run_id, response: extracted.response }),
     });
     if (body.session.state === "completed") {
       await clearLinkedSession();
-      setStatus("PSOS 검증과 저장이 완료됐습니다. 로컬 브리지 화면에서 결과를 확인하거나 복사하세요.");
+      setStatus(
+        `${body.session.run_id}\nPSOS 검증과 저장이 완료됐습니다. ` +
+        "로컬 브리지 화면에서 결과를 확인하거나 복사하세요.",
+      );
       return;
     }
     await insertSession(body.session);
