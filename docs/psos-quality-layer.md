@@ -146,6 +146,30 @@ evidence/images/<sha256>.<확장자>
 
 다운로드 실패는 전체 가져오기를 거짓 성공이나 전면 실패로 바꾸지 않는다. 해당 항목은 원격 URL을 유지하고 `archive.status: unavailable`과 실패 이유를 남긴다. 따라서 핫링크 차단이나 로그인 쿠키가 필요한 이미지도 원본 페이지에서 다시 확인할 수 있다.
 
+## 브라우저 E2E 검증
+
+Playwright가 실제 Chromium에 압축 해제 확장 프로그램을 로드하고 다음 흐름을 자동 재현한다.
+
+```text
+로컬 후기 페이지 열기
+→ 확장 content script 삽입
+→ 크기 조건을 통과한 사진만 표시
+→ 실행 ID·후보명·구매자 후기 출처로 전송
+→ Evidence Bundle 갱신과 이미지 로컬 보존
+→ production quality-review.js 갤러리 렌더링
+→ 로컬 evidence endpoint와 원본 URL·SHA-256 확인
+```
+
+로컬에서 실행할 때:
+
+```powershell
+npm install
+npx playwright install chromium
+npm run test:visual-e2e
+```
+
+CI에서는 기존 `PSOS result contract` 워크플로의 `browser-e2e` job으로 실행한다. 실패하면 브라우저 화면을 `visual-evidence-e2e-failure.png` artifact로 남긴다.
+
 ## 권한과 안전 경계
 
 확장 프로그램은 다음 권한만 사용한다.
@@ -164,4 +188,4 @@ evidence/images/<sha256>.<확장자>
 - 완료 조건과 사진의 주장별 자동 연결은 아직 하지 않는다. 사진은 후보 단위로 연결된다.
 - CODE·PROJECT는 중복 파일 변경 위험 때문에 계약 미충족 시 자동 보충 실행을 하지 않는다.
 - 품질 계층은 아직 Draft PR의 별도 진입점이며 canonical `problem_solving_os.py`를 대체하지 않는다.
-- 서버·보안 경계·브라우저 스크립트는 자동 테스트했지만, 실제 사용자 Chrome에서 여러 쇼핑몰 페이지를 대상으로 한 수동 실사용 검증은 남아 있다.
+- Chromium 기반의 전체 수집·보존·갤러리 경로는 자동 검증한다. 실제 쇼핑몰별 로그인, 무한 스크롤, lazy loading, anti-hotlink 정책은 사용자 Chrome에서 별도 수동 검증이 필요하다.
