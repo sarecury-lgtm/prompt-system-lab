@@ -11,6 +11,7 @@ on:
       - "scripts/problem_solving_evidence_bundle.py"
       - "scripts/problem_solving_evidence_review.py"
       - "scripts/problem_solving_visual_evidence.py"
+      - "scripts/problem_solving_visual_archive.py"
       - "scripts/problem_solving_prompt_trace.py"
       - "scripts/problem_solving_prompt_causal_audit.py"
       - "scripts/problem_solving_prompt_ablation.py"
@@ -34,6 +35,7 @@ on:
       - "tests/test_problem_solving_evidence_bundle.py"
       - "tests/test_problem_solving_evidence_review.py"
       - "tests/test_problem_solving_visual_evidence.py"
+      - "tests/test_problem_solving_visual_archive.py"
       - "tests/test_problem_solving_prompt_trace.py"
       - "tests/test_prompt_generation_chart_case.py"
       - "tests/test_prompt_generation_causal_audit.py"
@@ -61,6 +63,7 @@ on:
       - "scripts/problem_solving_evidence_bundle.py"
       - "scripts/problem_solving_evidence_review.py"
       - "scripts/problem_solving_visual_evidence.py"
+      - "scripts/problem_solving_visual_archive.py"
       - "scripts/problem_solving_prompt_trace.py"
       - "scripts/problem_solving_prompt_causal_audit.py"
       - "scripts/problem_solving_prompt_ablation.py"
@@ -84,6 +87,7 @@ on:
       - "tests/test_problem_solving_evidence_bundle.py"
       - "tests/test_problem_solving_evidence_review.py"
       - "tests/test_problem_solving_visual_evidence.py"
+      - "tests/test_problem_solving_visual_archive.py"
       - "tests/test_problem_solving_prompt_trace.py"
       - "tests/test_prompt_generation_chart_case.py"
       - "tests/test_prompt_generation_causal_audit.py"
@@ -121,6 +125,7 @@ jobs:
           python -m py_compile scripts/problem_solving_evidence_bundle.py
           python -m py_compile scripts/problem_solving_evidence_review.py
           python -m py_compile scripts/problem_solving_visual_evidence.py
+          python -m py_compile scripts/problem_solving_visual_archive.py
           python -m py_compile scripts/problem_solving_prompt_trace.py
           python -m py_compile scripts/problem_solving_prompt_causal_audit.py
           python -m py_compile scripts/problem_solving_prompt_ablation.py
@@ -156,6 +161,7 @@ jobs:
           tests.test_problem_solving_evidence_bundle
           tests.test_problem_solving_evidence_review
           tests.test_problem_solving_visual_evidence
+          tests.test_problem_solving_visual_archive
           tests.test_problem_solving_prompt_trace
           tests.test_prompt_generation_chart_case
           tests.test_prompt_generation_causal_audit
