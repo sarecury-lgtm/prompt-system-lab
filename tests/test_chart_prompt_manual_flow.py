@@ -35,6 +35,8 @@ FINAL_PROMPT = """# 단타 차트 분석 프롬프트
 
 외부 뉴스, 기업가치, 실적 전망을 사용하지 않으며 근거 없는 확신을 피한다.
 """
+PROMPT_START = "<!-- PSOS_PROMPT_START -->"
+PROMPT_END = "<!-- PSOS_PROMPT_END -->"
 
 
 def route_result():
@@ -67,11 +69,12 @@ def route_result():
 
 
 def execution_result():
+    marked_prompt = f"{PROMPT_START}\n{FINAL_PROMPT.strip()}\n{PROMPT_END}"
     return {
         "execution": {
             "status": "completed",
             "summary": "차트 분석 프롬프트 완성",
-            "result_markdown": FINAL_PROMPT,
+            "result_markdown": marked_prompt,
             "capabilities_used": ["ai_reasoning"],
             "needed_capability": None,
             "handoff": None,
@@ -104,6 +107,8 @@ class ChartPromptManualFlowTests(unittest.TestCase):
             self.assertNotIn("Deep research", routed["prompt"])
             self.assertIn("기존 Prompt Compiler baseline", routed["prompt"])
             self.assertIn("외부 뉴스", routed["prompt"])
+            self.assertIn(PROMPT_START, routed["prompt"])
+            self.assertIn("피드백, 개선점", routed["prompt"])
 
             finished = bridge.submit(
                 "chart-prompt-flow",
@@ -117,6 +122,8 @@ class ChartPromptManualFlowTests(unittest.TestCase):
         self.assertEqual("completed", finished["state"])
         self.assertEqual(FINAL_PROMPT.strip(), finished["output_markdown"].strip())
         self.assertEqual(FINAL_PROMPT.strip(), output.strip())
+        self.assertNotIn(PROMPT_START, output)
+        self.assertNotIn("개선점", output)
         self.assertIn("현재 목표:", audit)
         self.assertEqual("PROMPT", route["selected_route"])
         self.assertEqual("none", route["manual_bridge"]["research_mode"])
