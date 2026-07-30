@@ -1,6 +1,7 @@
 name: PSOS result contract
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - "scripts/problem_solving_contract.py"
