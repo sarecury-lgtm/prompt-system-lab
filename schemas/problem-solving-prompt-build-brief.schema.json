@@ -43,7 +43,6 @@
     },
     "fixed_constraints": {
       "type": "array",
-      "maxItems": 12,
       "items": {
         "type": "string",
         "minLength": 1
