@@ -1,0 +1,59 @@
+name: PSOS core stabilization
+
+on:
+  pull_request:
+    paths:
+      - "scripts/problem_solving_core_semantic_fixes.py"
+      - "scripts/problem_solving_stable.py"
+      - "scripts/problem_solving_stable_web.py"
+      - "scripts/problem_solving_manual*.py"
+      - "schemas/problem-solving-os-route.schema.json"
+      - "tests/test_problem_solving_core_semantic_fixes.py"
+      - "tests/test_problem_solving_manual*.py"
+      - "tests/test_manual*.py"
+      - "tests/test_chart_prompt_manual_flow.py"
+      - "web/manual*"
+      - ".github/workflows/manual-chatgpt-bridge.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile entrypoints
+        run: >-
+          python -m py_compile
+          scripts/problem_solving_core_semantic_fixes.py
+          scripts/problem_solving_stable.py
+          scripts/problem_solving_stable_web.py
+          scripts/problem_solving_manual_semantic_fixes.py
+          scripts/problem_solving_manual.py
+          scripts/problem_solving_manual_revision.py
+          scripts/problem_solving_manual_deep.py
+          scripts/problem_solving_manual_web.py
+      - name: Validate route schema
+        run: python -m json.tool schemas/problem-solving-os-route.schema.json > /dev/null
+      - name: Run focused regression tests
+        run: >-
+          python -B -m unittest
+          tests.test_problem_solving_core_semantic_fixes
+          tests.test_manual_web_assets
+          tests.test_manual_output_copy
+          tests.test_problem_solving_manual_web
+          tests.test_problem_solving_manual_revision
+          tests.test_problem_solving_manual_deep
+          tests.test_problem_solving_manual_http
+          tests.test_chart_prompt_manual_flow
+      - name: Run canonical PSOS regression suite
+        run: python -B -m unittest tests.test_problem_solving_os tests.test_problem_solving_web
+      - name: Check browser scripts
+        run: |
+          node --check web/manual.js
+          node --check web/manual_result_actions.js

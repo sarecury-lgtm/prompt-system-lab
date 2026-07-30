@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PSOS · ChatGPT 수동 브리지</title>
+  <link rel="stylesheet" href="/manual.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <p class="eyebrow">PERSONAL PROBLEM-SOLVING OS</p>
+      <h1>ChatGPT 수동 브리지</h1>
+      <p class="lede">화면에 표시되는 현재 단계만 따라가면 됩니다. 복사 대상과 결과는 현재 run에 고정되고, 내부 경로와 JSON 형식은 PSOS가 검사합니다.</p>
+    </header>
+
+    <section class="panel" id="start-panel">
+      <div class="section-heading">
+        <span class="step">1</span>
+        <div>
+          <h2>무엇을 해결할까요?</h2>
+          <p>평소처럼 원하는 결과를 적으세요.</p>
+        </div>
+      </div>
+      <textarea id="request" rows="7" placeholder="예: 첨부한 여러 시간대 차트만 분석해 단타 매매 계획을 만드는 재사용 프롬프트를 만들어줘."></textarea>
+
+      <label class="field-label" for="research-mode">외부 정보 사용 범위</label>
+      <select id="research-mode">
+        <option value="standard">일반 웹 검색 허용 — 기본값</option>
+        <option value="deep">필요할 때 심층 조사 허용</option>
+        <option value="none">외부 검색 없이 작성·분석</option>
+      </select>
+      <p class="field-help" id="research-mode-help">실제 해결 경로는 다음 단계의 라우터가 정합니다.</p>
+
+      <button class="primary wide" id="start">시작</button>
+    </section>
+
+    <section class="panel hidden" id="handoff-panel">
+      <div class="guide-heading">
+        <div>
+          <p class="phase-step" id="phase-step">현재 단계</p>
+          <h2 id="phase-title">ChatGPT에 보내기</h2>
+          <p id="phase-detail">화면에 적힌 한 가지만 하면 됩니다.</p>
+        </div>
+        <span class="mode-badge" id="chat-mode-badge">일반 ChatGPT</span>
+      </div>
+
+      <div class="action-card">
+        <strong id="action-title">지금 할 일</strong>
+        <p id="action-text"></p>
+        <div class="action-buttons">
+          <button class="primary action-button" id="copy-prompt">1. 현재 지시문 복사</button>
+          <button class="quiet action-button" id="open-chatgpt">2. ChatGPT 열기</button>
+        </div>
+        <p class="action-note" id="action-note"></p>
+      </div>
+
+      <details class="advanced-box" id="prompt-details">
+        <summary>현재 보낼 지시문 직접 보기</summary>
+        <p class="field-help">이 칸은 현재 run과 단계의 지시문입니다. 읽기 전용이며 복사 버튼도 이 내용만 복사합니다.</p>
+        <textarea class="code-area" id="prompt" rows="14" readonly></textarea>
+      </details>
+
+      <div class="response-box">
+        <label class="field-label" id="response-label" for="response">ChatGPT 답변 전체 붙여넣기</label>
+        <p class="field-help" id="response-help">ChatGPT가 새로 답한 내용을 아래 칸에 붙이세요.</p>
+        <textarea class="code-area" id="response" rows="12" placeholder="ChatGPT 답변 전체를 여기에 붙여넣으세요."></textarea>
+        <div class="submit-row">
+          <p id="status">답변을 붙여넣으면 현재 단계에 맞게 검사합니다.</p>
+          <button class="primary" id="submit">붙여넣은 답변 확인</button>
+        </div>
+      </div>
+
+      <div class="bottom-toolbar">
+        <button class="quiet" id="abandon-run">현재 작업 닫기</button>
+        <span class="run-id" id="run-id"></span>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="result-panel">
+      <div class="section-heading">
+        <span class="step done">✓</span>
+        <div>
+          <h2>완료</h2>
+          <p id="result-detail">결과가 저장됐습니다.</p>
+        </div>
+      </div>
+      <pre id="result"></pre>
+      <div class="result-actions">
+        <span class="copy-status" id="result-copy-status" aria-live="polite"></span>
+        <button class="quiet" id="new-run">새 요청</button>
+        <button class="quiet" id="copy-result">결과 전체 복사</button>
+        <button class="primary" id="show-revision">이 결과 수정</button>
+      </div>
+
+      <div class="revision-box hidden" id="revision-box">
+        <div class="divider"></div>
+        <h3>어떻게 고칠까요?</h3>
+        <p>아쉬운 점을 그대로 적으면 기존 결과에 반영한 새 전체본을 만듭니다.</p>
+
+        <label class="field-label" for="revision-feedback">수정 피드백</label>
+        <textarea id="revision-feedback" rows="8" placeholder="예: 결과 설명이 아니라 실제 수정된 전체 프롬프트를 다시 보여줘. 빠진 조건도 모두 반영해줘."></textarea>
+        <label class="file-row" for="revision-file">
+          <span>텍스트 피드백 파일 불러오기</span>
+          <input id="revision-file" type="file" accept=".txt,.md,text/plain,text/markdown">
+        </label>
+        <p class="field-help" id="revision-file-status">TXT·MD 파일을 고르면 내용이 위 칸에 들어갑니다.</p>
+
+        <details class="advanced-box revision-advanced">
+          <summary>수정 방식 바꾸기 — 대부분 열 필요 없음</summary>
+          <label class="field-label" for="revision-mode">수정 방식</label>
+          <select id="revision-mode">
+            <option value="preserve_route">같은 방식으로 결과만 고치기</option>
+            <option value="reroute">목표와 해결 방식부터 다시 판단하기</option>
+          </select>
+          <p class="field-help" id="revision-mode-help"></p>
+
+          <label class="field-label" for="revision-research-mode">다시 조사할 때 사용할 방식</label>
+          <select id="revision-research-mode">
+            <option value="standard">일반 웹 검색 허용</option>
+            <option value="deep">심층 조사 허용</option>
+            <option value="none">외부 검색 없음</option>
+          </select>
+        </details>
+
+        <button class="primary wide" id="revise">피드백 반영 시작</button>
+      </div>
+    </section>
+
+    <aside class="note">
+      <strong>기록과 검증</strong>
+      <p>PSOS는 현재 run의 각 단계 응답과 최종 결과를 따로 저장합니다. 페이지를 다시 열 때는 이 브라우저에서 마지막으로 사용하던 run만 복원합니다.</p>
+    </aside>
+  </main>
+  <script src="/manual.js"></script>
+</body>
+</html>
