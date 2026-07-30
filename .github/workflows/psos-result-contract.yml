@@ -7,19 +7,28 @@ on:
       - "scripts/problem_solving_contract.py"
       - "scripts/problem_solving_contract_enforcement.py"
       - "scripts/problem_solving_evidence_bundle.py"
+      - "scripts/problem_solving_evidence_review.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os_quality_runtime.py"
+      - "scripts/problem_solving_quality_web.py"
+      - "scripts/problem_solving_web.py"
       - "scripts/problem_solving_os.py"
       - "schemas/problem-solving-os-result-contract.schema.json"
       - "schemas/problem-solving-os-result-contract-assessment.schema.json"
       - "schemas/problem-solving-os-evidence-bundle.schema.json"
+      - "schemas/problem-solving-os-evidence-review.schema.json"
       - "tests/test_problem_solving_contract.py"
       - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_evidence_bundle.py"
+      - "tests/test_problem_solving_evidence_review.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
+      - "tests/test_problem_solving_quality_web.py"
+      - "tests/test_problem_solving_web.py"
       - "tests/test_problem_solving_os.py"
       - "tests/fixtures/result-contract-cases.json"
+      - "web/quality-review.js"
+      - "web/quality-review.css"
       - ".github/workflows/psos-result-contract.yml"
   push:
     branches:
@@ -28,19 +37,28 @@ on:
       - "scripts/problem_solving_contract.py"
       - "scripts/problem_solving_contract_enforcement.py"
       - "scripts/problem_solving_evidence_bundle.py"
+      - "scripts/problem_solving_evidence_review.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os_quality_runtime.py"
+      - "scripts/problem_solving_quality_web.py"
+      - "scripts/problem_solving_web.py"
       - "scripts/problem_solving_os.py"
       - "schemas/problem-solving-os-result-contract.schema.json"
       - "schemas/problem-solving-os-result-contract-assessment.schema.json"
       - "schemas/problem-solving-os-evidence-bundle.schema.json"
+      - "schemas/problem-solving-os-evidence-review.schema.json"
       - "tests/test_problem_solving_contract.py"
       - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_evidence_bundle.py"
+      - "tests/test_problem_solving_evidence_review.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
+      - "tests/test_problem_solving_quality_web.py"
+      - "tests/test_problem_solving_web.py"
       - "tests/test_problem_solving_os.py"
       - "tests/fixtures/result-contract-cases.json"
+      - "web/quality-review.js"
+      - "web/quality-review.css"
       - ".github/workflows/psos-result-contract.yml"
 
 permissions:
@@ -59,21 +77,31 @@ jobs:
           python -m py_compile scripts/problem_solving_contract.py
           python -m py_compile scripts/problem_solving_contract_enforcement.py
           python -m py_compile scripts/problem_solving_evidence_bundle.py
+          python -m py_compile scripts/problem_solving_evidence_review.py
           python -m py_compile scripts/problem_solving_os_contract_runtime.py
           python -m py_compile scripts/problem_solving_os_quality_runtime.py
+          python -m py_compile scripts/problem_solving_quality_web.py
       - name: Validate fixture and schema JSON
         run: |
           python -m json.tool tests/fixtures/result-contract-cases.json > /dev/null
           python -m json.tool schemas/problem-solving-os-result-contract.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-result-contract-assessment.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-evidence-bundle.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-os-evidence-review.schema.json > /dev/null
+      - name: Check browser scripts
+        run: |
+          node --check web/app.js
+          node --check web/quality-review.js
       - name: Run focused quality tests
         run: >-
           python -m unittest
           tests.test_problem_solving_contract
           tests.test_problem_solving_contract_enforcement
           tests.test_problem_solving_evidence_bundle
+          tests.test_problem_solving_evidence_review
           tests.test_problem_solving_os_contract_runtime
           tests.test_problem_solving_os_quality_runtime
+          tests.test_problem_solving_quality_web
+          tests.test_problem_solving_web
       - name: Run canonical PSOS regression suite
         run: python -m unittest tests.test_problem_solving_os
