@@ -70,6 +70,7 @@ function showSession(session) {
   currentSession = session;
   currentRunId = session.run_id;
   localStorage.setItem("psos-current-run-id", currentRunId);
+  localStorage.removeItem("psos-skip-latest");
   $("#run-id").textContent = `${session.run_id} · ${researchModeLabel(session.research_mode)}`;
   $("#prompt").value = session.prompt || "";
   $("#response").value = "";
@@ -201,6 +202,7 @@ $("#new-run").addEventListener("click", () => {
   currentRunId = null;
   currentSession = null;
   localStorage.removeItem("psos-current-run-id");
+  localStorage.setItem("psos-skip-latest", "1");
   $("#request").value = "";
   $("#revision-feedback").value = "";
   $("#revision-box").classList.add("hidden");
@@ -223,9 +225,15 @@ async function restoreLastSession() {
       localStorage.removeItem("psos-current-run-id");
     }
   }
+  if (localStorage.getItem("psos-skip-latest") === "1") return;
   try {
-    const body = await api("/api/manual/active");
-    if (body.session) showSession(body.session);
+    const active = await api("/api/manual/active");
+    if (active.session) {
+      showSession(active.session);
+      return;
+    }
+    const latest = await api("/api/manual/latest");
+    if (latest.session) showSession(latest.session);
   } catch (_error) {
     // The start panel remains usable when no previous session can be restored.
   }
