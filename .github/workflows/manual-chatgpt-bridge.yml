@@ -6,6 +6,7 @@ on:
       - "scripts/problem_solving_manual.py"
       - "scripts/problem_solving_manual_web.py"
       - "tests/test_problem_solving_manual_web.py"
+      - "tests/test_problem_solving_manual_http.py"
       - "web/manual.*"
       - "extensions/psos-chatgpt-bridge/**"
       - ".github/workflows/manual-chatgpt-bridge.yml"
@@ -25,7 +26,7 @@ jobs:
       - name: Compile Python entrypoints
         run: python -m py_compile scripts/problem_solving_manual.py scripts/problem_solving_manual_web.py
       - name: Run focused unit tests
-        run: python -B -m unittest tests.test_problem_solving_manual_web
+        run: python -B -m unittest tests.test_problem_solving_manual_web tests.test_problem_solving_manual_http
       - name: Check extension manifest
         run: python -m json.tool extensions/psos-chatgpt-bridge/manifest.json > /dev/null
       - name: Check JavaScript syntax
