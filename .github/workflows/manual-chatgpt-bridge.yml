@@ -4,8 +4,10 @@ on:
   pull_request:
     paths:
       - "scripts/problem_solving_manual.py"
+      - "scripts/problem_solving_manual_revision.py"
       - "scripts/problem_solving_manual_web.py"
       - "tests/test_problem_solving_manual_web.py"
+      - "tests/test_problem_solving_manual_revision.py"
       - "tests/test_problem_solving_manual_http.py"
       - "web/manual.*"
       - "extensions/psos-chatgpt-bridge/**"
@@ -24,9 +26,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Compile Python entrypoints
-        run: python -m py_compile scripts/problem_solving_manual.py scripts/problem_solving_manual_web.py
+        run: python -m py_compile scripts/problem_solving_manual.py scripts/problem_solving_manual_revision.py scripts/problem_solving_manual_web.py
       - name: Run focused unit tests
-        run: python -B -m unittest tests.test_problem_solving_manual_web tests.test_problem_solving_manual_http
+        run: python -B -m unittest tests.test_problem_solving_manual_web tests.test_problem_solving_manual_revision tests.test_problem_solving_manual_http
       - name: Check extension manifest
         run: python -m json.tool extensions/psos-chatgpt-bridge/manifest.json > /dev/null
       - name: Check JavaScript syntax
