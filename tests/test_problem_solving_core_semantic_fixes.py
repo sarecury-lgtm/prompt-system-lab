@@ -78,19 +78,22 @@ class SemanticCoreFixTests(unittest.TestCase):
         with self.assertRaises(OS.ProblemSolvingError):
             OS.validate_route_output(route_payload(primary="DIRECT"))
 
-    def test_router_rejects_mismatched_route_reason(self):
+    def test_router_normalizes_duplicate_route_reason(self):
         payload = route_payload()
-        payload["goal_ledger"]["route_reason"] = "다른 이유"
-        with self.assertRaises(OS.ProblemSolvingError):
-            OS.validate_route_output(payload)
+        payload["goal_ledger"]["route_reason"] = "표현만 다른 같은 선택 이유"
+        validated = OS.validate_route_output(payload)
+        self.assertEqual(
+            validated["goal_ledger"]["route_reason"],
+            validated["route"]["route_reason"],
+        )
+        self.assertEqual(validated["route"]["route_reason"], "가장 작은 충분 경로")
 
     def test_router_prompt_explains_empty_constraints_and_hybrid_order(self):
-        prompt = OS.build_router_prompt(
-            "첨부 차트를 분석해줘", "", None, self.capabilities
-        )
+        prompt = OS.build_router_prompt("첨부 차트를 분석해줘", "", None, self.capabilities)
         self.assertIn("fixed_constraints는 빈 배열", prompt)
         self.assertIn("primary_route는 먼저 만들어야 하는 선행 결과", prompt)
         self.assertIn("첨부 이미지", prompt)
+        self.assertIn("route_reason은 가능하면 같은", prompt)
 
     def test_completed_execution_rejects_handoff(self):
         with self.assertRaises(OS.ProblemSolvingError):
@@ -115,9 +118,8 @@ class SemanticCoreFixTests(unittest.TestCase):
         secondary = execution("completed", limitations=["보조 경로 한계"])["execution"]
         merged = OS.merge_executions("RESEARCH", primary, "PROMPT", secondary)
         self.assertEqual(merged["status"], "partial")
-        self.assertEqual(
-            merged["limitations"], ["주 경로 한계", "보조 경로 한계"]
-        )
+        self.assertEqual(merged["limitations"], ["주 경로 한계", "보조 경로 한계"])
+        self.assertIn("결과", merged["summary"])
 
 
 if __name__ == "__main__":
