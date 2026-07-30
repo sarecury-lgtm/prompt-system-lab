@@ -18,9 +18,14 @@ Optional Chrome extension for `scripts/problem_solving_manual_web.py`.
 ## Use
 
 1. Start a request in the local bridge page.
-2. On a ChatGPT tab, open the extension and choose **대기 중 작업 가져오기**.
+2. On the intended ChatGPT tab, choose **현재 PSOS 작업 가져오기**.
 3. Review the inserted prompt and press ChatGPT's send button yourself.
-4. When the response is complete, choose **마지막 답변 반환**.
-5. If another PSOS stage is required, the extension inserts the next prompt automatically.
+4. Wait until the response has completely finished.
+5. Choose **이 작업의 새 답변 반환**.
+6. If another PSOS stage remains, review the newly inserted prompt and send it yourself.
 
-The extension intentionally does not click ChatGPT's send button. This keeps each transfer visible and avoids treating brittle DOM automation as an execution guarantee.
+The extension stays bound to one run until that run completes. It records the assistant-response state when each prompt is inserted and refuses to return an older response or a response that is still streaming.
+
+It also refuses to overwrite a non-empty ChatGPT composer. Clear or save any draft before importing a PSOS prompt.
+
+The extension intentionally does not click ChatGPT's send button. This keeps each transfer visible and avoids treating brittle DOM automation as an execution guarantee. ChatGPT DOM changes can still require selector maintenance.
