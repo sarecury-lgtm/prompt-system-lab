@@ -41,8 +41,10 @@ class PromptBuildBriefQualityIntegrationTests(unittest.TestCase):
                 execution_result(
                     "PROMPT",
                     result=(
+                        "<!-- PSOS_PROMPT_START -->\n"
                         "# 재사용 프롬프트\n\n"
-                        "핵심 절차를 먼저 수행하고 필요한 조건만 출력한다."
+                        "핵심 절차를 먼저 수행하고 필요한 조건만 출력한다.\n"
+                        "<!-- PSOS_PROMPT_END -->"
                     ),
                 ),
                 semantically_linked_assessment,
@@ -77,10 +79,13 @@ class PromptBuildBriefQualityIntegrationTests(unittest.TestCase):
         self.assertEqual(1, len(executor_calls))
         executor_prompt = executor_calls[0]["prompt"]
         self.assertIn("[Prompt Build Brief]", executor_prompt)
+        self.assertIn("<!-- PSOS_PROMPT_START -->", executor_prompt)
+        self.assertIn("<!-- PSOS_PROMPT_END -->", executor_prompt)
         self.assertNotIn("[Goal Ledger]", executor_prompt)
         self.assertNotIn("[기존 Prompt Compiler baseline]", executor_prompt)
         self.assertNotIn("[사용자 요청]", executor_prompt)
         self.assertIn("# 재사용 프롬프트", output)
+        self.assertNotIn("PSOS_PROMPT_START", output)
         self.assertEqual("applied", payload["prompt_build_brief"]["status"])
         self.assertEqual(2, trace["version"])
         self.assertTrue(
