@@ -32,13 +32,13 @@
     },
     "must_preserve": {
       "type": "array",
-      "minItems": 1,
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
     },
     "required_outputs": {
       "type": "array",
       "minItems": 1,
+      "maxItems": 12,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -61,9 +61,10 @@
       "additionalProperties": false,
       "required": ["minimum_sources", "source_roles", "claim_source_mapping"],
       "properties": {
-        "minimum_sources": {"type": "integer", "minimum": 0},
+        "minimum_sources": {"type": "integer", "minimum": 0, "maximum": 8},
         "source_roles": {
           "type": "array",
+          "maxItems": 8,
           "uniqueItems": true,
           "items": {"type": "string", "minLength": 1}
         },
