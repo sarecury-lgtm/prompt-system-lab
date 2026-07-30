@@ -31,12 +31,14 @@ on:
       - "tests/test_problem_solving_evidence_review.py"
       - "tests/test_problem_solving_visual_evidence.py"
       - "tests/test_problem_solving_prompt_trace.py"
+      - "tests/test_prompt_generation_chart_case.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
       - "tests/test_problem_solving_quality_web.py"
       - "tests/test_problem_solving_web.py"
       - "tests/test_problem_solving_os.py"
       - "tests/fixtures/result-contract-cases.json"
+      - "tests/fixtures/prompt-generation-chart-case.json"
       - "web/quality-review.js"
       - "web/quality-review.css"
       - "extensions/psos-visual-evidence/**"
@@ -72,12 +74,14 @@ on:
       - "tests/test_problem_solving_evidence_review.py"
       - "tests/test_problem_solving_visual_evidence.py"
       - "tests/test_problem_solving_prompt_trace.py"
+      - "tests/test_prompt_generation_chart_case.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
       - "tests/test_problem_solving_quality_web.py"
       - "tests/test_problem_solving_web.py"
       - "tests/test_problem_solving_os.py"
       - "tests/fixtures/result-contract-cases.json"
+      - "tests/fixtures/prompt-generation-chart-case.json"
       - "web/quality-review.js"
       - "web/quality-review.css"
       - "extensions/psos-visual-evidence/**"
@@ -110,6 +114,7 @@ jobs:
       - name: Validate fixture and schema JSON
         run: |
           python -m json.tool tests/fixtures/result-contract-cases.json > /dev/null
+          python -m json.tool tests/fixtures/prompt-generation-chart-case.json > /dev/null
           python -m json.tool schemas/problem-solving-os-route.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-result-contract.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-result-contract-assessment.schema.json > /dev/null
@@ -134,6 +139,7 @@ jobs:
           tests.test_problem_solving_evidence_review
           tests.test_problem_solving_visual_evidence
           tests.test_problem_solving_prompt_trace
+          tests.test_prompt_generation_chart_case
           tests.test_problem_solving_os_contract_runtime
           tests.test_problem_solving_os_quality_runtime
           tests.test_problem_solving_quality_web
