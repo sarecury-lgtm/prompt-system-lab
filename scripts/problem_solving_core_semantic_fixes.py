@@ -82,7 +82,11 @@ def _validate_route_output(os_module: Any, payload: Any) -> dict[str, Any]:
     if ledger["selected_route"] != selected or ledger["secondary_route"] != secondary:
         raise error("Goal Ledger와 route 선택이 일치하지 않습니다.")
     route_reason = _nonempty(route["route_reason"], "route.route_reason", error)
-    ledger["route_reason"] = route_reason
+    ledger_reason = _nonempty(
+        ledger["route_reason"], "Goal Ledger route_reason", error
+    )
+    if ledger_reason != route_reason:
+        raise error("Goal Ledger와 route의 route_reason이 일치하지 않습니다.")
 
     for field in (
         "parent_goal",
@@ -93,6 +97,8 @@ def _validate_route_output(os_module: Any, payload: Any) -> dict[str, Any]:
         "completion_condition",
     ):
         ledger[field] = _nonempty(ledger[field], f"Goal Ledger {field}", error)
+    ledger["route_reason"] = ledger_reason
+    route["route_reason"] = route_reason
     ledger["fixed_constraints"] = _string_list(
         ledger["fixed_constraints"],
         "fixed_constraints",
