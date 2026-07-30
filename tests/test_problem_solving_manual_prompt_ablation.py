@@ -95,7 +95,10 @@ class ManualPromptAblationTests(unittest.TestCase):
                     "ablation_without_raw_request",
                     session["phase"],
                 )
-                self.assertEqual(1, session["prompt"].count(parent["request"]))
+                self.assertNotIn(
+                    f"[사용자 요청]\n{parent['request']}\n\n[선택적 문맥]",
+                    session["prompt"],
+                )
 
                 session = comparison.submit(
                     "manual-comparison",
