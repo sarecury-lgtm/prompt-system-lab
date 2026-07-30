@@ -13,7 +13,7 @@ from http import HTTPStatus
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Mapping
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import unquote, urlparse
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -183,12 +183,12 @@ def submit_review_revision(
     payload: Mapping[str, Any],
 ) -> dict[str, Any]:
     run_dir = base_web.safe_run_dir(run_id)
-    review_result = save_public_review(run_id, payload)
     search_enabled = payload.get("search_enabled", False)
     if not isinstance(search_enabled, bool):
         raise evidence_review.EvidenceReviewError(
             "수정 실행의 웹 검색 설정이 올바르지 않습니다."
         )
+    review_result = save_public_review(run_id, payload)
     context_record = evidence_review.build_revision_context(run_dir)
     context_path = (run_dir / str(context_record["path"])).resolve()
     try:
@@ -279,7 +279,11 @@ class QualityRequestHandler(base_web.PsosRequestHandler):
                 except (ValueError, OSError, json.JSONDecodeError) as exc:
                     self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
                 return
-        if len(parts) == 5 and parts[:2] == ["api", "runs"] and parts[3] == "evidence-items":
+        if (
+            len(parts) == 5
+            and parts[:2] == ["api", "runs"]
+            and parts[3] == "evidence-items"
+        ):
             try:
                 image = safe_evidence_image(unquote(parts[2]), unquote(parts[4]))
                 self.send_image(image)
