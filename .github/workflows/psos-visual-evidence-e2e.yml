@@ -1,0 +1,51 @@
+name: PSOS visual evidence browser E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "extensions/psos-visual-evidence/**"
+      - "scripts/problem_solving_evidence_review.py"
+      - "scripts/problem_solving_quality_web.py"
+      - "scripts/problem_solving_visual_archive.py"
+      - "scripts/problem_solving_visual_evidence.py"
+      - "tests/e2e/visual-evidence-flow.mjs"
+      - "tests/fixtures/visual_evidence_e2e_server.py"
+      - "web/quality-review.js"
+      - "package.json"
+      - ".github/workflows/psos-visual-evidence-e2e.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  browser-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Playwright
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Check E2E fixtures
+        run: |
+          python -m py_compile tests/fixtures/visual_evidence_e2e_server.py
+          node --check tests/e2e/visual-evidence-flow.mjs
+      - name: Run extension to review gallery flow
+        env:
+          PYTHON: python
+        run: xvfb-run -a npm run test:visual-e2e
+      - name: Upload failure screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-evidence-e2e-failure
+          path: visual-evidence-e2e-failure.png
+          if-no-files-found: ignore
