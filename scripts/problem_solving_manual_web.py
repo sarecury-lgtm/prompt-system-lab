@@ -34,7 +34,10 @@ class Handler(BaseHTTPRequestHandler):
     bridge: manual.ManualBridge
 
     def log_message(self, format: str, *args: Any) -> None:
-        sys.stderr.write("%s - - [%s] %s\n" % (self.address_string(), self.log_date_time_string(), format % args))
+        sys.stderr.write(
+            "%s - - [%s] %s\n"
+            % (self.address_string(), self.log_date_time_string(), format % args)
+        )
 
     def allowed_origin(self) -> str | None:
         origin = self.headers.get("Origin")
@@ -42,7 +45,18 @@ class Handler(BaseHTTPRequestHandler):
             return None
         if origin.startswith("chrome-extension://"):
             return origin
-        return origin if urlparse(origin).hostname in {"127.0.0.1", "localhost"} else None
+        return (
+            origin
+            if urlparse(origin).hostname in {"127.0.0.1", "localhost"}
+            else None
+        )
+
+    def reject_disallowed_origin(self) -> bool:
+        origin = self.headers.get("Origin")
+        if origin and self.allowed_origin() is None:
+            self.send_error(HTTPStatus.FORBIDDEN, "Cross-origin bridge request rejected")
+            return True
+        return False
 
     def headers(self, status: int, kind: str, size: int) -> None:
         self.send_response(status)
@@ -64,13 +78,21 @@ class Handler(BaseHTTPRequestHandler):
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError as exc:
-            raise manual.ManualBridgeError("Content-Length가 올바르지 않습니다.") from exc
-        if length <= 0 or length > manual.MAX_RESPONSE_CHARS + manual.MAX_REQUEST_CHARS + 10_000:
+            raise manual.ManualBridgeError(
+                "Content-Length가 올바르지 않습니다."
+            ) from exc
+        if (
+            length <= 0
+            or length
+            > manual.MAX_RESPONSE_CHARS + manual.MAX_REQUEST_CHARS + 10_000
+        ):
             raise manual.ManualBridgeError("요청 본문 크기가 올바르지 않습니다.")
         try:
             value = json.loads(self.rfile.read(length).decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise manual.ManualBridgeError("JSON 요청 본문을 읽을 수 없습니다.") from exc
+            raise manual.ManualBridgeError(
+                "JSON 요청 본문을 읽을 수 없습니다."
+            ) from exc
         if not isinstance(value, dict):
             raise manual.ManualBridgeError("요청 본문은 JSON 객체여야 합니다.")
         return value
@@ -88,6 +110,8 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:
+        if self.reject_disallowed_origin():
+            return
         parsed = urlparse(self.path)
         if parsed.path in STATIC:
             filename, kind = STATIC[parsed.path]
@@ -105,7 +129,10 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/manual/status":
                 run_id = parse_qs(parsed.query).get("run_id", [""])[0]
-                self.send_json(HTTPStatus.OK, {"session": self.bridge.get(run_id)})
+                self.send_json(
+                    HTTPStatus.OK,
+                    {"session": self.bridge.get(run_id)},
+                )
                 return
         except manual.ManualBridgeError as exc:
             self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
@@ -113,14 +140,22 @@ class Handler(BaseHTTPRequestHandler):
         self.send_error(HTTPStatus.NOT_FOUND)
 
     def do_POST(self) -> None:
+        if self.reject_disallowed_origin():
+            return
         try:
             value = self.read_json()
             if self.path == "/api/manual/start":
-                session = self.bridge.start(str(value.get("request", "")), value.get("search_enabled", False))
+                session = self.bridge.start(
+                    str(value.get("request", "")),
+                    value.get("search_enabled", False),
+                )
                 self.send_json(HTTPStatus.CREATED, {"session": session})
                 return
             if self.path == "/api/manual/submit":
-                session = self.bridge.submit(str(value.get("run_id", "")), str(value.get("response", "")))
+                session = self.bridge.submit(
+                    str(value.get("run_id", "")),
+                    str(value.get("response", "")),
+                )
                 self.send_json(HTTPStatus.OK, {"session": session})
                 return
         except manual.ManualBridgeError as exc:
@@ -134,10 +169,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8766)
     parser.add_argument("--runs-dir", type=Path, default=problem_os.RUNS_DIR)
-    parser.add_argument("--model-policy", type=Path, default=problem_os.DEFAULT_MODEL_POLICY_PATH)
+    parser.add_argument(
+        "--model-policy",
+        type=Path,
+        default=problem_os.DEFAULT_MODEL_POLICY_PATH,
+    )
     args = parser.parse_args(argv)
     if args.host not in {"127.0.0.1", "localhost", "::1"}:
-        print("ERROR: 수동 브리지는 loopback 주소에만 바인딩할 수 있습니다.", file=sys.stderr)
+        print(
+            "ERROR: 수동 브리지는 loopback 주소에만 바인딩할 수 있습니다.",
+            file=sys.stderr,
+        )
         return 1
     bridge = manual.ManualBridge(args.runs_dir, args.model_policy)
     configured = type("ConfiguredHandler", (Handler,), {"bridge": bridge})
