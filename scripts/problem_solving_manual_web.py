@@ -56,6 +56,25 @@ def strip_trailing_markdown_references(raw: str) -> str:
     return raw
 
 
+def latest_session(bridge: manual.ManualBridge) -> dict[str, Any] | None:
+    """Return the newest manual run, including completed runs."""
+
+    with bridge.lock:
+        candidates: list[tuple[str, Path, dict[str, Any]]] = []
+        for run_dir in bridge.runs_dir.iterdir():
+            if not manual.state_path(run_dir).is_file():
+                continue
+            try:
+                state = manual.read_state(run_dir)
+            except manual.ManualBridgeError:
+                continue
+            candidates.append((state["updated_at"], run_dir, state))
+        if not candidates:
+            return None
+        _, run_dir, state = max(candidates, key=lambda item: item[0])
+        return manual.public_state(state, run_dir)
+
+
 class Handler(BaseHTTPRequestHandler):
     bridge: manual.ManualBridge
 
@@ -159,6 +178,12 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if parsed.path == "/api/manual/active":
                 self.send_json(HTTPStatus.OK, {"session": self.bridge.active()})
+                return
+            if parsed.path == "/api/manual/latest":
+                self.send_json(
+                    HTTPStatus.OK,
+                    {"session": latest_session(self.bridge)},
+                )
                 return
             if parsed.path == "/api/manual/status":
                 run_id = parse_qs(parsed.query).get("run_id", [""])[0]
