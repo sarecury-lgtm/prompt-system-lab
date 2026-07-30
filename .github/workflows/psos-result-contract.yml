@@ -10,6 +10,7 @@ on:
       - "scripts/problem_solving_quality_semantic_fixes.py"
       - "scripts/problem_solving_evidence_bundle.py"
       - "scripts/problem_solving_evidence_review.py"
+      - "scripts/problem_solving_visual_evidence.py"
       - "scripts/problem_solving_prompt_trace.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os_quality_runtime.py"
@@ -21,12 +22,14 @@ on:
       - "schemas/problem-solving-os-result-contract-assessment.schema.json"
       - "schemas/problem-solving-os-evidence-bundle.schema.json"
       - "schemas/problem-solving-os-evidence-review.schema.json"
+      - "schemas/problem-solving-os-visual-evidence-import.schema.json"
       - "tests/test_problem_solving_core_semantic_fixes.py"
       - "tests/test_problem_solving_quality_semantic_fixes.py"
       - "tests/test_problem_solving_contract.py"
       - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_evidence_bundle.py"
       - "tests/test_problem_solving_evidence_review.py"
+      - "tests/test_problem_solving_visual_evidence.py"
       - "tests/test_problem_solving_prompt_trace.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
@@ -36,6 +39,7 @@ on:
       - "tests/fixtures/result-contract-cases.json"
       - "web/quality-review.js"
       - "web/quality-review.css"
+      - "extensions/psos-visual-evidence/**"
       - ".github/workflows/psos-result-contract.yml"
   push:
     branches:
@@ -47,6 +51,7 @@ on:
       - "scripts/problem_solving_quality_semantic_fixes.py"
       - "scripts/problem_solving_evidence_bundle.py"
       - "scripts/problem_solving_evidence_review.py"
+      - "scripts/problem_solving_visual_evidence.py"
       - "scripts/problem_solving_prompt_trace.py"
       - "scripts/problem_solving_os_contract_runtime.py"
       - "scripts/problem_solving_os_quality_runtime.py"
@@ -58,12 +63,14 @@ on:
       - "schemas/problem-solving-os-result-contract-assessment.schema.json"
       - "schemas/problem-solving-os-evidence-bundle.schema.json"
       - "schemas/problem-solving-os-evidence-review.schema.json"
+      - "schemas/problem-solving-os-visual-evidence-import.schema.json"
       - "tests/test_problem_solving_core_semantic_fixes.py"
       - "tests/test_problem_solving_quality_semantic_fixes.py"
       - "tests/test_problem_solving_contract.py"
       - "tests/test_problem_solving_contract_enforcement.py"
       - "tests/test_problem_solving_evidence_bundle.py"
       - "tests/test_problem_solving_evidence_review.py"
+      - "tests/test_problem_solving_visual_evidence.py"
       - "tests/test_problem_solving_prompt_trace.py"
       - "tests/test_problem_solving_os_contract_runtime.py"
       - "tests/test_problem_solving_os_quality_runtime.py"
@@ -73,6 +80,7 @@ on:
       - "tests/fixtures/result-contract-cases.json"
       - "web/quality-review.js"
       - "web/quality-review.css"
+      - "extensions/psos-visual-evidence/**"
       - ".github/workflows/psos-result-contract.yml"
 
 permissions:
@@ -94,6 +102,7 @@ jobs:
           python -m py_compile scripts/problem_solving_quality_semantic_fixes.py
           python -m py_compile scripts/problem_solving_evidence_bundle.py
           python -m py_compile scripts/problem_solving_evidence_review.py
+          python -m py_compile scripts/problem_solving_visual_evidence.py
           python -m py_compile scripts/problem_solving_prompt_trace.py
           python -m py_compile scripts/problem_solving_os_contract_runtime.py
           python -m py_compile scripts/problem_solving_os_quality_runtime.py
@@ -106,10 +115,14 @@ jobs:
           python -m json.tool schemas/problem-solving-os-result-contract-assessment.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-evidence-bundle.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-os-evidence-review.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-os-visual-evidence-import.schema.json > /dev/null
+          python -m json.tool extensions/psos-visual-evidence/manifest.json > /dev/null
       - name: Check browser scripts
         run: |
           node --check web/app.js
           node --check web/quality-review.js
+          node --check extensions/psos-visual-evidence/background.js
+          node --check extensions/psos-visual-evidence/content.js
       - name: Run focused quality tests
         run: >-
           python -m unittest
@@ -119,6 +132,7 @@ jobs:
           tests.test_problem_solving_contract_enforcement
           tests.test_problem_solving_evidence_bundle
           tests.test_problem_solving_evidence_review
+          tests.test_problem_solving_visual_evidence
           tests.test_problem_solving_prompt_trace
           tests.test_problem_solving_os_contract_runtime
           tests.test_problem_solving_os_quality_runtime
