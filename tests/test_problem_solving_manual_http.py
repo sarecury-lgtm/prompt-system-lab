@@ -57,6 +57,22 @@ class ManualBridgeHTTPTests(unittest.TestCase):
                 server.server_close()
                 thread.join(timeout=5)
 
+    def test_trailing_markdown_link_definitions_are_removed(self):
+        raw = (
+            '{"execution":{"status":"completed"}}\n\n'
+            '[1]: https://example.com/a "first"\n'
+            '[2]: https://example.com/b "second"\n'
+        )
+        cleaned = WEB.strip_trailing_markdown_references(raw)
+        self.assertEqual(
+            cleaned,
+            '{"execution":{"status":"completed"}}',
+        )
+
+    def test_unrelated_trailing_text_is_not_removed(self):
+        raw = '{"execution":{}}\nThis explanation must remain invalid.'
+        self.assertEqual(WEB.strip_trailing_markdown_references(raw), raw)
+
 
 if __name__ == "__main__":
     unittest.main()
