@@ -9,6 +9,9 @@ const reviseButton = $("#revise");
 const copyPromptButton = $("#copy-prompt");
 const openChatGPTButton = $("#open-chatgpt");
 const copyResultButton = $("#copy-result");
+const comparePromptButton = $("#compare-prompt");
+const backToParentButton = $("#back-to-parent");
+const showRevisionButton = $("#show-revision");
 const statusText = $("#status");
 let currentRunId = null;
 let currentSession = null;
@@ -69,7 +72,58 @@ function researchModeLabel(mode) {
   }[mode] || mode;
 }
 
+function ablationPresentation(session) {
+  const views = {
+    ablation_without_raw_request: {
+      step: "비교 1/4",
+      title: "원문 중복 제거 방식 만들기",
+      detail: "Goal Ledger와 Compiler baseline은 유지하고, 따로 반복된 사용자 원문만 뺀 결과를 만듭니다.",
+      copyLabel: "1. 비교 후보 A 지시문 복사",
+    },
+    ablation_compact_ledger: {
+      step: "비교 2/4",
+      title: "Goal Ledger 축약 방식 만들기",
+      detail: "목표·고정 조건·완료 조건만 남긴 계약과 Compiler baseline으로 결과를 만듭니다.",
+      copyLabel: "1. 비교 후보 B 지시문 복사",
+    },
+    ablation_single_build_brief: {
+      step: "비교 3/4",
+      title: "단일 Build Brief 방식 만들기",
+      detail: "중복된 입력 표면을 하나의 brief로 합쳐 핵심 절차 중심의 결과를 만듭니다.",
+      copyLabel: "1. 비교 후보 C 지시문 복사",
+    },
+    ablation_assessment: {
+      step: "비교 4/4",
+      title: "후보 이름을 가리고 평가하기",
+      detail: "현재 방식과 세 변형을 A~D로 가린 채 조건 보존·절차·반복·재사용성을 비교합니다.",
+      copyLabel: "1. 블라인드 평가 지시문 복사",
+    },
+  };
+  const current = views[session.phase];
+  if (!current) throw new Error(`알 수 없는 비교 단계입니다: ${session.phase}`);
+  const isAssessment = session.phase === "ablation_assessment";
+  return {
+    ...current,
+    badge: "일반 ChatGPT · 새 채팅",
+    badgeKind: "normal",
+    action: "현재 지시문을 복사한 뒤 반드시 새 ChatGPT 채팅을 열어 보내세요. 받은 JSON 전체를 아래 칸에 붙입니다.",
+    note: isAssessment
+      ? "후보의 내부 이름은 지시문에 포함되지 않습니다. 짧다는 이유만으로 고르지 말고 조건 보존과 실제 작동 구조를 함께 평가합니다."
+      : "이전 후보의 답변이 다음 후보에 영향을 주지 않도록 같은 대화방을 이어 쓰지 않습니다.",
+    responseLabel: isAssessment
+      ? "블라인드 평가 JSON 전체 붙여넣기"
+      : "생성된 프롬프트 JSON 전체 붙여넣기",
+    responseHelp: "ChatGPT가 반환한 JSON 전체를 수정하지 말고 그대로 붙이세요.",
+    responsePlaceholder: "ChatGPT 답변 JSON 전체를 여기에 붙여넣으세요.",
+    submitLabel: isAssessment ? "평가 확인하고 비교 완료" : "후보 확인하고 다음",
+  };
+}
+
 function stagePresentation(session) {
+  if (session.session_kind === "prompt_ablation") {
+    return ablationPresentation(session);
+  }
+
   const isDeepReport = session.response_kind === "markdown";
   const isDeepNormalize =
     session.research_mode === "deep" &&
@@ -166,7 +220,7 @@ function applyPresentation(session) {
   submitButton.dataset.label = view.submitLabel;
   copyPromptButton.textContent = view.copyLabel;
   copyPromptButton.dataset.label = view.copyLabel;
-  openChatGPTButton.textContent = "2. ChatGPT 열기";
+  openChatGPTButton.textContent = "2. ChatGPT 새 채팅 열기";
   openChatGPTButton.dataset.label = openChatGPTButton.textContent;
 }
 
@@ -174,7 +228,8 @@ function showSession(session) {
   currentSession = session;
   currentRunId = session.run_id;
   localStorage.setItem("psos-current-run-id", currentRunId);
-  $("#run-id").textContent = `${session.run_id} · ${researchModeLabel(session.research_mode)} · ${session.phase || session.state}`;
+  const kindLabel = session.session_kind === "prompt_ablation" ? "구조 비교" : researchModeLabel(session.research_mode);
+  $("#run-id").textContent = `${session.run_id} · ${kindLabel} · ${session.phase || session.state}`;
   $("#prompt").value = session.prompt || "";
   $("#prompt-details").open = false;
   $("#response").value = "";
@@ -182,6 +237,7 @@ function showSession(session) {
   statusText.classList.toggle("error", Boolean(session.error));
 
   if (session.state === "completed") {
+    const isAblation = session.session_kind === "prompt_ablation";
     handoffPanel.classList.add("hidden");
     startPanel.classList.add("hidden");
     resultPanel.classList.remove("hidden");
@@ -194,9 +250,15 @@ function showSession(session) {
     $("#revision-file").value = "";
     $("#revision-file-status").textContent = "TXT·MD 파일을 고르면 내용이 위 칸에 들어갑니다.";
     $("#result-copy-status").textContent = "";
-    $("#result-detail").textContent = session.parent_run_id
-      ? "원본을 보존한 수정 결과입니다."
-      : "결과와 작업 기록이 저장됐습니다.";
+    comparePromptButton.classList.toggle(
+      "hidden",
+      isAblation || session.selected_route !== "PROMPT",
+    );
+    backToParentButton.classList.toggle("hidden", !isAblation || !session.parent_run_id);
+    showRevisionButton.classList.toggle("hidden", isAblation);
+    $("#result-detail").textContent = isAblation
+      ? "원본 결과를 보존한 채 네 입력 구조의 생성 결과를 비교했습니다."
+      : (session.parent_run_id ? "원본을 보존한 수정 결과입니다." : "결과와 작업 기록이 저장됐습니다.");
     return;
   }
 
@@ -269,7 +331,10 @@ submitButton.addEventListener("click", async () => {
     ? "보고서 내용을 검사하는 중입니다."
     : "답변 구조와 완료 조건을 검사하는 중입니다.";
   try {
-    const body = await api("/api/manual/submit", {
+    const endpoint = currentSession?.session_kind === "prompt_ablation"
+      ? "/api/manual/prompt-ablation/submit"
+      : "/api/manual/submit";
+    const body = await api(endpoint, {
       method: "POST",
       body: JSON.stringify({ run_id: currentRunId, response }),
     });
@@ -287,7 +352,7 @@ copyPromptButton.addEventListener("click", async () => {
   try {
     await copyText(prompt, $("#prompt"));
     setTemporaryLabel(copyPromptButton, "복사됨 · 현재 단계 지시문");
-    statusText.textContent = `${currentSession?.phase || "현재"} 단계 지시문을 복사했습니다. 이제 ChatGPT를 여세요.`;
+    statusText.textContent = `${currentSession?.phase || "현재"} 단계 지시문을 복사했습니다. 이제 새 ChatGPT 채팅을 여세요.`;
     statusText.classList.remove("error");
   } catch (error) {
     $("#prompt-details").open = true;
@@ -315,12 +380,43 @@ copyResultButton.addEventListener("click", async () => {
   }
 });
 
+comparePromptButton.addEventListener("click", async () => {
+  if (!currentRunId || currentSession?.selected_route !== "PROMPT") return;
+  setBusy(comparePromptButton, true);
+  try {
+    const body = await api("/api/manual/prompt-ablation/start", {
+      method: "POST",
+      body: JSON.stringify({ parent_run_id: currentRunId }),
+    });
+    showSession(body.session);
+  } catch (error) {
+    $("#result-copy-status").textContent = error.message;
+  } finally {
+    setBusy(comparePromptButton, false);
+  }
+});
+
+backToParentButton.addEventListener("click", async () => {
+  const parentRunId = currentSession?.parent_run_id;
+  if (!parentRunId) return;
+  setBusy(backToParentButton, true);
+  try {
+    const body = await api(`/api/manual/status?run_id=${encodeURIComponent(parentRunId)}`);
+    showSession(body.session);
+  } catch (error) {
+    $("#result-copy-status").textContent = error.message;
+  } finally {
+    setBusy(backToParentButton, false);
+  }
+});
+
 $("#abandon-run").addEventListener("click", () => {
   const leave = window.confirm("현재 작업 화면을 닫고 시작 화면으로 돌아갈까요? 기존 기록은 삭제되지 않습니다.");
   if (leave) returnToStart({ preserveCurrentRequest: true });
 });
 
-$("#show-revision").addEventListener("click", () => {
+showRevisionButton.addEventListener("click", () => {
+  if (currentSession?.session_kind === "prompt_ablation") return;
   $("#revision-box").classList.toggle("hidden");
   if (!$("#revision-box").classList.contains("hidden")) {
     $("#revision-feedback").focus();
