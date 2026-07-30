@@ -14,6 +14,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_os_contract_runtime.py"
 EVIDENCE_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_evidence_bundle.py"
+PROMPT_BRIEF_PATH = ROOT / "scripts" / "problem_solving_prompt_build_brief.py"
 PROMPT_TRACE_PATH = ROOT / "scripts" / "problem_solving_prompt_trace.py"
 PROMPT_CAUSAL_AUDIT_PATH = ROOT / "scripts" / "problem_solving_prompt_causal_audit.py"
 PROMPT_ABLATION_PATH = ROOT / "scripts" / "problem_solving_prompt_ablation.py"
@@ -38,6 +39,10 @@ CONTRACT_RUNTIME = _load_local_module(
 EVIDENCE = _load_local_module(
     "psos_evidence_bundle_runtime",
     EVIDENCE_RUNTIME_PATH,
+)
+PROMPT_BRIEF = _load_local_module(
+    "psos_prompt_build_brief_runtime",
+    PROMPT_BRIEF_PATH,
 )
 PROMPT_TRACE = _load_local_module(
     "psos_prompt_generation_trace",
@@ -183,14 +188,25 @@ def run_request(
     model_policy_path: Path = OS.DEFAULT_MODEL_POLICY_PATH,
     run_id: str | None = None,
 ) -> tuple[Path, dict[str, Any]]:
+    prompt_brief_engine = PROMPT_BRIEF.PromptBuildBriefEngine(
+        engine,
+        request=request,
+        os_module=OS,
+    )
     run_dir, payload = CONTRACT_RUNTIME.run_request(
         request,
         context_path=context_path,
         output_root=output_root,
-        engine=engine,
+        engine=prompt_brief_engine,
         model_policy=model_policy,
         model_policy_path=model_policy_path,
         run_id=run_id,
+    )
+    _persist_quality_record(
+        run_dir,
+        payload,
+        "prompt_build_brief",
+        prompt_brief_engine.record(),
     )
     _attach_user_output(run_dir, payload)
     QUALITY_FIXES.set_workspace_root(EVIDENCE, engine)
@@ -257,6 +273,11 @@ def main(argv: list[str] | None = None) -> int:
     print((run_dir / "output.md").read_text(encoding="utf-8").rstrip())
     if "evidence_bundle" in payload:
         print(f"\n근거 검토: {run_dir / payload['evidence_bundle']['review_markdown']}")
+    prompt_brief = payload.get("prompt_build_brief")
+    if isinstance(prompt_brief, dict):
+        entries = prompt_brief.get("entries") or []
+        if entries:
+            print(f"\nPrompt Build Brief: {run_dir / entries[0]['markdown_path']}")
     prompt_trace = payload.get("prompt_generation_trace")
     if isinstance(prompt_trace, dict) and prompt_trace.get("markdown_path"):
         print(f"\nPROMPT 생성 진단: {run_dir / prompt_trace['markdown_path']}")
