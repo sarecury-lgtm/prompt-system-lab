@@ -23,36 +23,52 @@ function insertPrompt(prompt) {
   const composer = findComposer();
   if (!composer) throw new Error("ChatGPT 입력창을 찾지 못했습니다.");
   composer.focus();
-  if (composer instanceof HTMLTextAreaElement || composer instanceof HTMLInputElement) {
-    const setter = Object.getOwnPropertyDescriptor(
-      composer instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype,
-      "value",
-    )?.set;
+  if (
+    composer instanceof HTMLTextAreaElement ||
+    composer instanceof HTMLInputElement
+  ) {
+    const prototype =
+      composer instanceof HTMLTextAreaElement
+        ? HTMLTextAreaElement.prototype
+        : HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
     setter?.call(composer, prompt);
     if (!setter) composer.value = prompt;
   } else {
-    composer.textContent = prompt;
+    const paragraph = document.createElement("p");
+    paragraph.textContent = prompt;
+    composer.replaceChildren(paragraph);
   }
-  composer.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: prompt }));
+  composer.dispatchEvent(
+    new InputEvent("input", {
+      bubbles: true,
+      inputType: "insertText",
+      data: prompt,
+    }),
+  );
   composer.dispatchEvent(new Event("change", { bubbles: true }));
   composer.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
+function responseText(container) {
+  const content =
+    container.querySelector(".markdown") ||
+    container.querySelector("[data-message-content]") ||
+    container;
+  return content.innerText?.trim() || "";
+}
+
 function lastAssistantResponse() {
-  const selectors = [
-    "[data-message-author-role='assistant']",
-    "article [data-message-author-role='assistant']",
-  ];
-  for (const selector of selectors) {
-    const items = [...document.querySelectorAll(selector)].filter(visible);
-    if (items.length) {
-      const text = items.at(-1).innerText?.trim();
-      if (text) return text;
-    }
+  const items = [
+    ...document.querySelectorAll("[data-message-author-role='assistant']"),
+  ].filter(visible);
+  if (items.length) {
+    const text = responseText(items.at(-1));
+    if (text) return text;
   }
   const articles = [...document.querySelectorAll("main article")].filter(visible);
   for (const article of articles.reverse()) {
-    const text = article.innerText?.trim();
+    const text = responseText(article);
     if (text) return text;
   }
   throw new Error("마지막 ChatGPT 답변을 찾지 못했습니다.");
