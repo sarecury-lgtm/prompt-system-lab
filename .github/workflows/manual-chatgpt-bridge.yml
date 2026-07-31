@@ -7,7 +7,9 @@ on:
       - "scripts/problem_solving_stable.py"
       - "scripts/problem_solving_stable_web.py"
       - "scripts/problem_solving_manual*.py"
+      - "scripts/problem_solving_prompt_build_brief.py"
       - "schemas/problem-solving-os-route.schema.json"
+      - "schemas/problem-solving-prompt-build-brief.schema.json"
       - "tests/test_problem_solving_core_semantic_fixes.py"
       - "tests/test_problem_solving_manual*.py"
       - "tests/test_manual*.py"
@@ -33,13 +35,17 @@ jobs:
           scripts/problem_solving_core_semantic_fixes.py
           scripts/problem_solving_stable.py
           scripts/problem_solving_stable_web.py
+          scripts/problem_solving_prompt_build_brief.py
           scripts/problem_solving_manual_semantic_fixes.py
           scripts/problem_solving_manual.py
           scripts/problem_solving_manual_revision.py
           scripts/problem_solving_manual_deep.py
+          scripts/problem_solving_manual_prompt_brief.py
           scripts/problem_solving_manual_web.py
-      - name: Validate route schema
-        run: python -m json.tool schemas/problem-solving-os-route.schema.json > /dev/null
+      - name: Validate schemas
+        run: |
+          python -m json.tool schemas/problem-solving-os-route.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-prompt-build-brief.schema.json > /dev/null
       - name: Run focused regression tests
         run: >-
           python -B -m unittest
@@ -49,6 +55,7 @@ jobs:
           tests.test_problem_solving_manual_web
           tests.test_problem_solving_manual_revision
           tests.test_problem_solving_manual_deep
+          tests.test_problem_solving_manual_prompt_build_brief
           tests.test_problem_solving_manual_http
           tests.test_chart_prompt_manual_flow
       - name: Run canonical PSOS regression suite
@@ -56,4 +63,5 @@ jobs:
       - name: Check browser scripts
         run: |
           node --check web/manual.js
+          node --check web/manual_prompt_brief.js
           node --check web/manual_result_actions.js
