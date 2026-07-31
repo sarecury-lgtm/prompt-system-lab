@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve a local, read-only web interface for the Personal Problem-Solving OS."""
+"""Serve a local web interface for the Personal Problem-Solving OS."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import problem_solving_os as problem_os
+import problem_solving_prompt_renderer as prompt_renderer
 import problem_solving_status as problem_status
 
 
@@ -35,10 +36,13 @@ WEB_DIR = ROOT / "web"
 RUN_ID_PATTERN = re.compile(r"[A-Za-z0-9._-]+")
 MAX_REQUEST_CHARS = 10_000
 MAX_BODY_BYTES = 50_000
+MAX_RENDER_ITEMS = 24
 STATIC_FILES = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/index.html": ("index.html", "text/html; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+    "/renderer.js": ("renderer.js", "text/javascript; charset=utf-8"),
+    "/renderer.css": ("renderer.css", "text/css; charset=utf-8"),
     "/styles.css": ("styles.css", "text/css; charset=utf-8"),
 }
 
@@ -72,6 +76,147 @@ def compact_job(job: dict[str, Any]) -> dict[str, Any]:
             "workspace_rollback",
             "error",
         )
+    }
+
+
+def _required_text(payload: dict[str, Any], key: str, label: str) -> str:
+    value = payload.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label}을 입력해 주세요.")
+    cleaned = value.strip()
+    if len(cleaned) > MAX_REQUEST_CHARS:
+        raise ValueError(f"{label}은 10,000자 이하여야 합니다.")
+    return cleaned
+
+
+def _string_list(
+    payload: dict[str, Any],
+    key: str,
+    label: str,
+    *,
+    minimum: int = 0,
+    maximum: int = MAX_RENDER_ITEMS,
+) -> list[str]:
+    value = payload.get(key, [])
+    if isinstance(value, str):
+        values = value.splitlines()
+    elif isinstance(value, list):
+        values = value
+    else:
+        raise ValueError(f"{label} 형식이 올바르지 않습니다.")
+    normalized: list[str] = []
+    for item in values:
+        if not isinstance(item, str):
+            raise ValueError(f"{label}에는 문자열만 사용할 수 있습니다.")
+        cleaned = item.strip()
+        if cleaned and cleaned not in normalized:
+            normalized.append(cleaned)
+    if len(normalized) < minimum:
+        raise ValueError(f"{label}을 {minimum}개 이상 입력해 주세요.")
+    if len(normalized) > maximum:
+        raise ValueError(f"{label}은 {maximum}개 이하여야 합니다.")
+    return normalized
+
+
+def render_prompt_request(payload: dict[str, Any]) -> dict[str, Any]:
+    """Render a final prompt without invoking Codex or any model runtime."""
+
+    goal = _required_text(payload, "goal", "목표")
+    core_procedure = _string_list(
+        payload,
+        "core_procedure",
+        "핵심 작업 절차",
+        minimum=1,
+        maximum=8,
+    )
+    fixed_constraints = _string_list(
+        payload,
+        "fixed_constraints",
+        "고정 조건",
+    )
+    completion = _required_text(
+        payload,
+        "completion_condition",
+        "완료 조건",
+    )
+    output_details = _string_list(
+        payload,
+        "output_details",
+        "추가 출력 조건",
+        maximum=7,
+    )
+    brief = {
+        "version": 1,
+        "goal": goal,
+        "core_procedure": core_procedure,
+        "supporting_inputs": _string_list(
+            payload,
+            "supporting_inputs",
+            "보조 입력·도구",
+            maximum=8,
+        ),
+        "fixed_constraints": fixed_constraints,
+        "output_contract": [completion, *output_details],
+        "defaults_and_exceptions": _string_list(
+            payload,
+            "defaults_and_exceptions",
+            "기본값과 예외",
+            maximum=6,
+        ),
+        "exclusions": _string_list(
+            payload,
+            "exclusions",
+            "제외 범위",
+            maximum=6,
+        ),
+        "upstream_context": _string_list(
+            payload,
+            "upstream_context",
+            "검증된 상위 맥락",
+            maximum=8,
+        ),
+    }
+    ledger = {
+        "fixed_constraints": fixed_constraints,
+        "completion_condition": completion,
+    }
+    try:
+        rendered = prompt_renderer.render_prompt(
+            brief,
+            ledger,
+            prompt_renderer.load_policy(),
+        )
+    except (
+        prompt_renderer.PromptRendererError,
+        prompt_renderer.BRIEF.PromptBuildBriefError,
+    ) as exc:
+        raise ValueError(str(exc)) from exc
+    return {
+        "run_id": None,
+        "route": "PROMPT · NO CODEX",
+        "execution_status": "completed",
+        "result_markdown": rendered,
+        "artifacts": [
+            {
+                "path": "configs/psos-goal-aware-assistant-policy.md",
+                "action": "read",
+            },
+            {
+                "path": "scripts/problem_solving_prompt_renderer.py",
+                "action": "used",
+            },
+        ],
+        "evidence": [
+            {
+                "source": "deterministic_renderer",
+                "finding": "Codex와 모델 호출 없이 입력된 구조를 검증해 최종 프롬프트를 렌더링했습니다.",
+            }
+        ],
+        "limitations": [
+            "목표·절차·조건을 AI가 추론하거나 보완하지 않고 사용자가 입력한 구조만 렌더링합니다."
+        ],
+        "workspace_receipt": None,
+        "workspace_rollback": None,
     }
 
 
@@ -525,7 +670,7 @@ def open_browser(url: str, browser_name: str) -> None:
 
 
 class PsosRequestHandler(BaseHTTPRequestHandler):
-    server_version = "PSOSWeb/1"
+    server_version = "PSOSWeb/2"
 
     @property
     def app(self) -> "PsosHTTPServer":
@@ -628,6 +773,17 @@ class PsosRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
+        if path == "/api/render-prompt":
+            try:
+                self.send_json(render_prompt_request(self.read_json_body()))
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            except Exception as exc:
+                self.send_json(
+                    {"error": str(exc).strip() or exc.__class__.__name__},
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+            return
         if path == "/api/jobs":
             try:
                 payload = self.read_json_body()
