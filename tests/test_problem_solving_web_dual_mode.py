@@ -49,15 +49,15 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertEqual("PROMPT · NO CODEX", result["route"])
         self.assertIn("사용자 취향에 맞는 상품 하나", result["result_markdown"])
 
-    def test_browser_replaces_fast_template_with_integrated_one_call(self):
-        script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
+    def test_comparison_overlay_uses_one_external_ai_round_trip_without_codex(self):
+        script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
 
-        self.assertIn("통합 AI 1회", script)
-        self.assertIn("/api/design-prompt", script)
-        self.assertIn("Goal Ledger와 Prompt Build Brief", script)
-        self.assertIn("Codex 1회 · 로컬 검증 및 조립", script)
-        self.assertNotIn("DEFAULT_CORE_PROCEDURE", script)
-        self.assertNotIn("빠른 템플릿 생성", script)
+        self.assertIn("통합 AI 1회 · Codex 없음", script)
+        self.assertIn("1. 통합 지시문 복사", script)
+        self.assertIn("2. 붙여넣은 JSON으로 조립", script)
+        self.assertIn("integrated_design: integratedDesign", script)
+        self.assertIn("Codex 0회 · 로컬 검증 및 조립 완료", script)
+        self.assertNotIn("CodexEngine", script)
 
     def test_manual_four_stage_mode_is_preserved(self):
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
@@ -77,6 +77,11 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertIn("# 통합 AI 1회 결과", script)
         self.assertIn("# 수동 PSOS 4단계 결과", script)
         self.assertIn("두 결과를 한 번에 복사했습니다.", script)
+
+    def test_compare_server_injects_no_codex_overlay(self):
+        source = (ROOT / "scripts" / "problem_solving_compare_web.py").read_text(encoding="utf-8")
+        self.assertIn("compare-no-codex.js", source)
+        self.assertIn("Codex 호출 없음", source)
 
 
 if __name__ == "__main__":
