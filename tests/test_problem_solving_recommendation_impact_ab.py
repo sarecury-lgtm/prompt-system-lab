@@ -103,7 +103,7 @@ class RecommendationImpactABTests(unittest.TestCase):
             self.assertIn("실제 선택이나 행동이 달라질 정도", text)
             self.assertIn("정체 공개", text)
             self.assertIn("disabled", text)
-            self.assertIn("goal-aware", text)
+            self.assertIn("goal_aware", text)
 
 
 if __name__ == "__main__":
