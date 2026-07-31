@@ -64,6 +64,14 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertIn('"final_prompt"', script)
         self.assertNotIn("CodexEngine", script)
 
+    def test_integrated_final_editing_avoids_three_observed_failure_modes(self):
+        script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
+
+        self.assertIn("근거도 정의되지 않은 신뢰도 등급·점수·백분율", script)
+        self.assertIn("서로 다른 판단 축을 하나의 선택지 목록에 섞지 말고", script)
+        self.assertIn("누락된 기간·성향·기준을 처리할 때 임의의 고정값", script)
+        self.assertIn("제공된 입력 구성을 바탕으로 추정", script)
+
     def test_integrated_preview_updates_from_original_request(self):
         script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
 
@@ -82,6 +90,18 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertIn("Ctrl+V로 붙여넣으세요", script)
         self.assertIn('document.addEventListener("click"', script)
         self.assertIn('status.setAttribute("aria-live", "polite")', script)
+
+    def test_blind_ab_execution_controls_randomize_and_hide_identity(self):
+        script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
+
+        self.assertIn("블라인드 A 복사", script)
+        self.assertIn("블라인드 B 복사", script)
+        self.assertIn("A/B 다시 섞기", script)
+        self.assertIn("A/B 정답 확인", script)
+        self.assertIn("psos-blind-comparison-map", script)
+        self.assertIn("window.crypto.getRandomValues", script)
+        self.assertIn("같은 차트와 입력으로 새 채팅에서 실행", script)
+        self.assertIn("정답: A =", script)
 
     def test_integrated_json_field_uses_full_width(self):
         stylesheet = (ROOT / "web" / "renderer.css").read_text(encoding="utf-8")
