@@ -1,12 +1,14 @@
-name: PSOS web dual mode
+name: PSOS web prompt modes
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - "scripts/problem_solving_web.py"
+      - "scripts/problem_solving_compare_web.py"
       - "scripts/problem_solving_prompt_renderer.py"
       - "configs/psos-goal-aware-assistant-policy.md"
+      - "schemas/problem-solving-integrated-prompt-design.schema.json"
       - "web/index.html"
       - "web/app.js"
       - "web/renderer.js"
@@ -14,8 +16,10 @@ on:
       - "web/renderer.css"
       - "tests/test_problem_solving_web.py"
       - "tests/test_problem_solving_web_dual_mode.py"
+      - "tests/test_problem_solving_compare_web.py"
       - "tests/test_problem_solving_prompt_renderer.py"
       - "docs/psos-web-dual-mode.md"
+      - "start-psos-compare.cmd"
       - ".github/workflows/psos-web-dual-mode.yml"
 
 permissions:
@@ -29,10 +33,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Compile server and renderer
+      - name: Compile servers and renderer
         run: |
           python -m py_compile scripts/problem_solving_web.py
+          python -m py_compile scripts/problem_solving_compare_web.py
           python -m py_compile scripts/problem_solving_prompt_renderer.py
+      - name: Validate integrated design schema
+        run: python -m json.tool schemas/problem-solving-integrated-prompt-design.schema.json > /dev/null
       - name: Check browser scripts
         run: |
           node --check web/app.js
@@ -42,4 +49,5 @@ jobs:
           python -B -m unittest
           tests.test_problem_solving_web
           tests.test_problem_solving_web_dual_mode
+          tests.test_problem_solving_compare_web
           tests.test_problem_solving_prompt_renderer

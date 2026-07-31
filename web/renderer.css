@@ -48,25 +48,6 @@
   gap: var(--space-3);
 }
 
-.renderer-optional {
-  margin-top: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: #fbfcfa;
-}
-
-.renderer-optional summary {
-  color: var(--action);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.optional-grid {
-  margin-top: var(--space-2);
-}
-
 .renderer-actions {
   margin-top: var(--space-4);
 }
@@ -147,6 +128,10 @@
   background: var(--surface);
 }
 
+.compare-copy-button {
+  margin-left: auto;
+}
+
 @media (max-width: 980px) {
   .engine-selector {
     grid-template-columns: 1fr;
@@ -164,7 +149,9 @@
     flex-direction: column;
   }
 
-  #render-button {
+  #render-button,
+  .compare-copy-button {
     width: 100%;
+    margin-left: 0;
   }
 }
