@@ -12,6 +12,7 @@ on:
       - "web/index.html"
       - "web/app.js"
       - "web/renderer.js"
+      - "web/compare-no-codex.js"
       - "web/styles.css"
       - "web/renderer.css"
       - "tests/test_problem_solving_web.py"
@@ -44,6 +45,7 @@ jobs:
         run: |
           node --check web/app.js
           node --check web/renderer.js
+          node --check web/compare-no-codex.js
       - name: Run web and renderer tests
         run: >-
           python -B -m unittest

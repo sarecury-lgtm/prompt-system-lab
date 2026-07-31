@@ -1,7 +1,9 @@
 import importlib.util
+import json
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,19 +17,6 @@ COMPARE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 sys.modules[SPEC.name] = COMPARE
 SPEC.loader.exec_module(COMPARE)
-
-
-class FakeEngine:
-    def __init__(self, payload):
-        self.payload = payload
-        self.calls = []
-
-    def execute(self, prompt, run_dir, invocation):
-        self.calls.append((prompt, run_dir, invocation))
-        return self.payload
-
-    def trace(self):
-        return [{"model": "fake-one-call-model"}]
 
 
 class ProblemSolvingCompareWebTests(unittest.TestCase):
@@ -74,19 +63,25 @@ class ProblemSolvingCompareWebTests(unittest.TestCase):
             },
         }
 
-    def test_one_model_call_then_local_render(self):
-        engine = FakeEngine(self.design_payload())
-        result = COMPARE.design_prompt_request(
-            {"request": "차트 분석 프롬프트를 만들어 줘"},
-            engine=engine,
-        )
+    def test_pasted_one_ai_result_then_local_render_without_codex(self):
+        with mock.patch.object(
+            COMPARE.problem_os,
+            "CodexEngine",
+            side_effect=AssertionError("Codex must not run"),
+        ):
+            result = COMPARE.design_prompt_request(
+                {
+                    "request": "차트 분석 프롬프트를 만들어 줘",
+                    "integrated_design": json.dumps(self.design_payload(), ensure_ascii=False),
+                }
+            )
 
-        self.assertEqual(1, len(engine.calls))
-        self.assertEqual(1, result["model_call_count"])
-        self.assertEqual("PROMPT · AI 1회", result["route"])
+        self.assertEqual(0, result["codex_call_count"])
+        self.assertEqual(0, result["model_call_count"])
+        self.assertEqual(1, result["external_ai_round_trip_count"])
+        self.assertEqual("PROMPT · AI 왕복 1회 · CODEX 0회", result["route"])
         self.assertIn("상위 시간대부터 추세", result["result_markdown"])
-        self.assertIn("fake-one-call-model", result["evidence"][0]["finding"])
-        self.assertEqual("PROMPT", result["goal_ledger"]["selected_route"])
+        self.assertIn("서버는 Codex나 다른 모델을 호출하지 않았습니다", result["evidence"][0]["finding"])
 
     def test_integrated_prompt_requests_both_logical_outputs(self):
         prompt = COMPARE.build_integrated_design_prompt("상품 비교 프롬프트를 만들어 줘")
@@ -96,6 +91,12 @@ class ProblemSolvingCompareWebTests(unittest.TestCase):
         self.assertIn("한 번만 분석", prompt)
         self.assertIn("범용 절차로 끝내지 않는다", prompt)
         self.assertIn("selected_route는 반드시 PROMPT", prompt)
+        self.assertIn('"goal_ledger"', prompt)
+
+    def test_parser_accepts_markdown_json_fence(self):
+        text = "```json\n" + json.dumps(self.design_payload(), ensure_ascii=False) + "\n```"
+        parsed = COMPARE.parse_integrated_design(text)
+        self.assertEqual("PROMPT", parsed["goal_ledger"]["selected_route"])
 
     def test_validation_rejects_constraint_mismatch(self):
         payload = self.design_payload()
@@ -110,6 +111,12 @@ class ProblemSolvingCompareWebTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "PROMPT"):
             COMPARE.validate_integrated_design(payload)
+
+    def test_compare_runtime_source_does_not_invoke_codex(self):
+        source = MODULE_PATH.read_text(encoding="utf-8")
+        self.assertNotIn("CodexEngine(", source)
+        self.assertNotIn("active_engine.execute", source)
+        self.assertIn("zero Codex calls", source)
 
 
 if __name__ == "__main__":

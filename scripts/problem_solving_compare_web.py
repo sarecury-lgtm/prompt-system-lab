@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Serve PSOS prompt comparison with one-call AI design and manual four-stage flow."""
+"""Serve PSOS prompt comparison without invoking Codex for integrated design."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
-import tempfile
 import threading
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer
@@ -25,11 +25,11 @@ import problem_solving_web as base_web
 
 
 ROOT = SCRIPT_DIR.parent
-DESIGN_SCHEMA_PATH = ROOT / "schemas" / "problem-solving-integrated-prompt-design.schema.json"
+COMPARE_SCRIPT_NAME = "compare-no-codex.js"
 
 
 def build_integrated_design_prompt(request: str) -> str:
-    """Ask one model call to produce both the ledger and the prompt brief."""
+    """Build one external-AI instruction that returns both logical outputs."""
 
     return f"""당신은 Personal Problem-Solving OS의 통합 프롬프트 설계기다.
 
@@ -38,14 +38,14 @@ def build_integrated_design_prompt(request: str) -> str:
 1. 재사용 가능한 프롬프트 제작에 필요한 Goal Ledger를 작성한다.
 2. 그 Goal Ledger를 기준으로 Prompt Build Brief를 작성한다.
 
-이 단계에서는 최종 프롬프트 본문을 작성하지 않는다. JSON 이외의 설명도 출력하지 않는다.
+이 단계에서는 최종 프롬프트 본문을 작성하지 않는다. 설명이나 마크다운 코드블록 없이 JSON 객체 하나만 출력한다.
 
 [Goal Ledger 규칙]
 1. 사용자가 궁극적으로 얻으려는 결과를 parent_goal에 쓴다.
 2. current_goal_hypothesis는 최종 프롬프트가 다른 AI에게 실제로 수행시킬 작업으로 쓴다. “프롬프트를 만든다”를 작업 목표로 남기지 않는다.
 3. fixed_constraints에는 사용자가 명시했거나 결과를 실질적으로 바꾸는 조건만 둔다.
-4. 이 화면은 프롬프트 제작 전용이므로 selected_route는 반드시 PROMPT, secondary_route는 null로 둔다.
-5. completion_condition은 사용자가 최종 프롬프트를 바로 실행해 원하는 결과를 얻었는지 판별할 수 있게 쓴다.
+4. 이 요청은 프롬프트 제작 전용이므로 selected_route는 반드시 PROMPT, secondary_route는 null로 둔다.
+5. completion_condition은 사용자가 최종 프롬프트를 실행해 원하는 결과를 얻었는지 판별할 수 있게 쓴다.
 6. important_uncertainties는 결과를 실제로 바꿀 수 있는 것만 최대 3개로 둔다.
 
 [Prompt Build Brief 규칙]
@@ -59,6 +59,34 @@ def build_integrated_design_prompt(request: str) -> str:
 8. exclusions에는 목표 밖의 작업만 둔다.
 9. 같은 의미를 여러 필드에 반복하지 않는다.
 10. core_procedure를 “요청 파악 → 작업 수행 → 결과 제시” 같은 범용 절차로 끝내지 않는다.
+
+[출력 JSON 구조]
+{{
+  "goal_ledger": {{
+    "parent_goal": "...",
+    "current_goal_hypothesis": "...",
+    "fixed_constraints": [],
+    "current_position": "...",
+    "selected_route": "PROMPT",
+    "secondary_route": null,
+    "route_reason": "...",
+    "current_step": "...",
+    "why_this_step_matters": "...",
+    "completion_condition": "...",
+    "important_uncertainties": []
+  }},
+  "prompt_build_brief": {{
+    "version": 1,
+    "goal": "...",
+    "core_procedure": [],
+    "supporting_inputs": [],
+    "fixed_constraints": [],
+    "output_contract": [],
+    "defaults_and_exceptions": [],
+    "exclusions": [],
+    "upstream_context": []
+  }}
+}}
 
 [사용자 요청]
 {request.strip()}
@@ -83,6 +111,27 @@ def _validate_string_list(value: Any, label: str, maximum: int | None = None) ->
     if maximum is not None and len(result) > maximum:
         raise ValueError(f"{label}은 {maximum}개 이하여야 합니다.")
     return result
+
+
+def parse_integrated_design(value: Any) -> dict[str, Any]:
+    """Accept a JSON object or pasted JSON text, including fenced output."""
+
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("ChatGPT가 반환한 통합 JSON을 붙여 넣어 주세요.")
+
+    text = value.strip()
+    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", text, flags=re.DOTALL | re.IGNORECASE)
+    if fenced:
+        text = fenced.group(1).strip()
+    try:
+        decoded = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"통합 JSON을 읽을 수 없습니다: {exc.msg}") from exc
+    if not isinstance(decoded, dict):
+        raise ValueError("통합 설계 결과는 JSON 객체여야 합니다.")
+    return decoded
 
 
 def validate_integrated_design(value: Any) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -125,35 +174,12 @@ def validate_integrated_design(value: Any) -> tuple[dict[str, Any], dict[str, An
     return ledger, brief
 
 
-def design_prompt_request(
-    payload: dict[str, Any],
-    *,
-    engine: Any | None = None,
-) -> dict[str, Any]:
-    """Use exactly one Codex call, then render the final prompt locally."""
+def design_prompt_request(payload: dict[str, Any]) -> dict[str, Any]:
+    """Validate one pasted AI result and render locally with zero Codex calls."""
 
     request = base_web._required_text(payload, "request", "요청")
-    model_policy = problem_os.load_model_policy()
-    profile = model_policy["routes"]["PROMPT"]["primary"]
-    invocation = problem_os.InvocationSpec(
-        name="integrated-prompt-design",
-        phase="prompt-design",
-        route="PROMPT",
-        profile=profile,
-        schema_path=DESIGN_SCHEMA_PATH,
-    )
-    active_engine = engine or problem_os.CodexEngine(
-        ROOT,
-        allow_workspace_write=False,
-        enable_search=False,
-    )
-    with tempfile.TemporaryDirectory(prefix="psos-integrated-design-") as temp_dir:
-        raw = active_engine.execute(
-            build_integrated_design_prompt(request),
-            Path(temp_dir),
-            invocation,
-        )
-    ledger, brief = validate_integrated_design(raw)
+    raw_design = parse_integrated_design(payload.get("integrated_design"))
+    ledger, brief = validate_integrated_design(raw_design)
     try:
         rendered = prompt_renderer.render_prompt(
             brief,
@@ -166,16 +192,17 @@ def design_prompt_request(
     ) as exc:
         raise ValueError(str(exc)) from exc
 
-    trace = active_engine.trace() if callable(getattr(active_engine, "trace", None)) else []
-    model = trace[-1].get("model") if trace else profile.model
     return {
         "run_id": None,
-        "route": "PROMPT · AI 1회",
+        "route": "PROMPT · AI 왕복 1회 · CODEX 0회",
         "execution_status": "completed",
         "result_markdown": rendered,
+        "source_request": request,
         "goal_ledger": ledger,
         "prompt_build_brief": brief,
-        "model_call_count": 1,
+        "model_call_count": 0,
+        "codex_call_count": 0,
+        "external_ai_round_trip_count": 1,
         "artifacts": [
             {
                 "path": "configs/psos-goal-aware-assistant-policy.md",
@@ -188,12 +215,12 @@ def design_prompt_request(
         ],
         "evidence": [
             {
-                "source": "integrated_prompt_design",
-                "finding": f"{model}을 한 번 호출해 Goal Ledger와 Prompt Build Brief를 함께 만들고 로컬 렌더러로 조립했습니다.",
+                "source": "user_supplied_integrated_design",
+                "finding": "사용자가 한 번의 외부 AI 왕복으로 받은 Goal Ledger와 Prompt Build Brief를 검증하고 로컬 렌더러로 조립했습니다. 서버는 Codex나 다른 모델을 호출하지 않았습니다.",
             }
         ],
         "limitations": [
-            "한 번의 모델 호출에서 두 논리 단계를 함께 수행하므로 수동 단계별 검토와 결과가 달라질 수 있습니다."
+            "한 번의 AI 응답에서 두 논리 단계를 함께 수행하므로 수동 단계별 결과와 달라질 수 있습니다."
         ],
         "workspace_receipt": None,
         "workspace_rollback": None,
@@ -201,7 +228,40 @@ def design_prompt_request(
 
 
 class ComparisonRequestHandler(base_web.PsosRequestHandler):
-    server_version = "PSOSCompareWeb/1"
+    server_version = "PSOSCompareWeb/2"
+
+    def _send_compare_index(self) -> None:
+        try:
+            html = (self.app.web_dir / "index.html").read_text(encoding="utf-8")
+            marker = '<script src="/renderer.js" defer></script>'
+            injected = marker + f'\n    <script src="/{COMPARE_SCRIPT_NAME}" defer></script>'
+            if marker not in html:
+                raise OSError("renderer script marker is missing")
+            content = html.replace(marker, injected, 1).encode("utf-8")
+        except OSError:
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(content)))
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; script-src 'self'; style-src 'self'",
+        )
+        self.end_headers()
+        self.wfile.write(content)
+
+    def do_GET(self) -> None:
+        path = urlparse(self.path).path
+        if path in {"/", "/index.html"}:
+            self._send_compare_index()
+            return
+        if path == f"/{COMPARE_SCRIPT_NAME}":
+            self.send_static(COMPARE_SCRIPT_NAME, "text/javascript; charset=utf-8")
+            return
+        super().do_GET()
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
@@ -262,6 +322,7 @@ def main(argv: list[str] | None = None) -> int:
     actual_host, actual_port = server.server_address
     url = f"http://{actual_host}:{actual_port}/"
     print(f"PSOS 비교 화면: {url}")
+    print("통합 비교 모드: Codex 호출 없음")
     print("종료: Ctrl+C")
     if args.open_browser:
         threading.Timer(0.3, base_web.open_browser, args=(url, args.open_browser)).start()
