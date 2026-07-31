@@ -1,46 +1,27 @@
-const rendererElements = {
+const promptUi = {
   modes: document.querySelectorAll('input[name="engine-mode"]'),
   codexPanel: document.querySelector("#codex-panel"),
-  rendererPanel: document.querySelector("#renderer-panel"),
+  integratedPanel: document.querySelector("#renderer-panel"),
   manualPanel: null,
   sectionNote: document.querySelector("#request-section-note"),
   form: document.querySelector("#renderer-form"),
   intro: document.querySelector(".renderer-intro"),
-  goal: document.querySelector("#renderer-goal"),
+  request: document.querySelector("#renderer-goal"),
   procedure: document.querySelector("#renderer-procedure"),
   constraints: document.querySelector("#renderer-constraints"),
   completion: document.querySelector("#renderer-completion"),
-  supporting: document.querySelector("#renderer-supporting"),
-  exceptions: document.querySelector("#renderer-exceptions"),
-  exclusions: document.querySelector("#renderer-exclusions"),
-  upstream: document.querySelector("#renderer-upstream"),
-  outputDetails: document.querySelector("#renderer-output-details"),
   optional: document.querySelector(".renderer-optional"),
-  optionalGrid: document.querySelector(".renderer-optional .optional-grid"),
   submit: document.querySelector("#render-button"),
 };
 
 const engineStorageKey = "psos-engine-mode";
-const appliedPromptStorageKey = "psos-applied-fast-template";
-const latestFastTemplateStorageKey = "psos-latest-fast-template";
+const appliedPromptStorageKey = "psos-applied-prompt";
+const latestIntegratedPromptStorageKey = "psos-latest-integrated-prompt";
+const latestIntegratedRequestStorageKey = "psos-latest-integrated-request";
 const manualStateStorageKey = "psos-manual-workflow-state";
-const DEFAULT_CORE_PROCEDURE = [
-  "사용자 요청에서 실제로 수행해야 할 작업과 최종 판단을 파악한다.",
-  "제공된 자료와 조건만 사용해 요청한 작업을 직접 수행한다.",
-  "핵심 근거, 주요 위험, 결론이 바뀌는 조건과 다음 행동을 포함해 바로 쓸 수 있는 결과를 제시한다.",
-];
-const DEFAULT_COMPLETION =
-  "사용자가 요청한 실제 작업의 결과가 제공되며, 프롬프트를 다시 만들라고 요구하지 않는다.";
 
 function selectedEngineMode() {
   return document.querySelector('input[name="engine-mode"]:checked')?.value || "codex";
-}
-
-function splitLines(value) {
-  return String(value || "")
-    .split(/\r?\n/)
-    .map((item) => item.trim())
-    .filter(Boolean);
 }
 
 function fieldLabel(input) {
@@ -62,35 +43,13 @@ async function copyText(text, statusElement, successText = "복사했습니다."
   }
 }
 
-function normalizePromptGoal(value) {
-  let cleaned = String(value || "").trim();
-  if (!cleaned) return "";
-
-  const directTask = cleaned.replace(
-    /\s*(?:하는|해주는|해 줄|해줄)\s+프롬프트(?:를|을)?\s*(?:만들어|작성해|생성해)\s*(?:줘|주세요)?[.!?]?$/u,
-    "한다.",
-  );
-  if (directTask !== cleaned) return directTask;
-
-  const withoutPromptRequest = cleaned.replace(
-    /\s*프롬프트(?:를|을)?\s*(?:만들어|작성해|생성해)\s*(?:줘|주세요)?[.!?]?$/u,
-    "",
-  ).trim();
-  if (withoutPromptRequest !== cleaned && withoutPromptRequest) {
-    return /[.!?]$/.test(withoutPromptRequest)
-      ? withoutPromptRequest
-      : `${withoutPromptRequest} 작업을 수행한다.`;
-  }
-  return cleaned;
-}
-
 function queuePromptForNextCodexRequest(promptText, statusElement) {
   if (!String(promptText || "").trim()) {
     statusElement.textContent = "적용할 프롬프트가 없습니다.";
     return;
   }
   window.localStorage.setItem(appliedPromptStorageKey, promptText);
-  rendererElements.modes.forEach((mode) => {
+  promptUi.modes.forEach((mode) => {
     mode.checked = mode.value === "codex";
   });
   updateEngineMode();
@@ -100,22 +59,27 @@ function queuePromptForNextCodexRequest(promptText, statusElement) {
   statusElement.textContent = "다음 Codex 요청에 한 번 적용됩니다.";
 }
 
-function clearRendererResultActions() {
-  document.querySelector("#renderer-result-actions")?.remove();
+function applyStoredPromptToNextCodexRequest() {
+  const promptText = window.localStorage.getItem(appliedPromptStorageKey);
+  const userRequest = elements.request.value.trim();
+  if (!promptText || !userRequest) return;
+  elements.request.value = `${promptText}\n\n[현재 사용자 요청]\n${userRequest}`;
+  window.localStorage.removeItem(appliedPromptStorageKey);
+  document.querySelector("#prompt-result-actions")?.remove();
 }
 
-function renderRendererResultActions(promptText) {
-  clearRendererResultActions();
+function renderPromptResultActions(promptText, label) {
+  document.querySelector("#prompt-result-actions")?.remove();
   const completed = document.querySelector("#completed-result");
   if (!completed || !promptText) return;
 
   const actions = document.createElement("div");
-  actions.id = "renderer-result-actions";
+  actions.id = "prompt-result-actions";
   actions.className = "request-actions renderer-actions";
 
   const status = document.createElement("span");
   status.className = "renderer-proof";
-  status.textContent = "복사용 초안 · 아직 실행에 적용되지 않음";
+  status.textContent = label;
 
   const buttons = document.createElement("div");
   buttons.className = "approval-actions";
@@ -139,15 +103,6 @@ function renderRendererResultActions(promptText) {
   buttons.append(copyButton, applyButton);
   actions.append(status, buttons);
   completed.appendChild(actions);
-}
-
-function applyStoredPromptToNextCodexRequest() {
-  const promptText = window.localStorage.getItem(appliedPromptStorageKey);
-  const userRequest = elements.request.value.trim();
-  if (!promptText || !userRequest) return;
-  elements.request.value = `${promptText}\n\n[현재 사용자 요청]\n${userRequest}`;
-  window.localStorage.removeItem(appliedPromptStorageKey);
-  clearRendererResultActions();
 }
 
 function routerPrompt(request) {
@@ -272,6 +227,10 @@ function createManualStep(number, title, description, textareaId, placeholder) {
   return { section, textarea, status, buttonBox };
 }
 
+function combinedComparisonText(integrated, manual) {
+  return `# 통합 AI 1회 결과\n\n${integrated.trim()}\n\n---\n\n# 수동 PSOS 4단계 결과\n\n${manual.trim()}`;
+}
+
 function buildManualPanel() {
   const panel = document.createElement("div");
   panel.id = "manual-panel";
@@ -280,7 +239,7 @@ function buildManualPanel() {
 
   const intro = document.createElement("div");
   intro.className = "renderer-intro";
-  intro.innerHTML = "<strong>예전 수동 PSOS 4단계</strong><p>각 단계 지시문을 복사해 AI에 보내고, 나온 결과를 다음 칸에 붙여 넣습니다. 빠른 템플릿과 같은 요청으로 비교할 때 사용합니다.</p>";
+  intro.innerHTML = "<strong>예전 수동 PSOS 4단계</strong><p>각 단계 지시문을 복사해 AI에 보내고 결과를 다음 칸에 붙입니다. 마지막에는 통합 AI 1회 결과와 함께 복사할 수 있습니다.</p>";
 
   const form = document.createElement("div");
   form.className = "request-form renderer-form manual-form";
@@ -314,7 +273,7 @@ function buildManualPanel() {
   const briefStep = createManualStep(
     3,
     "Prompt Build Brief 결과",
-    "AI가 반환한 Brief JSON을 붙이고 최종 프롬프트 실행기 지시문을 복사합니다.",
+    "AI가 반환한 Brief JSON을 붙이고 최종 실행기 지시문을 복사합니다.",
     "manual-brief",
     "2단계에서 받은 Prompt Build Brief JSON을 붙여 넣으세요.",
   );
@@ -327,7 +286,7 @@ function buildManualPanel() {
   const finalStep = createManualStep(
     4,
     "수동 PSOS 최종 프롬프트",
-    "3단계에서 나온 최종 프롬프트를 붙이면 복사·1회 적용·비교가 가능합니다.",
+    "3단계에서 나온 최종 프롬프트를 붙이면 복사·적용·비교가 가능합니다.",
     "manual-final",
     "3단계에서 생성된 최종 프롬프트를 붙여 넣으세요.",
   );
@@ -345,18 +304,20 @@ function buildManualPanel() {
   compare.className = "manual-compare";
   const compareHeading = document.createElement("div");
   compareHeading.className = "manual-step-heading";
-  compareHeading.innerHTML = "<span class=\"step-label\">비교</span><h3>빠른 템플릿 vs 수동 PSOS</h3><p>같은 요청으로 만든 두 결과를 나란히 봅니다.</p>";
+  compareHeading.innerHTML = "<span class=\"step-label\">비교용 복사</span><h3>통합 AI 1회 + 수동 PSOS 4단계</h3><p>두 결과를 함께 복사해 ChatGPT에 붙여 비교합니다.</p>";
+
   const compareGrid = document.createElement("div");
   compareGrid.className = "renderer-grid manual-compare-grid";
-  const fastLabel = document.createElement("label");
-  fastLabel.className = "field-label";
-  fastLabel.innerHTML = "<span>최근 빠른 템플릿 결과</span>";
-  const fastResult = document.createElement("textarea");
-  fastResult.id = "manual-fast-result";
-  fastResult.rows = 14;
-  fastResult.readOnly = true;
-  fastResult.placeholder = "빠른 템플릿을 한 번 생성하면 여기에 표시됩니다.";
-  fastLabel.appendChild(fastResult);
+  const integratedLabel = document.createElement("label");
+  integratedLabel.className = "field-label";
+  integratedLabel.innerHTML = "<span>최근 통합 AI 1회 결과</span>";
+  const integratedResult = document.createElement("textarea");
+  integratedResult.id = "manual-integrated-result";
+  integratedResult.rows = 14;
+  integratedResult.readOnly = true;
+  integratedResult.placeholder = "통합 AI 1회 모드에서 먼저 생성하면 여기에 표시됩니다.";
+  integratedLabel.appendChild(integratedResult);
+
   const manualLabel = document.createElement("label");
   manualLabel.className = "field-label";
   manualLabel.innerHTML = "<span>수동 PSOS 최종 결과</span>";
@@ -365,8 +326,18 @@ function buildManualPanel() {
   manualResult.rows = 14;
   manualResult.readOnly = true;
   manualLabel.appendChild(manualResult);
-  compareGrid.append(fastLabel, manualLabel);
-  compare.append(compareHeading, compareGrid);
+  compareGrid.append(integratedLabel, manualLabel);
+
+  const compareActions = document.createElement("div");
+  compareActions.className = "request-actions manual-step-actions";
+  const compareStatus = document.createElement("span");
+  compareStatus.className = "renderer-proof";
+  const copyBoth = document.createElement("button");
+  copyBoth.type = "button";
+  copyBoth.className = "secondary-button compare-copy-button";
+  copyBoth.textContent = "두 결과 같이 복사";
+  compareActions.append(compareStatus, copyBoth);
+  compare.append(compareHeading, compareGrid, compareActions);
 
   form.append(
     intro,
@@ -392,7 +363,10 @@ function buildManualPanel() {
       manualResult.value = finalStep.textarea.value;
     });
   });
-  fastResult.value = window.localStorage.getItem(latestFastTemplateStorageKey) || "";
+  if (!requestStep.textarea.value) {
+    requestStep.textarea.value = window.localStorage.getItem(latestIntegratedRequestStorageKey) || "";
+  }
+  integratedResult.value = window.localStorage.getItem(latestIntegratedPromptStorageKey) || "";
   manualResult.value = finalStep.textarea.value;
 
   requestCopy.addEventListener("click", () => {
@@ -430,6 +404,17 @@ function buildManualPanel() {
   finalApply.addEventListener("click", () => {
     queuePromptForNextCodexRequest(finalStep.textarea.value, finalStep.status);
   });
+  copyBoth.addEventListener("click", () => {
+    if (!integratedResult.value.trim() || !manualResult.value.trim()) {
+      compareStatus.textContent = "통합 AI 결과와 수동 최종 결과를 모두 준비해 주세요.";
+      return;
+    }
+    copyText(
+      combinedComparisonText(integratedResult.value, manualResult.value),
+      compareStatus,
+      "두 결과를 한 번에 복사했습니다.",
+    );
+  });
 
   return panel;
 }
@@ -444,143 +429,114 @@ function installManualMode() {
     <input type="radio" name="engine-mode" value="manual">
     <span>
       <strong>수동 PSOS 4단계</strong>
-      <small>예전처럼 결과를 옮겨 붙이며 고품질 프롬프트를 만듭니다.</small>
+      <small>예전처럼 네 번 옮겨 붙여 만든 결과입니다.</small>
     </span>`;
   selector.appendChild(option);
 
-  rendererElements.manualPanel = buildManualPanel();
-  rendererElements.rendererPanel.after(rendererElements.manualPanel);
-  rendererElements.modes = document.querySelectorAll('input[name="engine-mode"]');
+  promptUi.manualPanel = buildManualPanel();
+  promptUi.integratedPanel.after(promptUi.manualPanel);
+  promptUi.modes = document.querySelectorAll('input[name="engine-mode"]');
 }
 
-function simplifyRendererForm() {
-  const goalLabel = fieldLabel(rendererElements.goal);
-  const procedureLabel = fieldLabel(rendererElements.procedure);
-  const constraintsLabel = fieldLabel(rendererElements.constraints);
-  const completionLabel = fieldLabel(rendererElements.completion);
-  const firstGrid = procedureLabel?.parentElement;
-  const deterministicMode = Array.from(rendererElements.modes)
-    .find((mode) => mode.value === "deterministic");
-  const deterministicLabel = deterministicMode?.closest(".mode-option");
-
-  if (deterministicLabel) {
-    deterministicLabel.querySelector("strong").textContent = "빠른 템플릿 생성";
-    deterministicLabel.querySelector("small").textContent =
-      "AI 설계 없이 공통 틀로 복사용 초안을 즉시 만듭니다.";
+function configureIntegratedMode() {
+  const integratedMode = Array.from(promptUi.modes).find((mode) => mode.value === "deterministic");
+  if (integratedMode) {
+    integratedMode.value = "integrated";
+    const option = integratedMode.closest(".mode-option");
+    option.querySelector("strong").textContent = "통합 AI 1회";
+    option.querySelector("small").textContent =
+      "Goal Ledger와 Brief를 한 번에 만들고 로컬에서 최종 조립합니다.";
   }
 
-  rendererElements.intro.querySelector("strong").textContent =
-    "빠른 복사용 초안입니다.";
-  rendererElements.intro.querySelector("p").textContent =
-    "전문 설계 단계는 거치지 않습니다. 요청 한 칸으로 공통 PSOS 틀을 붙이고, 필요하면 다음 Codex 실행에 한 번 적용할 수 있습니다.";
+  promptUi.intro.querySelector("strong").textContent = "논리 단계는 유지하고 AI 호출만 한 번으로 합칩니다.";
+  promptUi.intro.querySelector("p").textContent =
+    "Codex가 Goal Ledger와 Prompt Build Brief를 한 번에 설계하고, 검증된 결과를 로컬 렌더러가 즉시 최종 프롬프트로 조립합니다.";
 
-  goalLabel.querySelector("span").textContent = "어떤 작업용 템플릿이 필요한가요?";
-  rendererElements.goal.rows = 7;
-  rendererElements.goal.placeholder =
+  const requestLabel = fieldLabel(promptUi.request);
+  requestLabel.querySelector("span").textContent = "어떤 프롬프트가 필요한가요?";
+  promptUi.request.rows = 7;
+  promptUi.request.placeholder =
     "예: 첨부한 여러 시간대 차트를 보고 지금 진입할지, 손절과 분할익절을 어떻게 할지 판단하는 프롬프트를 만들어 줘.";
 
-  constraintsLabel.querySelector("span").textContent = "꼭 지킬 조건 · 선택";
-  rendererElements.constraints.rows = 3;
-  rendererElements.constraints.placeholder =
-    "예: 차트에서 확인되지 않는 사실은 만들지 않는다.\n하나의 현재 판단을 분명히 제시한다.";
+  [promptUi.procedure, promptUi.constraints, promptUi.completion].forEach((field) => {
+    const label = fieldLabel(field);
+    if (label) label.hidden = true;
+    field?.removeAttribute("required");
+  });
+  if (promptUi.optional) promptUi.optional.hidden = true;
 
-  procedureLabel.querySelector("span").textContent = "핵심 절차 직접 지정 · 선택";
-  completionLabel.querySelector("span").textContent = "완료 조건 직접 지정 · 선택";
-  rendererElements.procedure.removeAttribute("required");
-  rendererElements.completion.removeAttribute("required");
-
-  if (firstGrid && constraintsLabel && goalLabel) {
-    goalLabel.after(constraintsLabel);
-    firstGrid.remove();
-  }
-  if (rendererElements.optionalGrid) {
-    rendererElements.optionalGrid.prepend(procedureLabel, completionLabel);
-  }
-  rendererElements.optional.querySelector("summary").textContent =
-    "세부 설정 · 필요할 때만";
-
-  const safety = rendererElements.form.querySelector(".safety-note");
-  safety.textContent =
-    "생성 결과는 자동 실행되지 않습니다. 복사하거나 다음 Codex 요청에 1회 적용할 수 있습니다.";
+  const proof = promptUi.form.querySelector(".renderer-proof");
+  proof.textContent = "Codex 1회 · 로컬 검증 및 조립";
+  promptUi.submit.querySelector("span:first-child").textContent = "AI 1회로 생성";
+  promptUi.form.querySelector(".safety-note").textContent =
+    "통합 모드는 Codex를 정확히 한 번 호출합니다. 최종 조립 단계에서는 모델을 다시 부르지 않습니다.";
 }
 
 function updateEngineMode() {
   const mode = selectedEngineMode();
-  rendererElements.codexPanel.hidden = mode !== "codex";
-  rendererElements.rendererPanel.hidden = mode !== "deterministic";
-  if (rendererElements.manualPanel) {
-    rendererElements.manualPanel.hidden = mode !== "manual";
-  }
-  rendererElements.sectionNote.textContent = mode === "deterministic"
-    ? "AI 설계 없이 공통 틀로 복사용 초안을 즉시 만듭니다."
+  promptUi.codexPanel.hidden = mode !== "codex";
+  promptUi.integratedPanel.hidden = mode !== "integrated";
+  if (promptUi.manualPanel) promptUi.manualPanel.hidden = mode !== "manual";
+
+  promptUi.sectionNote.textContent = mode === "integrated"
+    ? "Goal Ledger와 Brief를 한 번에 설계한 뒤 로컬에서 최종 조립합니다."
     : mode === "manual"
-      ? "예전 방식대로 단계별 결과를 옮겨 붙여 빠른 템플릿과 비교합니다."
+      ? "예전 4단계 결과를 만든 뒤 두 결과를 함께 복사해 비교합니다."
       : "모델과 해결 방식은 시스템이 자동으로 고릅니다.";
   window.localStorage.setItem(engineStorageKey, mode);
-  if (mode === "deterministic") rendererElements.goal.focus();
+  if (mode === "integrated") promptUi.request.focus();
   if (mode === "manual") document.querySelector("#manual-request")?.focus();
 }
 
-async function submitRenderer(event) {
+async function submitIntegratedPrompt(event) {
   event.preventDefault();
-  const request = rendererElements.goal.value.trim();
+  const request = promptUi.request.value.trim();
   if (!request) {
-    rendererElements.goal.focus();
+    promptUi.request.focus();
     return;
   }
 
-  const normalizedGoal = normalizePromptGoal(request);
-  const customProcedure = splitLines(rendererElements.procedure.value);
-  const customCompletion = rendererElements.completion.value.trim();
-
-  clearRendererResultActions();
-  rendererElements.submit.disabled = true;
+  document.querySelector("#prompt-result-actions")?.remove();
+  promptUi.submit.disabled = true;
   setResultState("running");
-  elements.runningTitle.textContent = "빠른 템플릿을 만들고 있습니다.";
-  elements.runningDetail.textContent = "Codex와 모델 호출 없이 공통 PSOS 구조를 적용합니다.";
+  elements.runningTitle.textContent = "Goal Ledger와 Brief를 함께 설계하고 있습니다.";
+  elements.runningDetail.textContent = "Codex를 한 번 호출한 뒤 로컬 렌더러가 최종 프롬프트를 조립합니다.";
   try {
-    const data = await requestJson("/api/render-prompt", {
+    const data = await requestJson("/api/design-prompt", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        goal: normalizedGoal,
-        core_procedure: customProcedure.length
-          ? customProcedure
-          : DEFAULT_CORE_PROCEDURE,
-        fixed_constraints: splitLines(rendererElements.constraints.value),
-        completion_condition: customCompletion || DEFAULT_COMPLETION,
-        supporting_inputs: splitLines(rendererElements.supporting.value),
-        defaults_and_exceptions: splitLines(rendererElements.exceptions.value),
-        exclusions: splitLines(rendererElements.exclusions.value),
-        upstream_context: splitLines(rendererElements.upstream.value),
-        output_details: splitLines(rendererElements.outputDetails.value),
-      }),
+      body: JSON.stringify({ request }),
     });
-    window.localStorage.setItem(latestFastTemplateStorageKey, data.result_markdown);
-    const fastCompare = document.querySelector("#manual-fast-result");
-    if (fastCompare) fastCompare.value = data.result_markdown;
+    window.localStorage.setItem(latestIntegratedPromptStorageKey, data.result_markdown);
+    window.localStorage.setItem(latestIntegratedRequestStorageKey, request);
+    const integratedCompare = document.querySelector("#manual-integrated-result");
+    if (integratedCompare) integratedCompare.value = data.result_markdown;
+    const manualRequest = document.querySelector("#manual-request");
+    if (manualRequest && !manualRequest.value.trim()) manualRequest.value = request;
     showCompleted(data);
-    renderRendererResultActions(data.result_markdown);
+    renderPromptResultActions(data.result_markdown, "통합 AI 1회 결과 · 복사 또는 1회 적용 가능");
   } catch (error) {
     showError(error.message);
   } finally {
-    rendererElements.submit.disabled = false;
+    promptUi.submit.disabled = false;
   }
 }
 
+configureIntegratedMode();
 installManualMode();
-simplifyRendererForm();
+
 const savedEngine = window.localStorage.getItem(engineStorageKey);
+const normalizedSavedEngine = savedEngine === "deterministic" ? "integrated" : savedEngine;
 const pendingCodexWork =
   window.sessionStorage.getItem("psos-active-job") ||
   window.sessionStorage.getItem("psos-pending-approval");
-rendererElements.modes.forEach((mode) => {
+promptUi.modes.forEach((mode) => {
   mode.checked = pendingCodexWork
     ? mode.value === "codex"
-    : mode.value === (savedEngine || "codex");
+    : mode.value === (normalizedSavedEngine || "codex");
   mode.addEventListener("change", updateEngineMode);
 });
-rendererElements.form.addEventListener("submit", submitRenderer);
+promptUi.form.addEventListener("submit", submitIntegratedPrompt);
 document.querySelector("#request-form")?.addEventListener(
   "submit",
   applyStoredPromptToNextCodexRequest,
