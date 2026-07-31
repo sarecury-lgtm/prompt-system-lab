@@ -26,19 +26,29 @@ import problem_solving_web as base_web
 
 ROOT = SCRIPT_DIR.parent
 COMPARE_SCRIPT_NAME = "compare-no-codex.js"
+FINAL_PROMPT_MIN_CHARS = 80
+FINAL_PROMPT_MAX_CHARS = 100_000
+FINAL_PROMPT_FORBIDDEN_MARKERS = (
+    "Goal Ledger",
+    "Prompt Build Brief",
+    "검증된 상위 맥락",
+    "설계 계약",
+    "Personal Problem-Solving OS",
+)
 
 
 def build_integrated_design_prompt(request: str) -> str:
-    """Build one external-AI instruction that returns both logical outputs."""
+    """Build one external-AI instruction that returns design plus final prompt."""
 
     return f"""당신은 Personal Problem-Solving OS의 통합 프롬프트 설계기다.
 
-사용자의 요청을 한 번만 분석해 다음 두 논리 단계를 함께 수행한다.
+사용자의 요청을 한 번만 분석해 다음 세 논리 단계를 내부에서 순서대로 수행한다.
 
 1. 재사용 가능한 프롬프트 제작에 필요한 Goal Ledger를 작성한다.
 2. 그 Goal Ledger를 기준으로 Prompt Build Brief를 작성한다.
+3. Goal Ledger와 Brief를 바탕으로 다른 AI가 바로 실행할 최종 프롬프트를 작성한다.
 
-이 단계에서는 최종 프롬프트 본문을 작성하지 않는다. 설명이나 마크다운 코드블록 없이 JSON 객체 하나만 출력한다.
+설명이나 마크다운 코드블록 없이 JSON 객체 하나만 출력한다.
 
 [Goal Ledger 규칙]
 1. 사용자가 궁극적으로 얻으려는 결과를 parent_goal에 쓴다.
@@ -51,14 +61,25 @@ def build_integrated_design_prompt(request: str) -> str:
 [Prompt Build Brief 규칙]
 1. goal은 Goal Ledger의 목적을 실제 수행 작업으로 구체화한다.
 2. core_procedure는 범용 문구가 아니라 해당 도메인에서 판단과 결과를 좌우하는 구체적인 처리 순서로 작성한다.
-3. supporting_inputs에는 절차 수행에 필요한 자료, 입력 형태, 분석 요소, 도구만 둔다.
-4. fixed_constraints는 Goal Ledger의 fixed_constraints를 문구와 순서까지 정확히 복사한다.
-5. output_contract의 첫 항목은 Goal Ledger의 completion_condition과 정확히 같아야 한다.
-6. 나머지 output_contract에는 사용자가 실제로 비교·판단·행동하는 데 필요한 산출물만 둔다.
-7. defaults_and_exceptions에는 누락 정보 처리처럼 결과가 달라지는 기본값만 둔다.
-8. exclusions에는 목표 밖의 작업만 둔다.
-9. 같은 의미를 여러 필드에 반복하지 않는다.
-10. core_procedure를 “요청 파악 → 작업 수행 → 결과 제시” 같은 범용 절차로 끝내지 않는다.
+3. core_procedure는 서로 다른 판단 단계를 합치지 말고 필요한 만큼 작성하되 12개를 넘기지 않는다.
+4. supporting_inputs에는 절차 수행에 필요한 자료, 입력 형태, 분석 요소, 도구만 둔다.
+5. fixed_constraints는 Goal Ledger의 fixed_constraints를 문구와 순서까지 정확히 복사한다.
+6. output_contract의 첫 항목은 Goal Ledger의 completion_condition과 정확히 같아야 한다.
+7. 나머지 output_contract에는 사용자가 실제로 비교·판단·행동하는 데 필요한 산출물만 둔다.
+8. defaults_and_exceptions에는 누락 정보 처리처럼 결과가 달라지는 기본값만 둔다.
+9. exclusions에는 목표 밖의 작업만 둔다.
+10. 같은 의미를 여러 필드에 반복하지 않는다.
+11. core_procedure를 “요청 파악 → 작업 수행 → 결과 제시” 같은 범용 절차로 끝내지 않는다.
+
+[최종 프롬프트 작성 규칙]
+1. final_prompt는 복사해 바로 실행할 완성된 프롬프트다.
+2. Goal Ledger, Prompt Build Brief, PSOS, 설계 계약, 검증된 상위 맥락 등 제작 과정의 명칭이나 설명을 넣지 않는다.
+3. Brief의 목표·도메인 절차·고정 조건·예외·제외 범위·출력 계약을 실제 실행 지침으로 통합한다.
+4. 같은 뜻이 여러 필드에 있으면 한 번만 남기고, 중요도가 낮은 범용 원칙은 실제 결과를 바꾸는 경우에만 포함한다.
+5. 입력 → 판단·처리 절차 → 제한·예외 → 출력 형식이 자연스럽게 이어지도록 편집한다.
+6. 최종 프롬프트가 프롬프트를 다시 만들라고 요구하지 않게 한다.
+7. 내부 검토나 작성 과정을 설명하지 말고 최종 지침만 쓴다.
+8. final_prompt는 JSON 문자열이어야 하므로 실제 줄바꿈은 \\n으로 이스케이프한다.
 
 [출력 JSON 구조]
 {{
@@ -85,7 +106,8 @@ def build_integrated_design_prompt(request: str) -> str:
     "defaults_and_exceptions": [],
     "exclusions": [],
     "upstream_context": []
-  }}
+  }},
+  "final_prompt": "# 역할과 목표\\n\\n..."
 }}
 
 [사용자 요청]
@@ -134,8 +156,25 @@ def parse_integrated_design(value: Any) -> dict[str, Any]:
     return decoded
 
 
-def validate_integrated_design(value: Any) -> tuple[dict[str, Any], dict[str, Any]]:
-    if not isinstance(value, dict) or set(value) != {"goal_ledger", "prompt_build_brief"}:
+def _validate_final_prompt(value: Any) -> str:
+    final_prompt = _validate_string(value, "final_prompt")
+    if len(final_prompt) < FINAL_PROMPT_MIN_CHARS:
+        raise ValueError("final_prompt가 너무 짧아 실행용 프롬프트로 보기 어렵습니다.")
+    if len(final_prompt) > FINAL_PROMPT_MAX_CHARS:
+        raise ValueError("final_prompt가 허용 길이를 초과했습니다.")
+    found = [marker for marker in FINAL_PROMPT_FORBIDDEN_MARKERS if marker in final_prompt]
+    if found:
+        raise ValueError(
+            "final_prompt에 제작 단계의 표현이 남아 있습니다: " + ", ".join(found)
+        )
+    return final_prompt
+
+
+def validate_integrated_design(
+    value: Any,
+) -> tuple[dict[str, Any], dict[str, Any], str]:
+    expected_fields = {"goal_ledger", "prompt_build_brief", "final_prompt"}
+    if not isinstance(value, dict) or set(value) != expected_fields:
         raise ValueError("통합 설계 결과의 최상위 필드가 올바르지 않습니다.")
 
     raw_ledger = value["goal_ledger"]
@@ -171,32 +210,23 @@ def validate_integrated_design(value: Any) -> tuple[dict[str, Any], dict[str, An
         raise ValueError(str(exc)) from exc
     if not brief["core_procedure"]:
         raise ValueError("Prompt Build Brief의 핵심 작업 절차가 비어 있습니다.")
-    return ledger, brief
+
+    final_prompt = _validate_final_prompt(value["final_prompt"])
+    return ledger, brief, final_prompt
 
 
 def design_prompt_request(payload: dict[str, Any]) -> dict[str, Any]:
-    """Validate one pasted AI result and render locally with zero Codex calls."""
+    """Validate and extract one AI-authored final prompt with zero Codex calls."""
 
     request = base_web._required_text(payload, "request", "요청")
     raw_design = parse_integrated_design(payload.get("integrated_design"))
-    ledger, brief = validate_integrated_design(raw_design)
-    try:
-        rendered = prompt_renderer.render_prompt(
-            brief,
-            ledger,
-            prompt_renderer.load_policy(),
-        )
-    except (
-        prompt_renderer.PromptRendererError,
-        prompt_renderer.BRIEF.PromptBuildBriefError,
-    ) as exc:
-        raise ValueError(str(exc)) from exc
+    ledger, brief, final_prompt = validate_integrated_design(raw_design)
 
     return {
         "run_id": None,
         "route": "PROMPT · AI 왕복 1회 · CODEX 0회",
         "execution_status": "completed",
-        "result_markdown": rendered,
+        "result_markdown": final_prompt,
         "source_request": request,
         "goal_ledger": ledger,
         "prompt_build_brief": brief,
@@ -205,22 +235,22 @@ def design_prompt_request(payload: dict[str, Any]) -> dict[str, Any]:
         "external_ai_round_trip_count": 1,
         "artifacts": [
             {
-                "path": "configs/psos-goal-aware-assistant-policy.md",
-                "action": "read",
+                "path": "schemas/problem-solving-integrated-prompt-design.schema.json",
+                "action": "validated",
             },
             {
-                "path": "scripts/problem_solving_prompt_renderer.py",
-                "action": "used",
+                "path": "final_prompt",
+                "action": "extracted_from_user_supplied_ai_result",
             },
         ],
         "evidence": [
             {
                 "source": "user_supplied_integrated_design",
-                "finding": "사용자가 한 번의 외부 AI 왕복으로 받은 Goal Ledger와 Prompt Build Brief를 검증하고 로컬 렌더러로 조립했습니다. 서버는 Codex나 다른 모델을 호출하지 않았습니다.",
+                "finding": "한 번의 외부 AI 응답에 포함된 Goal Ledger와 Prompt Build Brief를 검증하고, 같은 응답에서 AI가 직접 작성한 final_prompt를 그대로 추출했습니다. 서버는 Codex나 다른 모델을 호출하지 않았습니다.",
             }
         ],
         "limitations": [
-            "한 번의 AI 응답에서 두 논리 단계를 함께 수행하므로 수동 단계별 결과와 달라질 수 있습니다."
+            "한 번의 AI 응답에서 설계와 최종 편집을 함께 수행하므로 수동 단계별 결과와 품질 차이가 있을 수 있습니다."
         ],
         "workspace_receipt": None,
         "workspace_rollback": None,
@@ -228,7 +258,7 @@ def design_prompt_request(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 class ComparisonRequestHandler(base_web.PsosRequestHandler):
-    server_version = "PSOSCompareWeb/2"
+    server_version = "PSOSCompareWeb/3"
 
     def _send_compare_index(self) -> None:
         try:
@@ -322,7 +352,7 @@ def main(argv: list[str] | None = None) -> int:
     actual_host, actual_port = server.server_address
     url = f"http://{actual_host}:{actual_port}/"
     print(f"PSOS 비교 화면: {url}")
-    print("통합 비교 모드: Codex 호출 없음")
+    print("통합 비교 모드: ChatGPT 왕복 1회 · Codex 호출 없음")
     print("종료: Ctrl+C")
     if args.open_browser:
         threading.Timer(0.3, base_web.open_browser, args=(url, args.open_browser)).start()
