@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "problem-solving-goal-aware-assessment.schema.json",
+  "title": "PSOS goal-aware assistant behavior assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "case_id", "candidates", "preferred_candidate_ids", "conclusion"],
+  "properties": {
+    "version": {"const": 1},
+    "case_id": {"type": "string", "minLength": 1},
+    "candidates": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "goal_fit",
+          "clarification_calibration",
+          "initiative",
+          "independent_judgment",
+          "evidence_priority",
+          "scope_control",
+          "tone",
+          "critical_failures",
+          "finding"
+        ],
+        "properties": {
+          "candidate_id": {"type": "string", "pattern": "^[AB]$"},
+          "goal_fit": {"type": "integer", "minimum": 1, "maximum": 5},
+          "clarification_calibration": {"type": "integer", "minimum": 1, "maximum": 5},
+          "initiative": {"type": "integer", "minimum": 1, "maximum": 5},
+          "independent_judgment": {"type": "integer", "minimum": 1, "maximum": 5},
+          "evidence_priority": {"type": "integer", "minimum": 1, "maximum": 5},
+          "scope_control": {"type": "integer", "minimum": 1, "maximum": 5},
+          "tone": {"type": "integer", "minimum": 1, "maximum": 5},
+          "critical_failures": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1},
+            "uniqueItems": true
+          },
+          "finding": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "preferred_candidate_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[AB]$"}
+    },
+    "conclusion": {"type": "string", "minLength": 1}
+  }
+}
