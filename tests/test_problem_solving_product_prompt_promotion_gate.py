@@ -1,4 +1,3 @@
-import copy
 import importlib.util
 import json
 import sys
@@ -9,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = ROOT / "scripts" / "problem_solving_product_prompt_promotion_gate.py"
+FIXTURE_PATH = ROOT / "tests" / "fixtures" / "product-evidence-hard-cases.json"
 SPEC = importlib.util.spec_from_file_location(
     "problem_solving_product_prompt_promotion_gate",
     MODULE_PATH,
@@ -98,6 +98,16 @@ class ProductPromptPromotionGateTests(unittest.TestCase):
         self.assertFalse(evaluated["approved"])
         self.assertEqual("retain_current_baseline", evaluated["decision"])
         self.assertEqual(1, evaluated["patch_wins"])
+
+    def test_repository_fixture_matches_gate_case_set(self):
+        fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+        fixture_ids = [item["id"] for item in fixture["cases"]]
+        self.assertEqual(CASE_IDS, fixture["promotion_policy"]["required_case_ids"])
+        self.assertEqual(CASE_IDS, fixture_ids)
+        self.assertEqual(2, fixture["promotion_policy"]["minimum_patch_wins"])
+        self.assertTrue(
+            all(item["application"]["critical_failures"] for item in fixture["cases"])
+        )
 
     def test_declared_gate_mismatch_is_rejected(self):
         value = payload(
