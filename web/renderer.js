@@ -2,6 +2,7 @@ const rendererElements = {
   modes: document.querySelectorAll('input[name="engine-mode"]'),
   codexPanel: document.querySelector("#codex-panel"),
   rendererPanel: document.querySelector("#renderer-panel"),
+  manualPanel: null,
   sectionNote: document.querySelector("#request-section-note"),
   form: document.querySelector("#renderer-form"),
   intro: document.querySelector(".renderer-intro"),
@@ -21,6 +22,8 @@ const rendererElements = {
 
 const engineStorageKey = "psos-engine-mode";
 const appliedPromptStorageKey = "psos-applied-fast-template";
+const latestFastTemplateStorageKey = "psos-latest-fast-template";
+const manualStateStorageKey = "psos-manual-workflow-state";
 const DEFAULT_CORE_PROCEDURE = [
   "사용자 요청에서 실제로 수행해야 할 작업과 최종 판단을 파악한다.",
   "제공된 자료와 조건만 사용해 요청한 작업을 직접 수행한다.",
@@ -44,6 +47,21 @@ function fieldLabel(input) {
   return input?.closest(".field-label") || null;
 }
 
+async function copyText(text, statusElement, successText = "복사했습니다.") {
+  if (!String(text || "").trim()) {
+    statusElement.textContent = "먼저 필요한 내용을 입력해 주세요.";
+    return false;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    statusElement.textContent = successText;
+    return true;
+  } catch (_error) {
+    statusElement.textContent = "자동 복사에 실패했습니다. 내용을 직접 선택해 복사해 주세요.";
+    return false;
+  }
+}
+
 function normalizePromptGoal(value) {
   let cleaned = String(value || "").trim();
   if (!cleaned) return "";
@@ -64,6 +82,22 @@ function normalizePromptGoal(value) {
       : `${withoutPromptRequest} 작업을 수행한다.`;
   }
   return cleaned;
+}
+
+function queuePromptForNextCodexRequest(promptText, statusElement) {
+  if (!String(promptText || "").trim()) {
+    statusElement.textContent = "적용할 프롬프트가 없습니다.";
+    return;
+  }
+  window.localStorage.setItem(appliedPromptStorageKey, promptText);
+  rendererElements.modes.forEach((mode) => {
+    mode.checked = mode.value === "codex";
+  });
+  updateEngineMode();
+  elements.request.placeholder =
+    "실제 요청을 입력하세요. 선택한 프롬프트가 다음 실행에 한 번만 적용됩니다.";
+  elements.request.focus();
+  statusElement.textContent = "다음 Codex 요청에 한 번 적용됩니다.";
 }
 
 function clearRendererResultActions() {
@@ -90,13 +124,8 @@ function renderRendererResultActions(promptText) {
   copyButton.type = "button";
   copyButton.className = "secondary-button";
   copyButton.textContent = "복사";
-  copyButton.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(promptText);
-      status.textContent = "클립보드에 복사했습니다.";
-    } catch (_error) {
-      status.textContent = "자동 복사에 실패했습니다. 결과를 직접 선택해 복사해 주세요.";
-    }
+  copyButton.addEventListener("click", () => {
+    copyText(promptText, status, "클립보드에 복사했습니다.");
   });
 
   const applyButton = document.createElement("button");
@@ -104,15 +133,7 @@ function renderRendererResultActions(promptText) {
   applyButton.className = "secondary-button";
   applyButton.textContent = "다음 Codex 요청에 1회 적용";
   applyButton.addEventListener("click", () => {
-    window.localStorage.setItem(appliedPromptStorageKey, promptText);
-    rendererElements.modes.forEach((mode) => {
-      mode.checked = mode.value === "codex";
-    });
-    updateEngineMode();
-    elements.request.placeholder =
-      "실제 요청을 입력하세요. 방금 만든 템플릿이 다음 실행에 한 번만 적용됩니다.";
-    elements.request.focus();
-    status.textContent = "다음 Codex 요청에 한 번 적용됩니다.";
+    queuePromptForNextCodexRequest(promptText, status);
   });
 
   buttons.append(copyButton, applyButton);
@@ -127,6 +148,309 @@ function applyStoredPromptToNextCodexRequest() {
   elements.request.value = `${promptText}\n\n[현재 사용자 요청]\n${userRequest}`;
   window.localStorage.removeItem(appliedPromptStorageKey);
   clearRendererResultActions();
+}
+
+function routerPrompt(request) {
+  return `당신은 Personal Problem-Solving OS의 라우터다.
+
+사용자 요청의 상위 목적과 고정 조건을 보존하고 Goal Ledger를 작성한 뒤, 가장 작은 충분 해결 경로만 선택한다. 이 단계에서는 답변·검색·프롬프트·코드 결과를 만들지 않는다.
+
+[경로]
+- DIRECT: 파일 시스템 변경 없이 현재 지식과 제공 문맥으로 바로 답할 수 있음
+- RESEARCH: 최신성·실재성·공식 출처가 결과를 바꿈
+- REUSE: 승인된 범위의 기존 자산·도구·템플릿을 실제로 확인해야 함
+- PROMPT: 다른 AI나 별도 환경에서 반복 사용할 지침 자체가 산출물
+- CODE: 실제 파일 생성·수정 또는 반복·재현성·대량 처리 때문에 코드 실행이 필요
+- PROJECT: 여러 단계·파일·상태 유지가 정말 필요
+- HYBRID: 주 경로 하나와 보조 경로 하나가 모두 필요
+
+[선택 규칙]
+1. 단순 요청을 CODE·PROJECT·HYBRID로 키우지 않는다.
+2. 최신 사실이나 실재 여부가 결과를 바꾸면 RESEARCH를 선택한다.
+3. 재사용 가능한 지침 자체가 필요하면 PROMPT를 선택한다.
+4. 사용자의 표현보다 실제 상위 목적을 보존한다.
+5. 내부 추론은 노출하지 않는다.
+
+다음 필드를 가진 JSON 객체 하나만 반환한다.
+parent_goal, current_goal_hypothesis, fixed_constraints, current_position, selected_route, secondary_route, route_reason, current_step, why_this_step_matters, completion_condition, important_uncertainties
+
+[사용자 요청]
+${request.trim()}`;
+}
+
+function briefCompilerPrompt(request, ledger) {
+  return `당신은 Personal Problem-Solving OS의 Prompt Build Brief 컴파일러다.
+
+최종 프롬프트를 작성하지 않는다. 사용자 요청과 Goal Ledger를 하나의 짧은 작업 계약으로 통합한다.
+
+[컴파일 원칙]
+1. goal은 최종 프롬프트가 다른 AI에게 실제로 수행시킬 일을 쓴다.
+2. core_procedure는 그 AI가 실행할 도메인 작업의 판단·처리 순서다. 프롬프트 작성 절차를 쓰지 않는다.
+3. supporting_inputs에는 핵심 절차를 돕는 자료·분석 요소·도구만 둔다.
+4. 같은 의미의 요구는 하나로 합친다.
+5. fixed_constraints는 Goal Ledger의 fixed_constraints를 문구와 순서까지 정확히 복사한다.
+6. output_contract의 첫 항목은 Goal Ledger completion_condition을 정확히 복사한다.
+7. defaults_and_exceptions에는 결과를 바꾸는 누락 처리만 둔다.
+8. exclusions에는 목표를 벗어나는 작업만 둔다.
+9. 내부 추론을 노출하지 말고 JSON 객체 하나만 반환한다.
+
+다음 필드를 사용한다.
+version, goal, core_procedure, supporting_inputs, fixed_constraints, output_contract, defaults_and_exceptions, exclusions, upstream_context
+
+[사용자 요청]
+${request.trim()}
+
+[Goal Ledger]
+${ledger.trim()}`;
+}
+
+function finalExecutorPrompt(brief) {
+  return `당신은 Personal Problem-Solving OS의 PROMPT 실행기다.
+
+아래 Prompt Build Brief를 유일한 사용자 요구 표면으로 사용해, 다른 AI가 반복 실행할 최종 프롬프트 하나를 완성한다.
+
+[작성 원칙]
+1. 목표와 고정 조건은 의미를 보존하되 같은 표현을 반복하지 않는다.
+2. 핵심 작업 절차를 프롬프트의 중심에 둔다.
+3. 같은 의미가 원칙·절차·출력 형식에서 되풀이되면 하나로 합친다.
+4. 출력 형식은 사용자가 판단하거나 행동하는 데 필요한 최소 구조만 둔다.
+5. 정보가 충분하면 불필요한 질문 없이 진행하고, 결론이 크게 달라질 때만 질문 1~2개를 허용한다.
+6. 사용자의 원하는 결론보다 근거와 실패 위험을 우선한다.
+7. 내부 추론이나 PSOS 생성 과정을 노출하지 않는다.
+8. 설명이나 JSON 포장 없이 최종 프롬프트 본문만 반환한다.
+
+[Prompt Build Brief]
+${brief.trim()}`;
+}
+
+function loadManualState() {
+  try {
+    const value = JSON.parse(window.localStorage.getItem(manualStateStorageKey) || "{}");
+    return value && typeof value === "object" ? value : {};
+  } catch (_error) {
+    return {};
+  }
+}
+
+function saveManualState(fields) {
+  const value = {};
+  Object.entries(fields).forEach(([key, field]) => {
+    value[key] = field.value;
+  });
+  window.localStorage.setItem(manualStateStorageKey, JSON.stringify(value));
+}
+
+function createManualStep(number, title, description, textareaId, placeholder) {
+  const section = document.createElement("section");
+  section.className = "manual-step";
+
+  const heading = document.createElement("div");
+  heading.className = "manual-step-heading";
+  const label = document.createElement("span");
+  label.className = "step-label";
+  label.textContent = `${String(number).padStart(2, "0")} · 수동 단계`;
+  const name = document.createElement("h3");
+  name.textContent = title;
+  const note = document.createElement("p");
+  note.textContent = description;
+  heading.append(label, name, note);
+
+  const textarea = document.createElement("textarea");
+  textarea.id = textareaId;
+  textarea.rows = number === 1 ? 5 : 9;
+  textarea.placeholder = placeholder;
+
+  const actions = document.createElement("div");
+  actions.className = "request-actions manual-step-actions";
+  const status = document.createElement("span");
+  status.className = "renderer-proof";
+  const buttonBox = document.createElement("div");
+  buttonBox.className = "approval-actions";
+  actions.append(status, buttonBox);
+
+  section.append(heading, textarea, actions);
+  return { section, textarea, status, buttonBox };
+}
+
+function buildManualPanel() {
+  const panel = document.createElement("div");
+  panel.id = "manual-panel";
+  panel.className = "renderer-panel manual-panel";
+  panel.hidden = true;
+
+  const intro = document.createElement("div");
+  intro.className = "renderer-intro";
+  intro.innerHTML = "<strong>예전 수동 PSOS 4단계</strong><p>각 단계 지시문을 복사해 AI에 보내고, 나온 결과를 다음 칸에 붙여 넣습니다. 빠른 템플릿과 같은 요청으로 비교할 때 사용합니다.</p>";
+
+  const form = document.createElement("div");
+  form.className = "request-form renderer-form manual-form";
+
+  const requestStep = createManualStep(
+    1,
+    "원래 요청",
+    "비교할 요청을 적고 라우터 지시문을 복사합니다.",
+    "manual-request",
+    "예: 첨부한 여러 시간대 차트를 보고 지금 진입할지, 손절과 분할익절을 어떻게 할지 판단하는 프롬프트를 만들어 줘.",
+  );
+  const requestCopy = document.createElement("button");
+  requestCopy.type = "button";
+  requestCopy.className = "secondary-button";
+  requestCopy.textContent = "1단계 라우터 지시문 복사";
+  requestStep.buttonBox.appendChild(requestCopy);
+
+  const ledgerStep = createManualStep(
+    2,
+    "Goal Ledger 결과",
+    "AI가 반환한 Goal Ledger JSON을 붙이고 Brief 컴파일러 지시문을 복사합니다.",
+    "manual-ledger",
+    "1단계에서 받은 Goal Ledger JSON을 붙여 넣으세요.",
+  );
+  const ledgerCopy = document.createElement("button");
+  ledgerCopy.type = "button";
+  ledgerCopy.className = "secondary-button";
+  ledgerCopy.textContent = "2단계 Brief 컴파일러 복사";
+  ledgerStep.buttonBox.appendChild(ledgerCopy);
+
+  const briefStep = createManualStep(
+    3,
+    "Prompt Build Brief 결과",
+    "AI가 반환한 Brief JSON을 붙이고 최종 프롬프트 실행기 지시문을 복사합니다.",
+    "manual-brief",
+    "2단계에서 받은 Prompt Build Brief JSON을 붙여 넣으세요.",
+  );
+  const briefCopy = document.createElement("button");
+  briefCopy.type = "button";
+  briefCopy.className = "secondary-button";
+  briefCopy.textContent = "3단계 최종 실행기 복사";
+  briefStep.buttonBox.appendChild(briefCopy);
+
+  const finalStep = createManualStep(
+    4,
+    "수동 PSOS 최종 프롬프트",
+    "3단계에서 나온 최종 프롬프트를 붙이면 복사·1회 적용·비교가 가능합니다.",
+    "manual-final",
+    "3단계에서 생성된 최종 프롬프트를 붙여 넣으세요.",
+  );
+  const finalCopy = document.createElement("button");
+  finalCopy.type = "button";
+  finalCopy.className = "secondary-button";
+  finalCopy.textContent = "최종 프롬프트 복사";
+  const finalApply = document.createElement("button");
+  finalApply.type = "button";
+  finalApply.className = "secondary-button";
+  finalApply.textContent = "다음 Codex 요청에 1회 적용";
+  finalStep.buttonBox.append(finalCopy, finalApply);
+
+  const compare = document.createElement("section");
+  compare.className = "manual-compare";
+  const compareHeading = document.createElement("div");
+  compareHeading.className = "manual-step-heading";
+  compareHeading.innerHTML = "<span class=\"step-label\">비교</span><h3>빠른 템플릿 vs 수동 PSOS</h3><p>같은 요청으로 만든 두 결과를 나란히 봅니다.</p>";
+  const compareGrid = document.createElement("div");
+  compareGrid.className = "renderer-grid manual-compare-grid";
+  const fastLabel = document.createElement("label");
+  fastLabel.className = "field-label";
+  fastLabel.innerHTML = "<span>최근 빠른 템플릿 결과</span>";
+  const fastResult = document.createElement("textarea");
+  fastResult.id = "manual-fast-result";
+  fastResult.rows = 14;
+  fastResult.readOnly = true;
+  fastResult.placeholder = "빠른 템플릿을 한 번 생성하면 여기에 표시됩니다.";
+  fastLabel.appendChild(fastResult);
+  const manualLabel = document.createElement("label");
+  manualLabel.className = "field-label";
+  manualLabel.innerHTML = "<span>수동 PSOS 최종 결과</span>";
+  const manualResult = document.createElement("textarea");
+  manualResult.id = "manual-compare-final";
+  manualResult.rows = 14;
+  manualResult.readOnly = true;
+  manualLabel.appendChild(manualResult);
+  compareGrid.append(fastLabel, manualLabel);
+  compare.append(compareHeading, compareGrid);
+
+  form.append(
+    intro,
+    requestStep.section,
+    ledgerStep.section,
+    briefStep.section,
+    finalStep.section,
+    compare,
+  );
+  panel.appendChild(form);
+
+  const state = loadManualState();
+  const fields = {
+    request: requestStep.textarea,
+    ledger: ledgerStep.textarea,
+    brief: briefStep.textarea,
+    final: finalStep.textarea,
+  };
+  Object.entries(fields).forEach(([key, field]) => {
+    field.value = state[key] || "";
+    field.addEventListener("input", () => {
+      saveManualState(fields);
+      manualResult.value = finalStep.textarea.value;
+    });
+  });
+  fastResult.value = window.localStorage.getItem(latestFastTemplateStorageKey) || "";
+  manualResult.value = finalStep.textarea.value;
+
+  requestCopy.addEventListener("click", () => {
+    copyText(
+      routerPrompt(requestStep.textarea.value),
+      requestStep.status,
+      "라우터 지시문을 복사했습니다. AI에 보내고 결과를 2단계에 붙여 넣으세요.",
+    );
+  });
+  ledgerCopy.addEventListener("click", () => {
+    if (!requestStep.textarea.value.trim() || !ledgerStep.textarea.value.trim()) {
+      ledgerStep.status.textContent = "원래 요청과 Goal Ledger 결과를 먼저 입력해 주세요.";
+      return;
+    }
+    copyText(
+      briefCompilerPrompt(requestStep.textarea.value, ledgerStep.textarea.value),
+      ledgerStep.status,
+      "Brief 컴파일러 지시문을 복사했습니다. 결과를 3단계에 붙여 넣으세요.",
+    );
+  });
+  briefCopy.addEventListener("click", () => {
+    if (!briefStep.textarea.value.trim()) {
+      briefStep.status.textContent = "Prompt Build Brief 결과를 먼저 입력해 주세요.";
+      return;
+    }
+    copyText(
+      finalExecutorPrompt(briefStep.textarea.value),
+      briefStep.status,
+      "최종 실행기 지시문을 복사했습니다. 결과를 4단계에 붙여 넣으세요.",
+    );
+  });
+  finalCopy.addEventListener("click", () => {
+    copyText(finalStep.textarea.value, finalStep.status, "최종 프롬프트를 복사했습니다.");
+  });
+  finalApply.addEventListener("click", () => {
+    queuePromptForNextCodexRequest(finalStep.textarea.value, finalStep.status);
+  });
+
+  return panel;
+}
+
+function installManualMode() {
+  const selector = document.querySelector(".engine-selector");
+  if (!selector || selector.querySelector('input[value="manual"]')) return;
+
+  const option = document.createElement("label");
+  option.className = "mode-option";
+  option.innerHTML = `
+    <input type="radio" name="engine-mode" value="manual">
+    <span>
+      <strong>수동 PSOS 4단계</strong>
+      <small>예전처럼 결과를 옮겨 붙이며 고품질 프롬프트를 만듭니다.</small>
+    </span>`;
+  selector.appendChild(option);
+
+  rendererElements.manualPanel = buildManualPanel();
+  rendererElements.rendererPanel.after(rendererElements.manualPanel);
+  rendererElements.modes = document.querySelectorAll('input[name="engine-mode"]');
 }
 
 function simplifyRendererForm() {
@@ -181,14 +505,20 @@ function simplifyRendererForm() {
 }
 
 function updateEngineMode() {
-  const deterministic = selectedEngineMode() === "deterministic";
-  rendererElements.codexPanel.hidden = deterministic;
-  rendererElements.rendererPanel.hidden = !deterministic;
-  rendererElements.sectionNote.textContent = deterministic
+  const mode = selectedEngineMode();
+  rendererElements.codexPanel.hidden = mode !== "codex";
+  rendererElements.rendererPanel.hidden = mode !== "deterministic";
+  if (rendererElements.manualPanel) {
+    rendererElements.manualPanel.hidden = mode !== "manual";
+  }
+  rendererElements.sectionNote.textContent = mode === "deterministic"
     ? "AI 설계 없이 공통 틀로 복사용 초안을 즉시 만듭니다."
-    : "모델과 해결 방식은 시스템이 자동으로 고릅니다.";
-  window.localStorage.setItem(engineStorageKey, deterministic ? "deterministic" : "codex");
-  if (deterministic) rendererElements.goal.focus();
+    : mode === "manual"
+      ? "예전 방식대로 단계별 결과를 옮겨 붙여 빠른 템플릿과 비교합니다."
+      : "모델과 해결 방식은 시스템이 자동으로 고릅니다.";
+  window.localStorage.setItem(engineStorageKey, mode);
+  if (mode === "deterministic") rendererElements.goal.focus();
+  if (mode === "manual") document.querySelector("#manual-request")?.focus();
 }
 
 async function submitRenderer(event) {
@@ -226,6 +556,9 @@ async function submitRenderer(event) {
         output_details: splitLines(rendererElements.outputDetails.value),
       }),
     });
+    window.localStorage.setItem(latestFastTemplateStorageKey, data.result_markdown);
+    const fastCompare = document.querySelector("#manual-fast-result");
+    if (fastCompare) fastCompare.value = data.result_markdown;
     showCompleted(data);
     renderRendererResultActions(data.result_markdown);
   } catch (error) {
@@ -235,6 +568,7 @@ async function submitRenderer(event) {
   }
 }
 
+installManualMode();
 simplifyRendererForm();
 const savedEngine = window.localStorage.getItem(engineStorageKey);
 const pendingCodexWork =
