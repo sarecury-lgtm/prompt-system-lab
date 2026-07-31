@@ -1,0 +1,44 @@
+name: PSOS PROMPT applied patch review
+
+on:
+  pull_request:
+    paths:
+      - "scripts/problem_solving_prompt_applied_patch_review.py"
+      - "scripts/problem_solving_prompt_approved_applied_patch_review.py"
+      - "prompt-candidates/**"
+      - "approved-prompts/**"
+      - "reviews/prompt-patch-2026-08-01/**"
+      - "tests/test_problem_solving_prompt_applied_patch_review.py"
+      - ".github/workflows/psos-prompt-applied-patch-review.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/problem_solving_prompt_applied_patch_review.py"
+      - "scripts/problem_solving_prompt_approved_applied_patch_review.py"
+      - "prompt-candidates/**"
+      - "approved-prompts/**"
+      - "reviews/prompt-patch-2026-08-01/**"
+      - "tests/test_problem_solving_prompt_applied_patch_review.py"
+      - ".github/workflows/psos-prompt-applied-patch-review.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile applied review entry points
+        run: |
+          python -m py_compile scripts/problem_solving_prompt_applied_patch_review.py
+          python -m py_compile scripts/problem_solving_prompt_approved_applied_patch_review.py
+      - name: Validate review records and approved registry
+        run: |
+          python -m json.tool approved-prompts/registry.json > /dev/null
+          python -m json.tool reviews/prompt-patch-2026-08-01/decisions.json > /dev/null
+      - name: Run applied review tests
+        run: |
+          python -m unittest tests.test_problem_solving_prompt_applied_patch_review
+          python -m unittest tests.test_problem_solving_approved_prompt_baseline
