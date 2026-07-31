@@ -9,6 +9,7 @@ on:
       - "schemas/problem-solving-chart-prompt-assessment.schema.json"
       - "schemas/problem-solving-prompt-applied-answer.schema.json"
       - "tests/test_problem_solving_chart_prompt_batch.py"
+      - "tests/test_problem_solving_chart_prompt_schemas.py"
       - "docs/chart-prompt-batch-comparison.md"
       - "scripts/problem_solving_os.py"
       - "problem-solving-project/model-policy.json"
@@ -28,7 +29,10 @@ jobs:
           python -m json.tool schemas/problem-solving-chart-prompt-assessment.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-prompt-applied-answer.schema.json > /dev/null
       - name: Run chart batch tests
-        run: python -B -m unittest tests.test_problem_solving_chart_prompt_batch
+        run: >-
+          python -B -m unittest
+          tests.test_problem_solving_chart_prompt_batch
+          tests.test_problem_solving_chart_prompt_schemas
       - name: Run PROMPT experiment regressions
         run: >-
           python -B -m unittest
