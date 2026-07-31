@@ -1,0 +1,47 @@
+name: Corpus registry validation
+
+on:
+  pull_request:
+    paths:
+      - "corpus/registry.csv"
+      - "prompt-corpus/famous-prompts*.md"
+      - "scripts/validate_corpus_registry.py"
+      - ".github/workflows/corpus-registry-validation.yml"
+  push:
+    branches:
+      - "restore/corpus-evidence-layers"
+    paths:
+      - "corpus/registry.csv"
+      - "prompt-corpus/famous-prompts*.md"
+      - "scripts/validate_corpus_registry.py"
+      - ".github/workflows/corpus-registry-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate corpus and registry
+        run: |
+          python scripts/validate_corpus_registry.py \
+            --report audit/corpus-registry-validation.generated.md \
+            --extracted audit/corpus-registry-extracted.generated.csv
+
+      - name: Upload validation outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corpus-registry-validation
+          path: |
+            audit/corpus-registry-validation.generated.md
+            audit/corpus-registry-extracted.generated.csv
