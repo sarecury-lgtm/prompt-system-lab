@@ -15,19 +15,21 @@ import problem_solving_prompt_generation_ab as AB  # noqa: E402
 
 def execution_result(prompt_text: str) -> dict:
     return {
-        "status": "completed",
-        "summary": "최종 프롬프트를 생성했다.",
-        "result_markdown": (
-            f"{AB.BRIEF.PROMPT_OUTPUT_START}\n"
-            f"{prompt_text}\n"
-            f"{AB.BRIEF.PROMPT_OUTPUT_END}"
-        ),
-        "capabilities_used": ["ai_reasoning"],
-        "needed_capability": None,
-        "handoff": None,
-        "artifacts": [],
-        "evidence": [],
-        "limitations": [],
+        "execution": {
+            "status": "completed",
+            "summary": "최종 프롬프트를 생성했다.",
+            "result_markdown": (
+                f"{AB.BRIEF.PROMPT_OUTPUT_START}\n"
+                f"{prompt_text}\n"
+                f"{AB.BRIEF.PROMPT_OUTPUT_END}"
+            ),
+            "capabilities_used": ["ai_reasoning"],
+            "needed_capability": None,
+            "handoff": None,
+            "artifacts": [],
+            "evidence": [],
+            "limitations": [],
+        }
     }
 
 
