@@ -30,7 +30,7 @@ class RecordingFakeEngine(FakeEngine):
 
 
 class PromptBuildBriefQualityIntegrationTests(unittest.TestCase):
-    def test_full_prompt_route_uses_single_brief_and_persists_diagnostics(self):
+    def test_full_prompt_route_preserves_baseline_and_persists_patch_diagnostics(self):
         routed = route_result("PROMPT")
         ledger = routed["goal_ledger"]
         engine = RecordingFakeEngine(
@@ -79,16 +79,26 @@ class PromptBuildBriefQualityIntegrationTests(unittest.TestCase):
         self.assertEqual(1, len(executor_calls))
         executor_prompt = executor_calls[0]["prompt"]
         self.assertIn("[Prompt Build Brief]", executor_prompt)
+        self.assertIn("[보존할 Compiler baseline 프롬프트]", executor_prompt)
         self.assertIn("<!-- PSOS_PROMPT_START -->", executor_prompt)
         self.assertIn("<!-- PSOS_PROMPT_END -->", executor_prompt)
         self.assertNotIn("[Goal Ledger]", executor_prompt)
         self.assertNotIn("[기존 Prompt Compiler baseline]", executor_prompt)
-        self.assertNotIn("[사용자 요청]", executor_prompt)
+        self.assertIn("[사용자 요청]", executor_prompt)
+        self.assertIn("명확한 실질 개선이 없으면 baseline을 한 글자도 바꾸지 않고", executor_prompt)
         self.assertIn("# 재사용 프롬프트", output)
         self.assertNotIn("PSOS_PROMPT_START", output)
         self.assertEqual("applied", payload["prompt_build_brief"]["status"])
+        self.assertEqual(
+            "baseline_plus_prompt_patch",
+            payload["prompt_build_brief"]["input_contract"],
+        )
+        self.assertEqual(
+            "pending_applied_evaluation",
+            payload["prompt_build_brief"]["entries"][0]["promotion_status"],
+        )
         self.assertEqual(2, trace["version"])
-        self.assertTrue(
+        self.assertFalse(
             trace["normalization"]["raw_parallel_surfaces_absent_from_executor"]
         )
         self.assertEqual(
