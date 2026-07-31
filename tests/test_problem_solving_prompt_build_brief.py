@@ -65,7 +65,10 @@ class PromptBuildBriefTests(unittest.TestCase):
             "final_prompt": (
                 "다음 사용자 요청을 수행하세요.\n\n"
                 f"[사용자 요청]\n{self.request}\n\n"
-                "[수행 및 출력 규칙]\n- 역할과 산출물을 구분하세요."
+                "[수행 및 출력 규칙]\n"
+                "- 상위 시간대에서 하위 시간대 순서로 분석하세요.\n"
+                "- 실행 손절과 구조적 무효화를 구분하세요.\n"
+                "- 역할과 산출물을 구분하세요."
             ),
             "selected_mode": "pattern-only",
             "selection_reason": "fixture",
@@ -92,7 +95,7 @@ class PromptBuildBriefTests(unittest.TestCase):
             + json.dumps({"required_outputs": ["goal-completion"]}, ensure_ascii=False)
         )
 
-    def test_validates_exact_constraints_and_completion(self):
+    def test_validates_exact_constraints_completion_and_empty_delta(self):
         validated = BRIEF.validate_prompt_build_brief(
             valid_brief(self.ledger),
             self.ledger,
@@ -103,12 +106,17 @@ class PromptBuildBriefTests(unittest.TestCase):
             validated["output_contract"][0],
         )
 
+        no_procedure_change = valid_brief(self.ledger)
+        no_procedure_change["core_procedure"] = []
+        validated = BRIEF.validate_prompt_build_brief(no_procedure_change, self.ledger)
+        self.assertEqual([], validated["core_procedure"])
+
         invalid = valid_brief(self.ledger)
         invalid["fixed_constraints"] = []
         with self.assertRaises(BRIEF.PromptBuildBriefError):
             BRIEF.validate_prompt_build_brief(invalid, self.ledger)
 
-    def test_executor_receives_only_brief_surface_and_contract(self):
+    def test_executor_receives_preserved_baseline_plus_focused_patch(self):
         engine = FakeEngine(
             [
                 self.routed,
@@ -141,25 +149,34 @@ class PromptBuildBriefTests(unittest.TestCase):
             wrapped.execute("router prompt", run_dir, router_invocation)
             result = wrapped.execute(self.executor_prompt(), run_dir, executor_invocation)
             record = wrapped.record()
-            brief_exists = (run_dir / record["entries"][0]["brief_path"]).is_file()
-            original_exists = (
-                run_dir / record["entries"][0]["original_executor_input_path"]
-            ).is_file()
+            entry = record["entries"][0]
+            brief_exists = (run_dir / entry["brief_path"]).is_file()
+            original_exists = (run_dir / entry["original_executor_input_path"]).is_file()
+            baseline_exists = (run_dir / entry["baseline_prompt_path"]).is_file()
 
+        compiler_prompt = engine.calls[1]["prompt"]
         final_prompt = engine.calls[-1]["prompt"]
         self.assertEqual("# 최종 프롬프트", result["execution"]["result_markdown"])
         self.assertEqual("prompt_brief", engine.calls[1]["invocation"].phase)
+        self.assertIn("차이만 짧은 수정 패치", compiler_prompt)
         self.assertIn(BRIEF.BRIEF_MARKER, final_prompt)
-        self.assertIn("가까운 목표와 손절 위험", final_prompt)
+        self.assertIn(BRIEF.BASELINE_PROMPT_MARKER, final_prompt)
+        self.assertIn(self.baseline["final_prompt"], final_prompt)
+        self.assertIn("실행 손절과 구조적 무효화를 구분", final_prompt)
+        self.assertIn("명확한 실질 개선이 없으면 baseline을 한 글자도 바꾸지 않고", final_prompt)
         self.assertIn("[Result Contract]", final_prompt)
         self.assertNotIn("[Goal Ledger]", final_prompt)
         self.assertNotIn(BRIEF.BASELINE_MARKER, final_prompt)
-        self.assertNotIn(f"[사용자 요청]\n{self.request}", final_prompt)
         self.assertTrue(brief_exists)
         self.assertTrue(original_exists)
-        self.assertTrue(record["entries"][0]["delivered_to_executor"])
+        self.assertTrue(baseline_exists)
+        self.assertEqual("baseline_plus_prompt_patch", record["input_contract"])
+        self.assertEqual("baseline_plus_patch", entry["preservation_mode"])
+        self.assertEqual("pending_applied_evaluation", entry["promotion_status"])
+        self.assertTrue(entry["delivered_to_executor"])
+        self.assertTrue(entry["deliveries"][0]["baseline_preserved_in_executor"])
 
-    def test_invalid_model_brief_uses_bounded_fallback(self):
+    def test_invalid_model_brief_uses_bounded_patch_fallback(self):
         engine = FakeEngine(
             [
                 self.routed,
@@ -194,9 +211,30 @@ class PromptBuildBriefTests(unittest.TestCase):
             record = wrapped.record()
 
         final_prompt = engine.calls[-1]["prompt"]
-        self.assertEqual("deterministic_fallback", record["entries"][0]["generation"])
+        self.assertEqual("deterministic_patch_fallback", record["entries"][0]["generation"])
         self.assertIn(self.ledger["current_step"], final_prompt)
         self.assertIn(self.ledger["completion_condition"], final_prompt)
+        self.assertIn(self.baseline["final_prompt"], final_prompt)
+
+    def test_missing_baseline_uses_patch_only_mode(self):
+        brief = valid_brief(self.ledger)
+        invocation = OS.InvocationSpec(
+            name="primary-prompt",
+            phase="executor",
+            route="PROMPT",
+            profile=self.profile,
+            schema_path=OS.EXECUTION_SCHEMA_PATH,
+        )
+        rendered = BRIEF.build_prompt_executor_from_brief(
+            brief,
+            invocation,
+            self.capabilities,
+            "",
+            baseline_prompt="",
+        )
+        self.assertIn("사용 가능한 baseline 프롬프트가 없으므로", rendered)
+        self.assertNotIn(BRIEF.BASELINE_PROMPT_MARKER, rendered)
+        self.assertIn(BRIEF.BRIEF_MARKER, rendered)
 
     def test_non_prompt_executor_is_unchanged(self):
         engine = FakeEngine([execution_result("DIRECT")], capabilities=self.capabilities)

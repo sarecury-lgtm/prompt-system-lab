@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "PSOS Prompt Build Brief",
+  "title": "PSOS Prompt Build Brief patch",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -16,6 +16,7 @@
   ],
   "properties": {
     "version": {
+      "type": "integer",
       "const": 1
     },
     "goal": {
@@ -24,13 +25,11 @@
     },
     "core_procedure": {
       "type": "array",
-      "minItems": 1,
       "maxItems": 8,
       "items": {
         "type": "string",
         "minLength": 1
-      },
-      "uniqueItems": true
+      }
     },
     "supporting_inputs": {
       "type": "array",
@@ -38,16 +37,14 @@
       "items": {
         "type": "string",
         "minLength": 1
-      },
-      "uniqueItems": true
+      }
     },
     "fixed_constraints": {
       "type": "array",
       "items": {
         "type": "string",
         "minLength": 1
-      },
-      "uniqueItems": true
+      }
     },
     "output_contract": {
       "type": "array",
@@ -56,8 +53,7 @@
       "items": {
         "type": "string",
         "minLength": 1
-      },
-      "uniqueItems": true
+      }
     },
     "defaults_and_exceptions": {
       "type": "array",
@@ -65,8 +61,7 @@
       "items": {
         "type": "string",
         "minLength": 1
-      },
-      "uniqueItems": true
+      }
     },
     "exclusions": {
       "type": "array",
@@ -74,8 +69,7 @@
       "items": {
         "type": "string",
         "minLength": 1
-      },
-      "uniqueItems": true
+      }
     },
     "upstream_context": {
       "type": "array",
@@ -83,8 +77,7 @@
       "items": {
         "type": "string",
         "minLength": 1
-      },
-      "uniqueItems": true
+      }
     }
   }
 }

@@ -115,9 +115,11 @@ class PromptBriefTraceTests(unittest.TestCase):
             "payload.execution.result_markdown",
             trace["final_prompt_source"],
         )
-        self.assertTrue(
+        self.assertFalse(
             trace["normalization"]["raw_parallel_surfaces_absent_from_executor"]
         )
+        self.assertIn(BRIEF.BASELINE_PROMPT_MARKER, final_prompt)
+        self.assertIn(baseline["final_prompt"], final_prompt)
         self.assertEqual(
             [
                 "legacy_executor_input",
@@ -131,7 +133,7 @@ class PromptBriefTraceTests(unittest.TestCase):
         self.assertEqual(len(validated_execution["result_markdown"]), final_metrics["characters"])
         self.assertIn("이전 병렬 합류 입력", markdown)
         self.assertIn("Prompt Build Brief", markdown)
-        self.assertIn("원문·전체 Ledger·baseline 표면 제거: 예", markdown)
+        self.assertIn("원문·전체 Ledger·baseline 표면 제거: 아니요", markdown)
         self.assertIn("payload.execution.result_markdown", markdown)
 
 
