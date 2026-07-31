@@ -6,11 +6,13 @@ on:
     paths:
       - "configs/psos-goal-aware-assistant-policy.md"
       - "scripts/problem_solving_goal_aware_behavior_ab.py"
+      - "scripts/problem_solving_goal_aware_behavior_ab_compat.py"
       - "schemas/problem-solving-prompt-applied-answer.schema.json"
       - "schemas/problem-solving-prompt-applied-assessment.schema.json"
       - "schemas/problem-solving-goal-aware-assessment.schema.json"
       - "tests/fixtures/goal-aware-assistant-cases.json"
       - "tests/test_problem_solving_goal_aware_behavior_ab.py"
+      - "tests/test_problem_solving_goal_aware_behavior_ab_compat.py"
       - "tests/test_codex_structured_output_schema_compatibility.py"
       - "docs/psos-goal-aware-behavior-ab.md"
       - ".github/workflows/psos-goal-aware-behavior-ab.yml"
@@ -26,8 +28,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Compile experiment runner
-        run: python -m py_compile scripts/problem_solving_goal_aware_behavior_ab.py
+      - name: Compile experiment runners
+        run: |
+          python -m py_compile scripts/problem_solving_goal_aware_behavior_ab.py
+          python -m py_compile scripts/problem_solving_goal_aware_behavior_ab_compat.py
       - name: Validate schema and cases
         run: |
           python -m json.tool schemas/problem-solving-prompt-applied-answer.schema.json > /dev/null
@@ -37,7 +41,10 @@ jobs:
       - name: Check Codex structured output compatibility
         run: python -B -m unittest tests.test_codex_structured_output_schema_compatibility
       - name: Run behavior experiment tests
-        run: python -B -m unittest tests.test_problem_solving_goal_aware_behavior_ab
+        run: >-
+          python -B -m unittest
+          tests.test_problem_solving_goal_aware_behavior_ab
+          tests.test_problem_solving_goal_aware_behavior_ab_compat
       - name: Run PROMPT experiment regressions
         run: >-
           python -B -m unittest
