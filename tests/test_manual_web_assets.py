@@ -25,6 +25,22 @@ class ManualWebAssetTests(unittest.TestCase):
         self.assertIn("result-copy", actions)
         self.assertNotIn("send-to-chatgpt", script)
 
+    def test_prompt_brief_and_final_require_separate_new_chats(self):
+        html = (ROOT / "web" / "manual.html").read_text(encoding="utf-8")
+        script = (ROOT / "web" / "manual_prompt_brief.js").read_text(
+            encoding="utf-8"
+        )
+        server = (
+            ROOT / "scripts" / "problem_solving_manual_web.py"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn('/manual_prompt_brief.js', html)
+        self.assertIn('phase.endsWith("_prompt_brief")', script)
+        self.assertIn('phase.endsWith("_prompt_final")', script)
+        self.assertGreaterEqual(script.count("새 ChatGPT 채팅"), 2)
+        self.assertIn("다시 새 채팅", script)
+        self.assertIn('"/manual_prompt_brief.js"', server)
+
     def test_page_does_not_auto_restore_unselected_latest_completed_run(self):
         script = (ROOT / "web" / "manual.js").read_text(encoding="utf-8")
         self.assertNotIn("/api/manual/latest", script)
