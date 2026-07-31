@@ -22,14 +22,15 @@
   }
 
   function integratedInstruction(request) {
-    return `당신은 Personal Problem-Solving OS의 통합 프롬프트 설계기다.
+    return `당신은 Personal Problem-Solving OS의 통합 프롬프트 설계기이자 최종 편집기다.
 
-사용자의 요청을 한 번만 분석해 다음 두 논리 단계를 함께 수행한다.
+사용자의 요청을 한 번만 분석해 다음 세 논리 단계를 내부에서 순서대로 수행한다.
 
 1. 재사용 가능한 프롬프트 제작에 필요한 Goal Ledger를 작성한다.
 2. 그 Goal Ledger를 기준으로 Prompt Build Brief를 작성한다.
+3. 두 설계 결과를 바탕으로 실제 실행에 바로 쓸 최종 프롬프트를 작성한다.
 
-이 단계에서는 최종 프롬프트 본문을 작성하지 않는다. 설명이나 마크다운 코드블록 없이 JSON 객체 하나만 출력한다.
+설명이나 마크다운 코드블록 없이 아래 구조의 JSON 객체 하나만 출력한다.
 
 [Goal Ledger 규칙]
 1. 사용자가 궁극적으로 얻으려는 결과를 parent_goal에 쓴다.
@@ -51,6 +52,16 @@
 9. exclusions에는 목표 밖의 작업만 둔다.
 10. 같은 의미를 여러 필드에 반복하지 않는다.
 11. core_procedure를 “요청 파악 → 작업 수행 → 결과 제시” 같은 범용 절차로 끝내지 않는다.
+
+[최종 프롬프트 편집 규칙]
+1. final_prompt에는 다른 AI에 복사해 바로 실행할 프롬프트 본문만 쓴다.
+2. Goal Ledger와 Prompt Build Brief는 내부 설계 자료로만 사용하고, 그 이름·필드·라우팅·설계 계약·PSOS 생성 과정은 final_prompt에 노출하지 않는다.
+3. Brief의 필드를 순서대로 기계적으로 펼치지 말고 역할, 입력, 핵심 절차, 예외·제한, 출력 형식처럼 실제 실행에 필요한 구조로 다시 편집한다.
+4. 같은 의미의 규칙은 합치고, 범용 운영 원칙은 도메인 작업의 판단이나 결과를 실제로 바꿀 때만 남긴다.
+5. core_procedure의 도메인 판단 단계, fixed_constraints, completion_condition과 필요한 output_contract는 빠뜨리지 않는다.
+6. 최종 프롬프트가 다시 “프롬프트를 만들어라”고 요구하지 않게 하고 사용자가 원한 실제 작업을 직접 수행하게 한다.
+7. 길이를 늘리는 것보다 실행의 명확성, 도메인 집중도, 중복 제거와 출력 일관성을 우선한다.
+8. final_prompt는 마크다운 제목과 목록을 사용할 수 있지만 JSON 안의 하나의 문자열 값으로 반환한다.
 
 [출력 JSON 구조]
 {
@@ -77,7 +88,8 @@
     "defaults_and_exceptions": [],
     "exclusions": [],
     "upstream_context": []
-  }
+  },
+  "final_prompt": "다른 AI에 그대로 복사해 실행할 최종 프롬프트 본문"
 }
 
 [사용자 요청]
@@ -157,7 +169,7 @@ ${request.trim()}`;
     status.className = "renderer-proof";
     status.setAttribute("role", "status");
     status.setAttribute("aria-live", "polite");
-    status.textContent = "Codex 0회 · 로컬 검증 및 조립 완료";
+    status.textContent = "AI 최종 편집 결과 검증 완료 · Codex 0회";
 
     const copyButton = document.createElement("button");
     copyButton.type = "button";
@@ -185,9 +197,9 @@ ${request.trim()}`;
     guide.className = "integrated-flow-guide";
     [
       ["1", "원래 요청 적기"],
-      ["2", "다듬기 지시문 복사"],
+      ["2", "설계·최종 편집 지시문 복사"],
       ["3", "ChatGPT 답변 붙이기"],
-      ["4", "최종 프롬프트 조립"],
+      ["4", "최종 프롬프트 꺼내기"],
     ].forEach(([number, text]) => {
       const item = document.createElement("div");
       item.className = "integrated-flow-item";
@@ -217,15 +229,15 @@ ${request.trim()}`;
     const heading = document.createElement("div");
     heading.className = "manual-step-heading";
     heading.innerHTML = `
-      <span class="step-label">02 · 요청 다듬기</span>
-      <h3>요청을 다듬는 통합 지시문</h3>
-      <p>이 지시문이 네 요청을 Goal Ledger와 도메인별 작업 절차로 바꿉니다. 아래 내용을 ChatGPT 새 채팅에 한 번 보내세요.</p>`;
+      <span class="step-label">02 · 설계와 최종 편집</span>
+      <h3>통합 AI 지시문</h3>
+      <p>ChatGPT가 Goal Ledger와 Brief를 만든 뒤, 메타 정보와 중복을 걷어내고 실제 실행용 final_prompt까지 직접 편집합니다.</p>`;
 
     const preview = document.createElement("textarea");
     preview.id = "integrated-instruction-preview";
     preview.rows = 10;
     preview.readOnly = true;
-    preview.setAttribute("aria-label", "요청을 다듬는 통합 지시문 미리보기");
+    preview.setAttribute("aria-label", "설계와 최종 편집을 한 번에 수행하는 통합 지시문 미리보기");
 
     const actionRow = document.createElement("div");
     actionRow.className = "request-actions manual-step-actions";
@@ -233,7 +245,7 @@ ${request.trim()}`;
     status.className = "renderer-proof instruction-copy-status";
     status.setAttribute("role", "status");
     status.setAttribute("aria-live", "polite");
-    status.textContent = "원래 요청을 적으면 지시문이 자동으로 완성됩니다.";
+    status.textContent = "원래 요청을 적으면 통합 지시문이 자동으로 완성됩니다.";
 
     const buttonBox = document.createElement("div");
     buttonBox.className = "approval-actions";
@@ -242,7 +254,7 @@ ${request.trim()}`;
     copyButton.id = "copy-integrated-instruction";
     copyButton.type = "button";
     copyButton.className = "secondary-button";
-    copyButton.textContent = "2. 다듬기 지시문 복사";
+    copyButton.textContent = "2. 통합 지시문 복사";
 
     const openButton = document.createElement("button");
     openButton.id = "copy-and-open-chatgpt";
@@ -272,25 +284,25 @@ ${request.trim()}`;
     const request = requestField.value.trim();
     instructionUi.preview.value = request ? integratedInstruction(request) : "";
     if (!request) {
-      instructionUi.preview.placeholder = "1단계에 원래 요청을 적으면 여기에서 다듬기 지시문을 확인할 수 있습니다.";
-      instructionUi.status.textContent = "원래 요청을 적으면 지시문이 자동으로 완성됩니다.";
+      instructionUi.preview.placeholder = "1단계에 원래 요청을 적으면 설계와 최종 편집 지시문이 여기에 나타납니다.";
+      instructionUi.status.textContent = "원래 요청을 적으면 통합 지시문이 자동으로 완성됩니다.";
     } else {
-      instructionUi.status.textContent = "이 지시문 안에서 목표·조건·도메인별 작업 절차를 한 번에 설계합니다.";
+      instructionUi.status.textContent = "한 번의 ChatGPT 응답에서 설계와 최종 프롬프트 편집까지 수행합니다.";
     }
   }
 
   function configureIntegratedUi() {
     const option = integratedMode.closest(".mode-option");
     if (option) {
-      option.querySelector("strong").textContent = "통합 AI 1회 · Codex 없음";
+      option.querySelector("strong").textContent = "통합 AI 1회 · 최종 편집 포함";
       option.querySelector("small").textContent =
-        "요청을 한 번 다듬고 JSON을 붙여 최종 프롬프트를 조립합니다.";
+        "ChatGPT가 설계와 최종 프롬프트 편집을 한 번에 수행합니다. Codex는 쓰지 않습니다.";
     }
 
     if (intro) {
-      intro.querySelector("strong").textContent = "요청을 다듬는 과정은 2단계에 있습니다.";
+      intro.querySelector("strong").textContent = "이번 통합안은 AI가 마지막 편집까지 합니다.";
       intro.querySelector("p").textContent =
-        "원래 요청을 적으면 다듬기 지시문이 자동으로 만들어집니다. 그 지시문을 ChatGPT에 한 번 보내고 답변을 붙이면 최종 프롬프트가 완성됩니다.";
+        "Goal Ledger와 Brief를 만든 뒤 필드를 그대로 붙이지 않고, 메타 정보와 중복을 제거한 실제 실행용 final_prompt를 같은 응답에서 작성합니다.";
     }
 
     const requestLabel = closestLabel(requestField);
@@ -308,12 +320,12 @@ ${request.trim()}`;
       if (!help) {
         help = document.createElement("small");
         help.className = "integrated-field-help";
-        help.textContent = "2단계 지시문을 ChatGPT 새 채팅에 보내고, 받은 답변 전체를 이 칸에 그대로 붙여 넣으세요.";
         designLabel.insertBefore(help, designField);
       }
+      help.textContent = "응답에는 goal_ledger, prompt_build_brief, final_prompt가 함께 들어 있어야 합니다. 받은 JSON 전체를 그대로 붙이세요.";
     }
     designField.rows = 12;
-    designField.placeholder = "ChatGPT가 반환한 JSON 전체를 여기에 붙여 넣으세요. ```json 코드블록 형태도 그대로 붙여 넣어도 됩니다.";
+    designField.placeholder = "ChatGPT가 반환한 JSON 전체를 붙여 넣으세요. final_prompt까지 포함되어 있어야 합니다. ```json 코드블록도 허용됩니다.";
     designField.removeAttribute("required");
 
     [constraintsField, completionField].forEach((field) => {
@@ -323,13 +335,13 @@ ${request.trim()}`;
     });
     if (optional) optional.hidden = true;
 
-    if (proof) proof.textContent = "붙여 넣은 JSON을 검증한 뒤 로컬에서 조립합니다.";
-    submitButton.querySelector("span:first-child").textContent = "4. 최종 프롬프트 조립";
+    if (proof) proof.textContent = "붙여 넣은 설계 구조를 검증하고 AI가 작성한 final_prompt만 꺼냅니다.";
+    submitButton.querySelector("span:first-child").textContent = "4. 검증하고 최종 프롬프트 꺼내기";
     form.querySelector(".safety-note").textContent =
-      "서버는 Codex나 API를 호출하지 않습니다. ChatGPT가 다듬은 Goal Ledger와 Brief를 검사하고 로컬에서 최종 문서만 조립합니다.";
+      "서버는 Codex나 API를 호출하지 않고 문장을 다시 조립하지도 않습니다. 붙여 넣은 JSON을 검사한 뒤 ChatGPT가 최종 편집한 final_prompt를 그대로 사용합니다.";
 
     const footer = document.querySelector("footer span:last-child");
-    if (footer) footer.textContent = "통합 비교: ChatGPT 왕복 1회 · Codex 호출 없음";
+    if (footer) footer.textContent = "통합 비교: ChatGPT 설계+최종 편집 1회 · Codex 호출 없음";
     removeCodexApplyButtons();
     refreshInstructionPreview();
   }
@@ -337,7 +349,7 @@ ${request.trim()}`;
   function configureModeNote() {
     const selected = document.querySelector('input[name="engine-mode"]:checked')?.value;
     if (selected === "integrated") {
-      sectionNote.textContent = "원래 요청 → 다듬기 지시문 → ChatGPT JSON → 최종 프롬프트 순서로 진행합니다.";
+      sectionNote.textContent = "원래 요청 → ChatGPT 설계·최종 편집 1회 → JSON 검증 → final_prompt 추출 순서입니다.";
     } else if (selected === "manual") {
       sectionNote.textContent = "예전 4단계 결과를 만든 뒤 두 최종 결과를 함께 복사합니다.";
     }
@@ -348,7 +360,7 @@ ${request.trim()}`;
     await copyValue(
       instructionUi.preview.value,
       instructionUi.status,
-      "다듬기 지시문을 복사했습니다. ChatGPT에 붙여넣고 답변을 3단계에 붙이세요.",
+      "통합 지시문을 복사했습니다. ChatGPT에 붙여넣고 답변 전체를 3단계에 붙이세요.",
       instructionUi.copyButton,
     );
   });
@@ -384,7 +396,7 @@ ${request.trim()}`;
   requestField.addEventListener("input", refreshInstructionPreview);
   designField.addEventListener("input", () => {
     if (designField.value.trim()) {
-      if (proof) proof.textContent = "답변이 붙었습니다. 이제 4단계 조립 버튼을 누르세요.";
+      if (proof) proof.textContent = "답변이 붙었습니다. 이제 구조를 검증하고 final_prompt를 꺼내세요.";
     }
   });
 
@@ -410,7 +422,7 @@ ${request.trim()}`;
       submitButton.disabled = true;
       setResultState("running");
       elements.runningTitle.textContent = "통합 JSON을 검증하고 있습니다.";
-      elements.runningDetail.textContent = "Codex 호출 없이 Goal Ledger와 Brief의 조건을 확인한 뒤 로컬에서 조립합니다.";
+      elements.runningDetail.textContent = "Codex 호출이나 로컬 재조립 없이 설계 조건과 final_prompt를 확인합니다.";
       try {
         const data = await requestJson("/api/design-prompt", {
           method: "POST",
