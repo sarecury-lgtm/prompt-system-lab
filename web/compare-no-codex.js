@@ -83,14 +83,14 @@ ${request.trim()}`;
 
   async function copyValue(text, status, success) {
     if (!String(text || "").trim()) {
-      status.textContent = "요청을 먼저 입력해 주세요.";
+      status.textContent = "원래 요청을 먼저 입력해 주세요.";
       return;
     }
     try {
       await navigator.clipboard.writeText(text);
       status.textContent = success;
     } catch (_error) {
-      status.textContent = "자동 복사에 실패했습니다. 직접 선택해 복사해 주세요.";
+      status.textContent = "자동 복사에 실패했습니다. 미리보기 내용을 직접 선택해 복사해 주세요.";
     }
   }
 
@@ -125,16 +125,88 @@ ${request.trim()}`;
     completed.appendChild(actions);
   }
 
+  function buildFlowGuide() {
+    const existing = document.querySelector("#integrated-flow-guide");
+    if (existing) return existing;
+
+    const guide = document.createElement("div");
+    guide.id = "integrated-flow-guide";
+    guide.className = "integrated-flow-guide";
+    [
+      ["1", "원래 요청 적기"],
+      ["2", "다듬기 지시문 복사"],
+      ["3", "ChatGPT 답변 붙이기"],
+      ["4", "최종 프롬프트 조립"],
+    ].forEach(([number, text]) => {
+      const item = document.createElement("div");
+      item.className = "integrated-flow-item";
+      item.innerHTML = `<strong>${number}</strong><span>${text}</span>`;
+      guide.appendChild(item);
+    });
+    intro?.after(guide);
+    return guide;
+  }
+
+  function buildInstructionPreview() {
+    const existing = document.querySelector("#integrated-instruction-step");
+    if (existing) {
+      return {
+        section: existing,
+        preview: existing.querySelector("#integrated-instruction-preview"),
+        copyButton: existing.querySelector("#copy-integrated-instruction"),
+        status: existing.querySelector(".instruction-copy-status"),
+      };
+    }
+
+    const section = document.createElement("section");
+    section.id = "integrated-instruction-step";
+    section.className = "integrated-instruction-step";
+
+    const heading = document.createElement("div");
+    heading.className = "manual-step-heading";
+    heading.innerHTML = `
+      <span class="step-label">02 · 요청 다듬기</span>
+      <h3>요청을 다듬는 통합 지시문</h3>
+      <p>이 지시문이 네 요청을 Goal Ledger와 도메인별 작업 절차로 바꿉니다. 아래 내용을 ChatGPT 새 채팅에 한 번 보내세요.</p>`;
+
+    const preview = document.createElement("textarea");
+    preview.id = "integrated-instruction-preview";
+    preview.rows = 10;
+    preview.readOnly = true;
+    preview.setAttribute("aria-label", "요청을 다듬는 통합 지시문 미리보기");
+
+    const actionRow = document.createElement("div");
+    actionRow.className = "request-actions manual-step-actions";
+    const status = document.createElement("span");
+    status.className = "renderer-proof instruction-copy-status";
+    status.textContent = "원래 요청을 적으면 지시문이 자동으로 완성됩니다.";
+    const copyButton = document.createElement("button");
+    copyButton.id = "copy-integrated-instruction";
+    copyButton.type = "button";
+    copyButton.className = "secondary-button";
+    copyButton.textContent = "2. 다듬기 지시문 복사";
+    actionRow.append(status, copyButton);
+
+    section.append(heading, preview, actionRow);
+    const requestLabel = closestLabel(requestField);
+    requestLabel?.after(section);
+    return { section, preview, copyButton, status };
+  }
+
   const actions = form.querySelector(".renderer-actions");
   const proof = actions?.querySelector(".renderer-proof");
-  let copyInstructionButton = document.querySelector("#copy-integrated-instruction");
-  if (!copyInstructionButton && actions) {
-    copyInstructionButton = document.createElement("button");
-    copyInstructionButton.id = "copy-integrated-instruction";
-    copyInstructionButton.type = "button";
-    copyInstructionButton.className = "secondary-button";
-    copyInstructionButton.textContent = "1. 통합 지시문 복사";
-    actions.insertBefore(copyInstructionButton, submitButton);
+  const instructionUi = buildInstructionPreview();
+  buildFlowGuide();
+
+  function refreshInstructionPreview() {
+    const request = requestField.value.trim();
+    instructionUi.preview.value = request ? integratedInstruction(request) : "";
+    if (!request) {
+      instructionUi.preview.placeholder = "1단계에 원래 요청을 적으면 여기에서 다듬기 지시문을 확인할 수 있습니다.";
+      instructionUi.status.textContent = "원래 요청을 적으면 지시문이 자동으로 완성됩니다.";
+    } else {
+      instructionUi.status.textContent = "이 지시문 안에서 목표·조건·도메인별 작업 절차를 한 번에 설계합니다.";
+    }
   }
 
   function configureIntegratedUi() {
@@ -142,26 +214,36 @@ ${request.trim()}`;
     if (option) {
       option.querySelector("strong").textContent = "통합 AI 1회 · Codex 없음";
       option.querySelector("small").textContent =
-        "지시문을 ChatGPT에 한 번 보내고 JSON을 한 번 붙여 최종 조립합니다.";
+        "요청을 한 번 다듬고 JSON을 붙여 최종 프롬프트를 조립합니다.";
     }
 
     if (intro) {
-      intro.querySelector("strong").textContent = "AI 왕복 1회, Codex 호출 0회";
+      intro.querySelector("strong").textContent = "요청을 다듬는 과정은 2단계에 있습니다.";
       intro.querySelector("p").textContent =
-        "아래 지시문을 복사해 ChatGPT에 한 번 보내고, 받은 JSON을 붙이면 서버가 검증한 뒤 최종 프롬프트를 로컬에서 조립합니다.";
+        "원래 요청을 적으면 다듬기 지시문이 자동으로 만들어집니다. 그 지시문을 ChatGPT에 한 번 보내고 답변을 붙이면 최종 프롬프트가 완성됩니다.";
     }
 
     const requestLabel = closestLabel(requestField);
-    if (requestLabel) requestLabel.querySelector("span").textContent = "어떤 프롬프트가 필요한가요?";
+    if (requestLabel) requestLabel.querySelector("span").textContent = "1. 원래 요청";
     requestField.rows = 6;
+    requestField.placeholder =
+      "예: 첨부한 여러 시간대 차트를 보고 지금 진입할지, 손절과 분할익절을 어떻게 할지 판단하는 프롬프트를 만들어 줘.";
 
     const designLabel = closestLabel(designField);
     if (designLabel) {
       designLabel.hidden = false;
-      designLabel.querySelector("span").textContent = "ChatGPT가 반환한 통합 JSON";
+      designLabel.classList.add("integrated-json-label");
+      designLabel.querySelector("span").textContent = "3. ChatGPT 답변 전체 붙여넣기";
+      let help = designLabel.querySelector(".integrated-field-help");
+      if (!help) {
+        help = document.createElement("small");
+        help.className = "integrated-field-help";
+        help.textContent = "2단계 지시문을 ChatGPT 새 채팅에 보내고, 받은 답변 전체를 이 칸에 그대로 붙여 넣으세요.";
+        designLabel.insertBefore(help, designField);
+      }
     }
     designField.rows = 12;
-    designField.placeholder = "복사한 통합 지시문을 ChatGPT에 보내고, 반환된 JSON 전체를 여기에 붙여 넣으세요.";
+    designField.placeholder = "ChatGPT가 반환한 JSON 전체를 여기에 붙여 넣으세요. ```json 코드블록 형태도 그대로 붙여 넣어도 됩니다.";
     designField.removeAttribute("required");
 
     [constraintsField, completionField].forEach((field) => {
@@ -171,32 +253,40 @@ ${request.trim()}`;
     });
     if (optional) optional.hidden = true;
 
-    if (proof) proof.textContent = "외부 AI 왕복 1회 · Codex 0회";
-    submitButton.querySelector("span:first-child").textContent = "2. 붙여넣은 JSON으로 조립";
+    if (proof) proof.textContent = "붙여 넣은 JSON을 검증한 뒤 로컬에서 조립합니다.";
+    submitButton.querySelector("span:first-child").textContent = "4. 최종 프롬프트 조립";
     form.querySelector(".safety-note").textContent =
-      "이 모드는 Codex나 API를 호출하지 않습니다. 붙여 넣은 JSON의 구조와 조건 일치만 검사하고 로컬에서 조립합니다.";
+      "서버는 Codex나 API를 호출하지 않습니다. ChatGPT가 다듬은 Goal Ledger와 Brief를 검사하고 로컬에서 최종 문서만 조립합니다.";
 
     const footer = document.querySelector("footer span:last-child");
-    if (footer) footer.textContent = "통합 비교: 외부 AI 왕복 1회 · Codex 호출 없음";
+    if (footer) footer.textContent = "통합 비교: ChatGPT 왕복 1회 · Codex 호출 없음";
     removeCodexApplyButtons();
+    refreshInstructionPreview();
   }
 
   function configureModeNote() {
     const selected = document.querySelector('input[name="engine-mode"]:checked')?.value;
     if (selected === "integrated") {
-      sectionNote.textContent = "지시문을 한 번 복사하고 JSON을 한 번 붙여 최종 프롬프트를 조립합니다.";
+      sectionNote.textContent = "원래 요청 → 다듬기 지시문 → ChatGPT JSON → 최종 프롬프트 순서로 진행합니다.";
     } else if (selected === "manual") {
       sectionNote.textContent = "예전 4단계 결과를 만든 뒤 두 최종 결과를 함께 복사합니다.";
     }
     removeCodexApplyButtons();
   }
 
-  copyInstructionButton?.addEventListener("click", () => {
+  instructionUi.copyButton?.addEventListener("click", () => {
     copyValue(
-      integratedInstruction(requestField.value),
-      proof,
-      "통합 지시문을 복사했습니다. ChatGPT에 보내고 결과 JSON을 아래 칸에 붙이세요.",
+      instructionUi.preview.value,
+      instructionUi.status,
+      "복사했습니다. ChatGPT 새 채팅에 붙여넣고, 받은 답변 전체를 3단계에 붙이세요.",
     );
+  });
+
+  requestField.addEventListener("input", refreshInstructionPreview);
+  designField.addEventListener("input", () => {
+    if (designField.value.trim()) {
+      if (proof) proof.textContent = "답변이 붙었습니다. 이제 4단계 조립 버튼을 누르세요.";
+    }
   });
 
   form.addEventListener(
@@ -207,11 +297,12 @@ ${request.trim()}`;
       const request = requestField.value.trim();
       const integratedDesign = designField.value.trim();
       if (!request) {
+        if (proof) proof.textContent = "1단계에 원래 요청을 먼저 입력해 주세요.";
         requestField.focus();
         return;
       }
       if (!integratedDesign) {
-        proof.textContent = "ChatGPT가 반환한 통합 JSON을 먼저 붙여 넣어 주세요.";
+        if (proof) proof.textContent = "2단계 지시문을 ChatGPT에 보내고, 받은 답변을 3단계에 붙여 넣어 주세요.";
         designField.focus();
         return;
       }

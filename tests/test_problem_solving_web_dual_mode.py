@@ -49,15 +49,33 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertEqual("PROMPT · NO CODEX", result["route"])
         self.assertIn("사용자 취향에 맞는 상품 하나", result["result_markdown"])
 
-    def test_comparison_overlay_uses_one_external_ai_round_trip_without_codex(self):
+    def test_comparison_overlay_shows_the_refinement_process(self):
         script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
 
         self.assertIn("통합 AI 1회 · Codex 없음", script)
-        self.assertIn("1. 통합 지시문 복사", script)
-        self.assertIn("2. 붙여넣은 JSON으로 조립", script)
+        self.assertIn("1. 원래 요청", script)
+        self.assertIn("요청을 다듬는 통합 지시문", script)
+        self.assertIn("3. ChatGPT 답변 전체 붙여넣기", script)
+        self.assertIn("4. 최종 프롬프트 조립", script)
+        self.assertIn("integrated-instruction-preview", script)
+        self.assertIn("Goal Ledger와 도메인별 작업 절차로 바꿉니다", script)
         self.assertIn("integrated_design: integratedDesign", script)
         self.assertIn("Codex 0회 · 로컬 검증 및 조립 완료", script)
         self.assertNotIn("CodexEngine", script)
+
+    def test_refinement_preview_updates_from_original_request(self):
+        script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
+
+        self.assertIn('requestField.addEventListener("input", refreshInstructionPreview)', script)
+        self.assertIn("instructionUi.preview.value = request ? integratedInstruction(request)", script)
+        self.assertIn("ChatGPT 새 채팅에 붙여넣고", script)
+
+    def test_integrated_json_field_uses_full_width(self):
+        stylesheet = (ROOT / "web" / "renderer.css").read_text(encoding="utf-8")
+
+        self.assertIn(".integrated-json-label", stylesheet)
+        self.assertIn("grid-column: 1 / -1", stylesheet)
+        self.assertIn(".integrated-flow-guide", stylesheet)
 
     def test_manual_four_stage_mode_is_preserved(self):
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
