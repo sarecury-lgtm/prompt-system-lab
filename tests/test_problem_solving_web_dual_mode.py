@@ -11,14 +11,14 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 MODULE_PATH = SCRIPTS_DIR / "problem_solving_web.py"
-SPEC = importlib.util.spec_from_file_location("problem_solving_web_dual", MODULE_PATH)
+SPEC = importlib.util.spec_from_file_location("problem_solving_web_modes", MODULE_PATH)
 WEB = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 sys.modules[SPEC.name] = WEB
 SPEC.loader.exec_module(WEB)
 
 
-class ProblemSolvingWebDualModeTests(unittest.TestCase):
+class ProblemSolvingWebModeTests(unittest.TestCase):
     def payload(self):
         return {
             "goal": "사용자 취향에 맞는 상품 하나를 추천한다.",
@@ -38,7 +38,7 @@ class ProblemSolvingWebDualModeTests(unittest.TestCase):
             "upstream_context": [],
         }
 
-    def test_no_codex_renderer_returns_final_prompt(self):
+    def test_existing_local_renderer_still_works_without_codex(self):
         with mock.patch.object(
             WEB.problem_os,
             "CodexEngine",
@@ -47,72 +47,19 @@ class ProblemSolvingWebDualModeTests(unittest.TestCase):
             result = WEB.render_prompt_request(self.payload())
 
         self.assertEqual("PROMPT · NO CODEX", result["route"])
-        self.assertEqual("completed", result["execution_status"])
         self.assertIn("사용자 취향에 맞는 상품 하나", result["result_markdown"])
-        self.assertIn("예산은 3만원 이하다.", result["result_markdown"])
-        self.assertIn("deterministic_renderer", result["evidence"][0]["source"])
-        self.assertIsNone(result["run_id"])
 
-    def test_no_codex_renderer_rejects_missing_required_structure(self):
-        payload = self.payload()
-        payload["core_procedure"] = []
-        with self.assertRaisesRegex(ValueError, "핵심 작업 절차"):
-            WEB.render_prompt_request(payload)
-
-        payload = self.payload()
-        payload["completion_condition"] = ""
-        with self.assertRaisesRegex(ValueError, "완료 조건"):
-            WEB.render_prompt_request(payload)
-
-    def test_no_codex_renderer_accepts_multiline_fields(self):
-        payload = self.payload()
-        payload["core_procedure"] = "후보를 비교한다.\n하나를 고른다."
-        payload["fixed_constraints"] = "예산을 지킨다.\n하나만 추천한다."
-        result = WEB.render_prompt_request(payload)
-        self.assertIn("후보를 비교한다.", result["result_markdown"])
-        self.assertIn("하나만 추천한다.", result["result_markdown"])
-
-    def test_static_ui_exposes_codex_and_fast_template_modes(self):
-        html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
+    def test_browser_replaces_fast_template_with_integrated_one_call(self):
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
 
-        self.assertIn('value="codex"', html)
-        self.assertIn('value="deterministic"', html)
-        self.assertIn("/api/render-prompt", script)
-        self.assertIn("/renderer.js", WEB.STATIC_FILES)
-        self.assertIn("/renderer.css", WEB.STATIC_FILES)
+        self.assertIn("통합 AI 1회", script)
+        self.assertIn("/api/design-prompt", script)
+        self.assertIn("Goal Ledger와 Prompt Build Brief", script)
+        self.assertIn("Codex 1회 · 로컬 검증 및 조립", script)
+        self.assertNotIn("DEFAULT_CORE_PROCEDURE", script)
+        self.assertNotIn("빠른 템플릿 생성", script)
 
-    def test_fast_template_ui_uses_one_primary_input_and_honest_name(self):
-        script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
-
-        self.assertIn("빠른 템플릿 생성", script)
-        self.assertIn("AI 설계 없이 공통 틀", script)
-        self.assertIn("DEFAULT_CORE_PROCEDURE", script)
-        self.assertIn("DEFAULT_COMPLETION", script)
-        self.assertIn('rendererElements.procedure.removeAttribute("required")', script)
-        self.assertIn('rendererElements.completion.removeAttribute("required")', script)
-        self.assertIn("세부 설정 · 필요할 때만", script)
-        self.assertIn("goal: normalizedGoal", script)
-
-    def test_fast_template_strips_nested_prompt_creation_intent(self):
-        script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
-
-        self.assertIn("function normalizePromptGoal", script)
-        self.assertIn("프롬프트(?:를|을)?", script)
-        self.assertIn("프롬프트를 다시 만들라고 요구하지 않는다.", script)
-        self.assertIn("normalizePromptGoal(request)", script)
-
-    def test_fast_template_result_can_copy_or_apply_once(self):
-        script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
-
-        self.assertIn('copyButton.textContent = "복사"', script)
-        self.assertIn("navigator.clipboard.writeText", script)
-        self.assertIn('applyButton.textContent = "다음 Codex 요청에 1회 적용"', script)
-        self.assertIn("psos-applied-fast-template", script)
-        self.assertIn("applyStoredPromptToNextCodexRequest", script)
-        self.assertIn("window.localStorage.removeItem(appliedPromptStorageKey)", script)
-
-    def test_manual_psos_four_stage_mode_is_restored(self):
+    def test_manual_four_stage_mode_is_preserved(self):
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
 
         self.assertIn('value="manual"', script)
@@ -121,20 +68,15 @@ class ProblemSolvingWebDualModeTests(unittest.TestCase):
         self.assertIn("2단계 Brief 컴파일러 복사", script)
         self.assertIn("3단계 최종 실행기 복사", script)
         self.assertIn("수동 PSOS 최종 프롬프트", script)
-        self.assertIn("function routerPrompt", script)
-        self.assertIn("function briefCompilerPrompt", script)
-        self.assertIn("function finalExecutorPrompt", script)
 
-    def test_manual_mode_preserves_progress_and_compares_results(self):
+    def test_two_final_prompts_can_be_copied_together(self):
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
 
-        self.assertIn("psos-manual-workflow-state", script)
-        self.assertIn("psos-latest-fast-template", script)
-        self.assertIn("빠른 템플릿 vs 수동 PSOS", script)
-        self.assertIn("manual-fast-result", script)
-        self.assertIn("manual-compare-final", script)
-        self.assertIn("saveManualState", script)
-        self.assertIn("다음 Codex 요청에 1회 적용", script)
+        self.assertIn("두 결과 같이 복사", script)
+        self.assertIn("combinedComparisonText", script)
+        self.assertIn("# 통합 AI 1회 결과", script)
+        self.assertIn("# 수동 PSOS 4단계 결과", script)
+        self.assertIn("두 결과를 한 번에 복사했습니다.", script)
 
 
 if __name__ == "__main__":
