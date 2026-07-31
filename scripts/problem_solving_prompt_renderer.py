@@ -19,6 +19,12 @@ import problem_solving_prompt_build_brief as BRIEF  # noqa: E402
 
 
 DEFAULT_POLICY_PATH = ROOT / "configs" / "psos-goal-aware-assistant-policy.md"
+CORE_PROCEDURE_LIMIT = 12
+
+# Detailed domain procedures can legitimately require more than eight distinct
+# steps. Keep the shared validator strict, but raise only this semantic field's
+# cap before every renderer and comparison flow validates a brief.
+BRIEF.LIST_LIMITS["core_procedure"] = (0, CORE_PROCEDURE_LIMIT)
 
 
 class PromptRendererError(ValueError):
