@@ -70,6 +70,17 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertIn("instructionUi.preview.value = request ? integratedInstruction(request)", script)
         self.assertIn("ChatGPT 새 채팅에 붙여넣고", script)
 
+    def test_copy_feedback_and_chatgpt_shortcut_are_visible(self):
+        script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
+
+        self.assertIn("복사됨 ✓", script)
+        self.assertIn("복사하고 ChatGPT 새 채팅 열기", script)
+        self.assertIn('const chatGptNewChatUrl = "https://chatgpt.com/"', script)
+        self.assertIn("window.open(chatGptNewChatUrl", script)
+        self.assertIn("Ctrl+V로 붙여넣으세요", script)
+        self.assertIn('document.addEventListener("click"', script)
+        self.assertIn('status.setAttribute("aria-live", "polite")', script)
+
     def test_integrated_json_field_uses_full_width(self):
         stylesheet = (ROOT / "web" / "renderer.css").read_text(encoding="utf-8")
 
