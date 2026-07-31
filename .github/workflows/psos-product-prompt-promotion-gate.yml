@@ -1,0 +1,31 @@
+name: PSOS product prompt promotion gate
+
+on:
+  pull_request:
+    paths:
+      - "scripts/problem_solving_product_prompt_promotion_gate.py"
+      - "tests/test_problem_solving_product_prompt_promotion_gate.py"
+      - "tests/fixtures/product-evidence-hard-cases.json"
+      - "reviews/product-evidence-hard-2026-08-01/**"
+      - ".github/workflows/psos-product-prompt-promotion-gate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/problem_solving_product_prompt_promotion_gate.py"
+      - "tests/test_problem_solving_product_prompt_promotion_gate.py"
+      - "tests/fixtures/product-evidence-hard-cases.json"
+      - "reviews/product-evidence-hard-2026-08-01/**"
+      - ".github/workflows/psos-product-prompt-promotion-gate.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run promotion gate tests
+        run: python -m unittest tests.test_problem_solving_product_prompt_promotion_gate
+      - name: Verify recorded decision
+        run: python -B scripts/problem_solving_product_prompt_promotion_gate.py
