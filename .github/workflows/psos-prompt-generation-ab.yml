@@ -1,0 +1,43 @@
+name: PSOS prompt generation A/B
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/problem_solving_prompt_generation_ab.py"
+      - "schemas/problem-solving-prompt-applied-answer.schema.json"
+      - "schemas/problem-solving-prompt-applied-assessment.schema.json"
+      - "tests/fixtures/prompt-generation-applied-cases.json"
+      - "tests/test_problem_solving_prompt_generation_ab.py"
+      - "docs/psos-prompt-generation-ab.md"
+      - ".github/workflows/psos-prompt-generation-ab.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile comparison runner
+        run: python -m py_compile scripts/problem_solving_prompt_generation_ab.py
+      - name: Validate schemas and cases
+        run: |
+          python -m json.tool schemas/problem-solving-prompt-applied-answer.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-prompt-applied-assessment.schema.json > /dev/null
+          python -m json.tool tests/fixtures/prompt-generation-applied-cases.json > /dev/null
+      - name: Run applied comparison tests
+        run: python -B -m unittest tests.test_problem_solving_prompt_generation_ab
+      - name: Run PROMPT build regressions
+        run: >-
+          python -B -m unittest
+          tests.test_problem_solving_prompt_build_brief
+          tests.test_problem_solving_prompt_build_brief_cross_domain
+          tests.test_problem_solving_prompt_build_brief_quality_integration
+          tests.test_problem_solving_os_quality_runtime
+      - name: Run canonical PSOS regression
+        run: python -B -m unittest tests.test_problem_solving_os
