@@ -12,7 +12,7 @@
     "conclusion"
   ],
   "properties": {
-    "version": {"const": 1},
+    "version": {"type": "integer", "const": 1},
     "ranking": {
       "type": "array",
       "minItems": 2,
