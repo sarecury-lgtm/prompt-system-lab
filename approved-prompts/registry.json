@@ -29,6 +29,35 @@
         "recorded_at": "2026-07-31",
         "summary": "동일한 세 차트 입력에서 current 후보가 자동 블라인드 평가 1위였고, 후속 인챗 비교에서도 가장 완전한 실행 계획으로 선택됐다."
       }
+    },
+    {
+      "id": "comment-natural-reply",
+      "status": "approved",
+      "prompt_path": "approved-prompts/comment-natural-reply.md",
+      "prompt_sha256": "f252e46879a892d61dec9c4d487aa8e5ab380f72821c5fa96760943719337014",
+      "match": {
+        "all_terms": [
+          "댓글"
+        ],
+        "any_terms": [
+          "답글",
+          "반박",
+          "논쟁",
+          "말투",
+          "상대 댓글"
+        ],
+        "none_terms": [
+          "코드 리뷰",
+          "깃허브",
+          "리뷰 코멘트"
+        ]
+      },
+      "evidence": {
+        "decision": "approved_baseline",
+        "source_kind": "user_feedback_plus_same_session_applied_comparison",
+        "recorded_at": "2026-08-01",
+        "summary": "사용자 피드백에서 확인된 과도한 스틸맨·문체 정제·분석 과잉을 수정했고, 동일 댓글 입력의 익명화 비교에서 사용자 말투 보존과 즉시 사용성이 더 높게 판정됐다."
+      }
     }
   ]
 }
