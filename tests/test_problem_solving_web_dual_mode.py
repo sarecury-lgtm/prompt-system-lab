@@ -68,7 +68,7 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
 
         self.assertIn('requestField.addEventListener("input", refreshInstructionPreview)', script)
         self.assertIn("instructionUi.preview.value = request ? integratedInstruction(request)", script)
-        self.assertIn("ChatGPT 새 채팅에 붙여넣고", script)
+        self.assertIn("ChatGPT에 붙여넣고 답변을 3단계에 붙이세요", script)
 
     def test_copy_feedback_and_chatgpt_shortcut_are_visible(self):
         script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
