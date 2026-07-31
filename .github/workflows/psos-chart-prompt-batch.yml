@@ -6,9 +6,11 @@ on:
     paths:
       - ".github/workflows/psos-chart-prompt-batch.yml"
       - "scripts/problem_solving_chart_prompt_batch.py"
+      - "scripts/problem_solving_chart_prompt_resume_judge.py"
       - "schemas/problem-solving-chart-prompt-assessment.schema.json"
       - "schemas/problem-solving-prompt-applied-answer.schema.json"
       - "tests/test_problem_solving_chart_prompt_batch.py"
+      - "tests/test_problem_solving_chart_prompt_resume_judge.py"
       - "tests/test_problem_solving_chart_prompt_schemas.py"
       - "docs/chart-prompt-batch-comparison.md"
       - "scripts/problem_solving_os.py"
@@ -22,8 +24,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Compile batch runner
-        run: python -m py_compile scripts/problem_solving_chart_prompt_batch.py
+      - name: Compile chart runners
+        run: |
+          python -m py_compile scripts/problem_solving_chart_prompt_batch.py
+          python -m py_compile scripts/problem_solving_chart_prompt_resume_judge.py
       - name: Validate schemas
         run: |
           python -m json.tool schemas/problem-solving-chart-prompt-assessment.schema.json > /dev/null
@@ -32,6 +36,7 @@ jobs:
         run: >-
           python -B -m unittest
           tests.test_problem_solving_chart_prompt_batch
+          tests.test_problem_solving_chart_prompt_resume_judge
           tests.test_problem_solving_chart_prompt_schemas
       - name: Run PROMPT experiment regressions
         run: >-
