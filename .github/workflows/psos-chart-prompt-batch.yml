@@ -1,0 +1,40 @@
+name: PSOS chart prompt batch comparison
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/psos-chart-prompt-batch.yml"
+      - "scripts/problem_solving_chart_prompt_batch.py"
+      - "schemas/problem-solving-chart-prompt-assessment.schema.json"
+      - "schemas/problem-solving-prompt-applied-answer.schema.json"
+      - "tests/test_problem_solving_chart_prompt_batch.py"
+      - "docs/chart-prompt-batch-comparison.md"
+      - "scripts/problem_solving_os.py"
+      - "problem-solving-project/model-policy.json"
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile batch runner
+        run: python -m py_compile scripts/problem_solving_chart_prompt_batch.py
+      - name: Validate schemas
+        run: |
+          python -m json.tool schemas/problem-solving-chart-prompt-assessment.schema.json > /dev/null
+          python -m json.tool schemas/problem-solving-prompt-applied-answer.schema.json > /dev/null
+      - name: Run chart batch tests
+        run: python -B -m unittest tests.test_problem_solving_chart_prompt_batch
+      - name: Run PROMPT experiment regressions
+        run: >-
+          python -B -m unittest
+          tests.test_problem_solving_prompt_generation_ab
+          tests.test_problem_solving_prompt_ablation_run
+          tests.test_prompt_generation_ablation
+          tests.test_problem_solving_prompt_build_brief
+      - name: Run canonical PSOS regressions
+        run: python -B -m unittest tests.test_problem_solving_os tests.test_problem_solving_web
