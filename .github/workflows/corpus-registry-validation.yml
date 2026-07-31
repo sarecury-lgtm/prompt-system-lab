@@ -4,14 +4,16 @@ on:
   pull_request:
     paths:
       - "corpus/registry.csv"
+      - "corpus/CORPUS_STATUS_POLICY.md"
       - "prompt-corpus/famous-prompts*.md"
       - "scripts/validate_corpus_registry.py"
       - ".github/workflows/corpus-registry-validation.yml"
   push:
     branches:
-      - "restore/corpus-evidence-layers"
+      - "main"
     paths:
       - "corpus/registry.csv"
+      - "corpus/CORPUS_STATUS_POLICY.md"
       - "prompt-corpus/famous-prompts*.md"
       - "scripts/validate_corpus_registry.py"
       - ".github/workflows/corpus-registry-validation.yml"
