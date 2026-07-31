@@ -49,26 +49,28 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertEqual("PROMPT · NO CODEX", result["route"])
         self.assertIn("사용자 취향에 맞는 상품 하나", result["result_markdown"])
 
-    def test_comparison_overlay_shows_the_refinement_process(self):
+    def test_comparison_overlay_shows_integrated_final_editing_process(self):
         script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
 
-        self.assertIn("통합 AI 1회 · Codex 없음", script)
+        self.assertIn("통합 AI 1회 · 최종 편집 포함", script)
         self.assertIn("1. 원래 요청", script)
-        self.assertIn("요청을 다듬는 통합 지시문", script)
+        self.assertIn("설계와 최종 작성을 한 번에 하는 지시문", script)
         self.assertIn("3. ChatGPT 답변 전체 붙여넣기", script)
-        self.assertIn("4. 최종 프롬프트 조립", script)
+        self.assertIn("4. 최종 프롬프트 추출", script)
         self.assertIn("integrated-instruction-preview", script)
-        self.assertIn("Goal Ledger와 도메인별 작업 절차로 바꿉니다", script)
+        self.assertIn("중복과 메타 정보를 버린 최종 프롬프트까지 직접 작성", script)
         self.assertIn("integrated_design: integratedDesign", script)
-        self.assertIn("Codex 0회 · 로컬 검증 및 조립 완료", script)
+        self.assertIn("AI 작성 최종 프롬프트 검증·추출 완료", script)
+        self.assertIn('"final_prompt"', script)
         self.assertNotIn("CodexEngine", script)
 
-    def test_refinement_preview_updates_from_original_request(self):
+    def test_integrated_preview_updates_from_original_request(self):
         script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
 
         self.assertIn('requestField.addEventListener("input", refreshInstructionPreview)', script)
         self.assertIn("instructionUi.preview.value = request ? integratedInstruction(request)", script)
-        self.assertIn("ChatGPT에 붙여넣고 답변을 3단계에 붙이세요", script)
+        self.assertIn("통합 제작 지시문을 복사했습니다", script)
+        self.assertIn("final_prompt는 복사해 바로 실행할 완성된 프롬프트", script)
 
     def test_copy_feedback_and_chatgpt_shortcut_are_visible(self):
         script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
@@ -111,6 +113,7 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         source = (ROOT / "scripts" / "problem_solving_compare_web.py").read_text(encoding="utf-8")
         self.assertIn("compare-no-codex.js", source)
         self.assertIn("Codex 호출 없음", source)
+        self.assertIn("AI가 직접 작성한 final_prompt", source)
 
 
 if __name__ == "__main__":

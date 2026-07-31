@@ -20,6 +20,21 @@ SPEC.loader.exec_module(COMPARE)
 
 
 class ProblemSolvingCompareWebTests(unittest.TestCase):
+    def final_prompt(self):
+        return """당신은 주식·ETF·암호화폐의 다중 시간대 차트를 분석하는 매매 판단 보조자다.
+
+첨부된 차트를 상위 시간대부터 검토해 추세, 가격 구조, 거래량, 지지·저항을 종합한다.
+
+## 분석 절차
+1. 상위 시간대의 추세와 주요 가격대를 확인한다.
+2. 시간대별 신호 충돌과 현재 가격의 위치를 비교한다.
+3. 구조적 무효화 조건을 먼저 정하고 손절을 배치한다.
+4. 저항과 손익비를 기준으로 분할익절 계획을 만든다.
+
+## 출력
+즉시 진입, 조건부 진입, 대기 중 하나를 고르고 핵심 근거, 손절, 분할익절을 제시한다.
+차트에서 확인되지 않는 가격은 만들지 않는다."""
+
     def design_payload(self):
         completion = "사용자가 바로 실행할 수 있는 매매 판단 프롬프트가 제공된다."
         constraints = [
@@ -61,13 +76,18 @@ class ProblemSolvingCompareWebTests(unittest.TestCase):
                 "exclusions": ["실시간 시세를 임의로 가정하지 않는다."],
                 "upstream_context": [],
             },
+            "final_prompt": self.final_prompt(),
         }
 
-    def test_pasted_one_ai_result_then_local_render_without_codex(self):
+    def test_pasted_one_ai_result_extracts_ai_final_prompt_without_codex(self):
         with mock.patch.object(
             COMPARE.problem_os,
             "CodexEngine",
             side_effect=AssertionError("Codex must not run"),
+        ), mock.patch.object(
+            COMPARE.prompt_renderer,
+            "render_prompt",
+            side_effect=AssertionError("local renderer must not rewrite final prompt"),
         ):
             result = COMPARE.design_prompt_request(
                 {
@@ -80,23 +100,25 @@ class ProblemSolvingCompareWebTests(unittest.TestCase):
         self.assertEqual(0, result["model_call_count"])
         self.assertEqual(1, result["external_ai_round_trip_count"])
         self.assertEqual("PROMPT · AI 왕복 1회 · CODEX 0회", result["route"])
-        self.assertIn("상위 시간대부터 추세", result["result_markdown"])
-        self.assertIn("서버는 Codex나 다른 모델을 호출하지 않았습니다", result["evidence"][0]["finding"])
+        self.assertEqual(self.final_prompt(), result["result_markdown"])
+        self.assertIn("AI가 직접 작성한 final_prompt", result["evidence"][0]["finding"])
 
-    def test_integrated_prompt_requests_both_logical_outputs(self):
+    def test_integrated_prompt_requests_design_and_final_prompt(self):
         prompt = COMPARE.build_integrated_design_prompt("상품 비교 프롬프트를 만들어 줘")
 
         self.assertIn("Goal Ledger", prompt)
         self.assertIn("Prompt Build Brief", prompt)
+        self.assertIn("최종 프롬프트", prompt)
+        self.assertIn("final_prompt", prompt)
         self.assertIn("한 번만 분석", prompt)
-        self.assertIn("범용 절차로 끝내지 않는다", prompt)
+        self.assertIn("제작 과정의 명칭이나 설명을 넣지 않는다", prompt)
         self.assertIn("selected_route는 반드시 PROMPT", prompt)
-        self.assertIn('"goal_ledger"', prompt)
 
     def test_parser_accepts_markdown_json_fence(self):
         text = "```json\n" + json.dumps(self.design_payload(), ensure_ascii=False) + "\n```"
         parsed = COMPARE.parse_integrated_design(text)
         self.assertEqual("PROMPT", parsed["goal_ledger"]["selected_route"])
+        self.assertEqual(self.final_prompt(), parsed["final_prompt"])
 
     def test_validation_rejects_constraint_mismatch(self):
         payload = self.design_payload()
@@ -112,10 +134,25 @@ class ProblemSolvingCompareWebTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "PROMPT"):
             COMPARE.validate_integrated_design(payload)
 
-    def test_compare_runtime_source_does_not_invoke_codex(self):
+    def test_validation_requires_final_prompt(self):
+        payload = self.design_payload()
+        del payload["final_prompt"]
+
+        with self.assertRaisesRegex(ValueError, "최상위 필드"):
+            COMPARE.validate_integrated_design(payload)
+
+    def test_validation_rejects_meta_design_markers_in_final_prompt(self):
+        payload = self.design_payload()
+        payload["final_prompt"] += "\n\nPrompt Build Brief를 바탕으로 작성했다."
+
+        with self.assertRaisesRegex(ValueError, "제작 단계"):
+            COMPARE.validate_integrated_design(payload)
+
+    def test_compare_runtime_source_does_not_invoke_codex_or_local_render(self):
         source = MODULE_PATH.read_text(encoding="utf-8")
         self.assertNotIn("CodexEngine(", source)
         self.assertNotIn("active_engine.execute", source)
+        self.assertNotIn("prompt_renderer.render_prompt(", source)
         self.assertIn("zero Codex calls", source)
 
 

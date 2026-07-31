@@ -3,7 +3,7 @@
   "title": "PSOS integrated prompt design",
   "type": "object",
   "additionalProperties": false,
-  "required": ["goal_ledger", "prompt_build_brief"],
+  "required": ["goal_ledger", "prompt_build_brief", "final_prompt"],
   "properties": {
     "goal_ledger": {
       "type": "object",
@@ -105,6 +105,11 @@
           "items": {"type": "string", "minLength": 1}
         }
       }
+    },
+    "final_prompt": {
+      "type": "string",
+      "minLength": 80,
+      "maxLength": 100000
     }
   }
 }
