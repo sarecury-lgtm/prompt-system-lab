@@ -1,0 +1,40 @@
+name: PSOS goal-aware behavior A/B
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "configs/psos-goal-aware-assistant-policy.md"
+      - "scripts/problem_solving_goal_aware_behavior_ab.py"
+      - "schemas/problem-solving-goal-aware-assessment.schema.json"
+      - "tests/fixtures/goal-aware-assistant-cases.json"
+      - "tests/test_problem_solving_goal_aware_behavior_ab.py"
+      - "docs/psos-goal-aware-behavior-ab.md"
+      - ".github/workflows/psos-goal-aware-behavior-ab.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile experiment runner
+        run: python -m py_compile scripts/problem_solving_goal_aware_behavior_ab.py
+      - name: Validate schema and cases
+        run: |
+          python -m json.tool schemas/problem-solving-goal-aware-assessment.schema.json > /dev/null
+          python -m json.tool tests/fixtures/goal-aware-assistant-cases.json > /dev/null
+      - name: Run behavior experiment tests
+        run: python -B -m unittest tests.test_problem_solving_goal_aware_behavior_ab
+      - name: Run PROMPT experiment regressions
+        run: >-
+          python -B -m unittest
+          tests.test_problem_solving_prompt_generation_ab
+          tests.test_problem_solving_prompt_build_brief_cross_domain
+      - name: Run canonical PSOS regression
+        run: python -B -m unittest tests.test_problem_solving_os
