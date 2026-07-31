@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "method": {
+    "runner": "same_session_chatgpt",
+    "codex_invoked": false,
+    "api_invoked": false,
+    "candidate_labels_hidden_during_scoring": true,
+    "independent_sessions": false
+  },
+  "results": [
+    {
+      "case_id": "comment-natural-reply",
+      "mapping": {
+        "A": "applied_baseline",
+        "B": "patched"
+      },
+      "scores": {
+        "A": {
+          "requirement_preservation": 5,
+          "task_correctness": 5,
+          "actionability": 4,
+          "calibration": 5,
+          "format_cost": 2,
+          "critical_failures": []
+        },
+        "B": {
+          "requirement_preservation": 5,
+          "task_correctness": 5,
+          "actionability": 5,
+          "calibration": 5,
+          "format_cost": 1,
+          "critical_failures": []
+        }
+      },
+      "preferred_candidate_ids": [
+        "B"
+      ],
+      "decision": "promote_patch",
+      "reason": "두 답변 모두 논점은 정확했지만 patched 후보가 사용자의 짧은 문장 습관을 더 그대로 보존하고 복사할 답글을 더 빨리 드러냈다."
+    },
+    {
+      "case_id": "product-evidence-choice",
+      "mapping": {
+        "A": "patched",
+        "B": "applied_baseline"
+      },
+      "scores": {
+        "A": {
+          "requirement_preservation": 5,
+          "task_correctness": 5,
+          "actionability": 5,
+          "calibration": 5,
+          "format_cost": 2,
+          "critical_failures": []
+        },
+        "B": {
+          "requirement_preservation": 5,
+          "task_correctness": 5,
+          "actionability": 5,
+          "calibration": 5,
+          "format_cost": 1,
+          "critical_failures": []
+        }
+      },
+      "preferred_candidate_ids": [
+        "A",
+        "B"
+      ],
+      "decision": "no_winner",
+      "reason": "patched 후보가 옵션·연도·로트 근거 경계를 더 명시했지만 이 통제 입력에서는 적용 baseline도 같은 행동 결론과 불확실성 처리를 냈다. 추가 구조가 판단을 바꾸지 않아 승격하지 않았다."
+    }
+  ]
+}
