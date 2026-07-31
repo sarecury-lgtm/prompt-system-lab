@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "chart-trade-plan",
+      "status": "approved",
+      "prompt_path": "approved-prompts/chart-trade-plan.md",
+      "prompt_sha256": "57bf98fe5f6afe097f93573b71d97b6e6a44d7b5e73df8d4c616629f25b01e1c",
+      "match": {
+        "all_terms": [
+          "차트"
+        ],
+        "any_terms": [
+          "매매",
+          "진입",
+          "손절",
+          "익절",
+          "피보나치",
+          "다중 시간대"
+        ],
+        "none_terms": [
+          "프로그래밍 차트",
+          "데이터 시각화"
+        ]
+      },
+      "evidence": {
+        "decision": "approved_baseline",
+        "source_kind": "blind_applied_comparison",
+        "recorded_at": "2026-07-31",
+        "summary": "동일한 세 차트 입력에서 current 후보가 자동 블라인드 평가 1위였고, 후속 인챗 비교에서도 가장 완전한 실행 계획으로 선택됐다."
+      }
+    }
+  ]
+}
