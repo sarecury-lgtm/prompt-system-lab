@@ -12,6 +12,7 @@
   const engineStorageKey = "psos-engine-mode";
   const latestPromptKey = "psos-latest-integrated-prompt";
   const latestRequestKey = "psos-latest-integrated-request";
+  const blindMapKey = "psos-blind-comparison-map";
   const chatGptNewChatUrl = "https://chatgpt.com/";
   const copyTimers = new WeakMap();
 
@@ -61,7 +62,10 @@
 5. 입력 → 판단·처리 절차 → 제한·예외 → 출력 형식이 자연스럽게 이어지도록 편집한다.
 6. 최종 프롬프트가 프롬프트를 다시 만들라고 요구하지 않게 한다.
 7. 내부 검토나 작성 과정을 설명하지 말고 최종 지침만 쓴다.
-8. final_prompt는 JSON 문자열이어야 하므로 실제 줄바꿈은 \\n으로 이스케이프한다.
+8. 사용자가 요구하지 않았고 근거도 정의되지 않은 신뢰도 등급·점수·백분율을 출력 형식에 추가하지 않는다.
+9. 신규 진입 판단과 보유 포지션 관리처럼 서로 다른 판단 축을 하나의 선택지 목록에 섞지 말고 필요한 경우 각각 분리한다.
+10. 누락된 기간·성향·기준을 처리할 때 임의의 고정값을 넣지 않는다. 제공된 입력 구성을 바탕으로 추정하고 추정임을 밝히거나, 결과가 크게 달라질 때만 질문한다.
+11. final_prompt는 JSON 문자열이어야 하므로 실제 줄바꿈은 \\n으로 이스케이프한다.
 
 [출력 JSON 구조]
 {
@@ -125,7 +129,7 @@ ${request.trim()}`;
 
   async function copyValue(text, status, success, button = null) {
     if (!String(text || "").trim()) {
-      if (status) status.textContent = "원래 요청을 먼저 입력해 주세요.";
+      if (status) status.textContent = "먼저 필요한 내용을 입력해 주세요.";
       return false;
     }
     try {
@@ -135,7 +139,7 @@ ${request.trim()}`;
       return true;
     } catch (_error) {
       if (status) {
-        status.textContent = "자동 복사에 실패했습니다. 미리보기 내용을 직접 선택해 복사해 주세요.";
+        status.textContent = "자동 복사에 실패했습니다. 내용을 직접 선택해 복사해 주세요.";
       }
       return false;
     }
@@ -264,11 +268,126 @@ ${request.trim()}`;
 
     buttonBox.append(copyButton, openButton);
     actionRow.append(status, buttonBox);
-
     section.append(heading, preview, actionRow);
-    const requestLabel = closestLabel(requestField);
-    requestLabel?.after(section);
+    closestLabel(requestField)?.after(section);
     return { section, preview, copyButton, openButton, status };
+  }
+
+  function randomBlindMap() {
+    let integratedFirst;
+    if (window.crypto?.getRandomValues) {
+      const value = new Uint32Array(1);
+      window.crypto.getRandomValues(value);
+      integratedFirst = value[0] % 2 === 0;
+    } else {
+      integratedFirst = Math.random() < 0.5;
+    }
+    const map = integratedFirst
+      ? { A: "integrated", B: "manual" }
+      : { A: "manual", B: "integrated" };
+    window.localStorage.setItem(blindMapKey, JSON.stringify(map));
+    return map;
+  }
+
+  function loadBlindMap() {
+    try {
+      const map = JSON.parse(window.localStorage.getItem(blindMapKey) || "null");
+      if (map?.A && map?.B && map.A !== map.B) return map;
+    } catch (_error) {
+      // Fall through and create a fresh map.
+    }
+    return randomBlindMap();
+  }
+
+  function installBlindComparisonControls() {
+    const compare = document.querySelector("#manual-panel .manual-compare");
+    if (!compare || compare.querySelector("#copy-blind-a")) return;
+    const actions = compare.querySelector(".manual-step-actions");
+    const status = actions?.querySelector(".renderer-proof");
+    const integrated = compare.querySelector("#manual-integrated-result");
+    const manual = compare.querySelector("#manual-compare-final");
+    if (!actions || !status || !integrated || !manual) return;
+
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    const buttonBox = document.createElement("div");
+    buttonBox.className = "approval-actions blind-compare-actions";
+    actions.querySelectorAll("button").forEach((button) => buttonBox.appendChild(button));
+
+    const copyA = document.createElement("button");
+    copyA.id = "copy-blind-a";
+    copyA.type = "button";
+    copyA.className = "secondary-button";
+    copyA.textContent = "블라인드 A 복사";
+
+    const copyB = document.createElement("button");
+    copyB.id = "copy-blind-b";
+    copyB.type = "button";
+    copyB.className = "secondary-button";
+    copyB.textContent = "블라인드 B 복사";
+
+    const reshuffle = document.createElement("button");
+    reshuffle.id = "reshuffle-blind-map";
+    reshuffle.type = "button";
+    reshuffle.className = "secondary-button";
+    reshuffle.textContent = "A/B 다시 섞기";
+
+    const reveal = document.createElement("button");
+    reveal.id = "reveal-blind-map";
+    reveal.type = "button";
+    reveal.className = "secondary-button";
+    reveal.textContent = "A/B 정답 확인";
+
+    function ready() {
+      if (!integrated.value.trim() || !manual.value.trim()) {
+        status.textContent = "통합 AI 결과와 수동 최종 결과를 모두 준비해 주세요.";
+        return false;
+      }
+      return true;
+    }
+
+    function promptFor(label) {
+      const map = loadBlindMap();
+      return map[label] === "integrated" ? integrated.value : manual.value;
+    }
+
+    copyA.addEventListener("click", async () => {
+      if (!ready()) return;
+      await copyValue(
+        promptFor("A"),
+        status,
+        "블라인드 A를 복사했습니다. 같은 차트와 입력으로 새 채팅에서 실행하세요.",
+        copyA,
+      );
+    });
+
+    copyB.addEventListener("click", async () => {
+      if (!ready()) return;
+      await copyValue(
+        promptFor("B"),
+        status,
+        "블라인드 B를 복사했습니다. A와 동일한 차트와 입력으로 새 채팅에서 실행하세요.",
+        copyB,
+      );
+    });
+
+    reshuffle.addEventListener("click", () => {
+      randomBlindMap();
+      status.textContent = "A/B 순서를 새로 무작위 배정했습니다. 두 결과를 실행하기 전에는 다시 섞지 마세요.";
+    });
+
+    reveal.addEventListener("click", () => {
+      const map = loadBlindMap();
+      const name = (value) => value === "integrated" ? "통합 AI 1회" : "수동 PSOS 4단계";
+      status.textContent = `정답: A = ${name(map.A)} · B = ${name(map.B)}`;
+    });
+
+    buttonBox.append(copyA, copyB, reshuffle, reveal);
+    actions.appendChild(buttonBox);
+    const headingNote = compare.querySelector(".manual-step-heading p");
+    if (headingNote) {
+      headingNote.textContent = "이름이 보이는 비교용 복사와, 동일한 차트로 실행할 무작위 A/B 복사를 함께 제공합니다.";
+    }
   }
 
   const actions = form.querySelector(".renderer-actions");
@@ -279,6 +398,7 @@ ${request.trim()}`;
   }
   const instructionUi = buildInstructionPreview();
   buildFlowGuide();
+  installBlindComparisonControls();
 
   function refreshInstructionPreview() {
     const request = requestField.value.trim();
@@ -344,6 +464,7 @@ ${request.trim()}`;
     if (footer) footer.textContent = "통합 비교: ChatGPT 왕복 1회 · AI 최종 편집 · Codex 호출 없음";
     removeCodexApplyButtons();
     refreshInstructionPreview();
+    installBlindComparisonControls();
   }
 
   function configureModeNote() {
@@ -351,9 +472,10 @@ ${request.trim()}`;
     if (selected === "integrated") {
       sectionNote.textContent = "원래 요청 → 통합 제작 지시문 → ChatGPT JSON → AI 작성 최종 프롬프트 추출 순서로 진행합니다.";
     } else if (selected === "manual") {
-      sectionNote.textContent = "예전 4단계 결과를 만든 뒤 두 최종 결과를 함께 복사합니다.";
+      sectionNote.textContent = "수동 결과를 완성한 뒤 이름 공개 비교 또는 무작위 A/B 실행을 선택합니다.";
     }
     removeCodexApplyButtons();
+    installBlindComparisonControls();
   }
 
   instructionUi.copyButton?.addEventListener("click", async () => {
@@ -378,7 +500,7 @@ ${request.trim()}`;
   document.addEventListener("click", (event) => {
     const button = event.target.closest("button");
     if (!button || !button.textContent.includes("복사")) return;
-    if (button.id === "copy-integrated-instruction" || button.id === "copy-and-open-chatgpt") return;
+    if (["copy-integrated-instruction", "copy-and-open-chatgpt", "copy-blind-a", "copy-blind-b"].includes(button.id)) return;
     const originalLabel = button.textContent;
     window.setTimeout(() => {
       const status = nearbyStatus(button);
@@ -395,8 +517,8 @@ ${request.trim()}`;
 
   requestField.addEventListener("input", refreshInstructionPreview);
   designField.addEventListener("input", () => {
-    if (designField.value.trim()) {
-      if (proof) proof.textContent = "답변이 붙었습니다. 이제 final_prompt 추출 버튼을 누르세요.";
+    if (designField.value.trim() && proof) {
+      proof.textContent = "답변이 붙었습니다. 이제 final_prompt 추출 버튼을 누르세요.";
     }
   });
 
@@ -437,6 +559,7 @@ ${request.trim()}`;
         if (manualRequest && !manualRequest.value.trim()) manualRequest.value = request;
         showCompleted(data);
         renderCopyOnlyActions(data.result_markdown);
+        installBlindComparisonControls();
       } catch (error) {
         showError(error.message);
       } finally {
