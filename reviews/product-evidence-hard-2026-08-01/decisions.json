@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "promotion_policy": {
+    "required_case_ids": [
+      "product-option-price-mismatch",
+      "product-review-scope-mismatch",
+      "product-sale-status-mismatch"
+    ],
+    "minimum_patch_wins": 2,
+    "maximum_patch_critical_failures": 0
+  },
+  "method": {
+    "runner": "same_session_chatgpt",
+    "codex_invoked": false,
+    "api_invoked": false,
+    "candidate_labels_hidden_during_scoring": true,
+    "independent_sessions": false,
+    "note": "동일 대화에서 후보 이름을 가린 채 적용 결과를 비교했으므로 완전한 독립 재실행은 아니다."
+  },
+  "results": [
+    {
+      "case_id": "product-option-price-mismatch",
+      "mapping": {
+        "A": "applied_baseline",
+        "B": "patched"
+      },
+      "scores": {
+        "A": {
+          "requirement_preservation": 5,
+          "task_correctness": 5,
+          "actionability": 5,
+          "calibration": 5,
+          "format_cost": 1,
+          "critical_failures": []
+        },
+        "B": {
+          "requirement_preservation": 5,
+          "task_correctness": 5,
+          "actionability": 5,
+          "calibration": 5,
+          "format_cost": 2,
+          "critical_failures": []
+        }
+      },
+      "preferred_candidate_ids": [
+        "A",
+        "B"
+      ],
+      "decision": "no_winner",
+      "reason": "두 후보 모두 검색 최저가가 아니라 3kg 특대과의 배송비 포함 42,900원을 사용하고 공용 평점을 옵션 후기에서 제외했다. patched 후보의 경계 표시는 더 명시적이지만 실제 구매 판단은 같아 승리로 보지 않았다."
+    },
+    {
+      "case_id": "product-review-scope-mismatch",
+      "mapping": {
+        "A": "patched",
+        "B": "applied_baseline"
+      },
+      "scores": {
+        "A": {
+          "requirement_preservation": 5,
+          "task_correctness": 5,
+          "actionability": 5,
+          "calibration": 5,
+          "format_cost": 2,
+          "critical_failures": []
+        },
+        "B": {
+          "requirement_preservation": 5,
+          "task_correctness": 5,
+          "actionability": 4,
+          "calibration": 4,
+          "format_cost": 1,
+          "critical_failures": []
+        }
+      },
+      "preferred_candidate_ids": [
+        "A"
+      ],
+      "decision": "promote_patch",
+      "reason": "두 후보 모두 B를 추천했지만 patched 후보만 판매자·연도·품종·옵션이 다른 근거를 현재 상품의 품질 신호에서 완전히 분리했다. baseline은 과거 반응을 약한 참고 신호로 남겨 현재 로트의 실패 위험을 흐릴 여지가 있었다."
+    },
+    {
+      "case_id": "product-sale-status-mismatch",
+      "mapping": {
+        "A": "applied_baseline",
+        "B": "patched"
+      },
+      "scores": {
+        "A": {
+          "requirement_preservation": 5,
+          "task_correctness": 5,
+          "actionability": 5,
+          "calibration": 5,
+          "format_cost": 1,
+          "critical_failures": []
+        },
+        "B": {
+          "requirement_preservation": 5,
+          "task_correctness": 5,
+          "actionability": 5,
+          "calibration": 5,
+          "format_cost": 2,
+          "critical_failures": []
+        }
+      },
+      "preferred_candidate_ids": [
+        "A",
+        "B"
+      ],
+      "decision": "no_winner",
+      "reason": "두 후보 모두 A의 원하는 황도 옵션은 품절, B는 12일 뒤 발송, C만 5일 안에 수령 가능하다고 정확히 구분했다. 추가 규칙이 행동 결론을 개선하지 않았다."
+    }
+  ],
+  "recorded_gate_decision": "retain_current_baseline"
+}
