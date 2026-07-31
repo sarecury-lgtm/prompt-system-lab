@@ -72,27 +72,69 @@ class ProblemSolvingWebDualModeTests(unittest.TestCase):
         self.assertIn("후보를 비교한다.", result["result_markdown"])
         self.assertIn("하나만 추천한다.", result["result_markdown"])
 
-    def test_static_ui_exposes_both_engine_modes(self):
+    def test_static_ui_exposes_codex_and_fast_template_modes(self):
         html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
 
         self.assertIn('value="codex"', html)
         self.assertIn('value="deterministic"', html)
-        self.assertIn("Codex 없는 프롬프트 생성", html)
         self.assertIn("/api/render-prompt", script)
         self.assertIn("/renderer.js", WEB.STATIC_FILES)
         self.assertIn("/renderer.css", WEB.STATIC_FILES)
 
-    def test_no_codex_ui_uses_one_primary_required_input(self):
+    def test_fast_template_ui_uses_one_primary_input_and_honest_name(self):
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
 
-        self.assertIn("평소에는 아래 한 칸만 쓰면 됩니다.", script)
+        self.assertIn("빠른 템플릿 생성", script)
+        self.assertIn("AI 설계 없이 공통 틀", script)
         self.assertIn("DEFAULT_CORE_PROCEDURE", script)
         self.assertIn("DEFAULT_COMPLETION", script)
         self.assertIn('rendererElements.procedure.removeAttribute("required")', script)
         self.assertIn('rendererElements.completion.removeAttribute("required")', script)
         self.assertIn("세부 설정 · 필요할 때만", script)
-        self.assertIn("goal: request", script)
+        self.assertIn("goal: normalizedGoal", script)
+
+    def test_fast_template_strips_nested_prompt_creation_intent(self):
+        script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
+
+        self.assertIn("function normalizePromptGoal", script)
+        self.assertIn("프롬프트(?:를|을)?", script)
+        self.assertIn("프롬프트를 다시 만들라고 요구하지 않는다.", script)
+        self.assertIn("normalizePromptGoal(request)", script)
+
+    def test_fast_template_result_can_copy_or_apply_once(self):
+        script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
+
+        self.assertIn('copyButton.textContent = "복사"', script)
+        self.assertIn("navigator.clipboard.writeText", script)
+        self.assertIn('applyButton.textContent = "다음 Codex 요청에 1회 적용"', script)
+        self.assertIn("psos-applied-fast-template", script)
+        self.assertIn("applyStoredPromptToNextCodexRequest", script)
+        self.assertIn("window.localStorage.removeItem(appliedPromptStorageKey)", script)
+
+    def test_manual_psos_four_stage_mode_is_restored(self):
+        script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
+
+        self.assertIn('value="manual"', script)
+        self.assertIn("수동 PSOS 4단계", script)
+        self.assertIn("1단계 라우터 지시문 복사", script)
+        self.assertIn("2단계 Brief 컴파일러 복사", script)
+        self.assertIn("3단계 최종 실행기 복사", script)
+        self.assertIn("수동 PSOS 최종 프롬프트", script)
+        self.assertIn("function routerPrompt", script)
+        self.assertIn("function briefCompilerPrompt", script)
+        self.assertIn("function finalExecutorPrompt", script)
+
+    def test_manual_mode_preserves_progress_and_compares_results(self):
+        script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
+
+        self.assertIn("psos-manual-workflow-state", script)
+        self.assertIn("psos-latest-fast-template", script)
+        self.assertIn("빠른 템플릿 vs 수동 PSOS", script)
+        self.assertIn("manual-fast-result", script)
+        self.assertIn("manual-compare-final", script)
+        self.assertIn("saveManualState", script)
+        self.assertIn("다음 Codex 요청에 1회 적용", script)
 
 
 if __name__ == "__main__":
