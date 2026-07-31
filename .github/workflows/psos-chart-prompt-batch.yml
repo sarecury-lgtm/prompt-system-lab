@@ -33,7 +33,8 @@ jobs:
         run: >-
           python -B -m unittest
           tests.test_problem_solving_prompt_generation_ab
-          tests.test_problem_solving_prompt_ablation
+          tests.test_problem_solving_prompt_ablation_run
+          tests.test_prompt_generation_ablation
           tests.test_problem_solving_prompt_build_brief
       - name: Run canonical PSOS regressions
         run: python -B -m unittest tests.test_problem_solving_os tests.test_problem_solving_web
