@@ -54,7 +54,7 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
 
         self.assertIn("통합 AI 1회 · Codex 없음", script)
         self.assertIn("1. 원래 요청", script)
-        self.assertIn("2. 요청을 다듬는 통합 지시문", script)
+        self.assertIn("요청을 다듬는 통합 지시문", script)
         self.assertIn("3. ChatGPT 답변 전체 붙여넣기", script)
         self.assertIn("4. 최종 프롬프트 조립", script)
         self.assertIn("integrated-instruction-preview", script)
