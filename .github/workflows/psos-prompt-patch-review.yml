@@ -1,0 +1,32 @@
+name: PSOS PROMPT patch manual review
+
+on:
+  pull_request:
+    paths:
+      - "scripts/problem_solving_prompt_patch_review.py"
+      - "tests/test_problem_solving_prompt_patch_review.py"
+      - "tests/fixtures/prompt-generation-applied-cases.json"
+      - "docs/prompt-patch-manual-review.md"
+      - ".github/workflows/psos-prompt-patch-review.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/problem_solving_prompt_patch_review.py"
+      - "tests/test_problem_solving_prompt_patch_review.py"
+      - "tests/fixtures/prompt-generation-applied-cases.json"
+      - "docs/prompt-patch-manual-review.md"
+      - ".github/workflows/psos-prompt-patch-review.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile manual review tool
+        run: python -m py_compile scripts/problem_solving_prompt_patch_review.py
+      - name: Run manual review tests
+        run: python -m unittest tests.test_problem_solving_prompt_patch_review
