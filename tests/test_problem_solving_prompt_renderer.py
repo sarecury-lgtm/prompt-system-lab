@@ -59,6 +59,31 @@ class DeterministicPromptRendererTests(unittest.TestCase):
         self.assertIn("같은 결론을 더 길게 표현하는 것을 개선으로 간주하지 않는다.", prompt)
         self.assertNotIn("## 검증된 상위 맥락", prompt)
 
+    def test_renderer_accepts_nine_distinct_domain_steps(self):
+        brief = self.brief()
+        brief["core_procedure"] = [
+            f"도메인 판단 절차 {index}을 수행한다."
+            for index in range(1, 10)
+        ]
+
+        prompt = RENDERER.render_prompt(brief, self.ledger(), "공통 정책")
+
+        self.assertIn("도메인 판단 절차 9", prompt)
+        self.assertEqual(12, RENDERER.CORE_PROCEDURE_LIMIT)
+
+    def test_renderer_rejects_more_than_twelve_domain_steps(self):
+        brief = self.brief()
+        brief["core_procedure"] = [
+            f"도메인 판단 절차 {index}을 수행한다."
+            for index in range(1, 14)
+        ]
+
+        with self.assertRaisesRegex(
+            RENDERER.BRIEF.PromptBuildBriefError,
+            "0~12",
+        ):
+            RENDERER.render_prompt(brief, self.ledger(), "공통 정책")
+
     def test_renderer_rejects_brief_that_changes_fixed_constraints(self):
         brief = self.brief()
         brief["fixed_constraints"] = ["예산은 5만원 이하다."]
