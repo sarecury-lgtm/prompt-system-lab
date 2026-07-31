@@ -7,12 +7,15 @@ on:
       - "configs/psos-goal-aware-assistant-policy.md"
       - "scripts/problem_solving_goal_aware_behavior_ab.py"
       - "scripts/problem_solving_goal_aware_behavior_ab_compat.py"
+      - "scripts/problem_solving_recommendation_impact_ab.py"
       - "schemas/problem-solving-prompt-applied-answer.schema.json"
       - "schemas/problem-solving-prompt-applied-assessment.schema.json"
       - "schemas/problem-solving-goal-aware-assessment.schema.json"
       - "tests/fixtures/goal-aware-assistant-cases.json"
+      - "tests/fixtures/recommendation-impact-cases.json"
       - "tests/test_problem_solving_goal_aware_behavior_ab.py"
       - "tests/test_problem_solving_goal_aware_behavior_ab_compat.py"
+      - "tests/test_problem_solving_recommendation_impact_ab.py"
       - "tests/test_codex_structured_output_schema_compatibility.py"
       - "docs/psos-goal-aware-behavior-ab.md"
       - ".github/workflows/psos-goal-aware-behavior-ab.yml"
@@ -32,12 +35,14 @@ jobs:
         run: |
           python -m py_compile scripts/problem_solving_goal_aware_behavior_ab.py
           python -m py_compile scripts/problem_solving_goal_aware_behavior_ab_compat.py
+          python -m py_compile scripts/problem_solving_recommendation_impact_ab.py
       - name: Validate schema and cases
         run: |
           python -m json.tool schemas/problem-solving-prompt-applied-answer.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-prompt-applied-assessment.schema.json > /dev/null
           python -m json.tool schemas/problem-solving-goal-aware-assessment.schema.json > /dev/null
           python -m json.tool tests/fixtures/goal-aware-assistant-cases.json > /dev/null
+          python -m json.tool tests/fixtures/recommendation-impact-cases.json > /dev/null
       - name: Check Codex structured output compatibility
         run: python -B -m unittest tests.test_codex_structured_output_schema_compatibility
       - name: Run behavior experiment tests
@@ -45,6 +50,7 @@ jobs:
           python -B -m unittest
           tests.test_problem_solving_goal_aware_behavior_ab
           tests.test_problem_solving_goal_aware_behavior_ab_compat
+          tests.test_problem_solving_recommendation_impact_ab
       - name: Run PROMPT experiment regressions
         run: >-
           python -B -m unittest
