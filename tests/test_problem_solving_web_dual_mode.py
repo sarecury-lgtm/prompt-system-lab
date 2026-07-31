@@ -83,6 +83,17 @@ class ProblemSolvingWebDualModeTests(unittest.TestCase):
         self.assertIn("/renderer.js", WEB.STATIC_FILES)
         self.assertIn("/renderer.css", WEB.STATIC_FILES)
 
+    def test_no_codex_ui_uses_one_primary_required_input(self):
+        script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
+
+        self.assertIn("평소에는 아래 한 칸만 쓰면 됩니다.", script)
+        self.assertIn("DEFAULT_CORE_PROCEDURE", script)
+        self.assertIn("DEFAULT_COMPLETION", script)
+        self.assertIn('rendererElements.procedure.removeAttribute("required")', script)
+        self.assertIn('rendererElements.completion.removeAttribute("required")', script)
+        self.assertIn("세부 설정 · 필요할 때만", script)
+        self.assertIn("goal: request", script)
+
 
 if __name__ == "__main__":
     unittest.main()
