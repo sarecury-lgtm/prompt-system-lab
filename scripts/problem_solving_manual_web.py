@@ -19,9 +19,12 @@ if str(SCRIPT_DIR) not in sys.path:
 
 import problem_solving_core_semantic_fixes as core_fixes
 import problem_solving_manual as manual
-import problem_solving_manual_deep as deep_manual
+import problem_solving_manual_prompt_brief as prompt_brief_manual
 import problem_solving_manual_semantic_fixes as manual_fixes
 import problem_solving_os as problem_os
+
+# Backward-compatible module alias used by existing bridge tests and local callers.
+deep_manual = prompt_brief_manual.deep_manual
 
 core_fixes.apply(problem_os)
 manual_fixes.apply(manual)
@@ -33,6 +36,10 @@ STATIC = {
     "/manual": ("manual.html", "text/html; charset=utf-8"),
     "/manual.html": ("manual.html", "text/html; charset=utf-8"),
     "/manual.js": ("manual.js", "text/javascript; charset=utf-8"),
+    "/manual_prompt_brief.js": (
+        "manual_prompt_brief.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/manual.css": ("manual.css", "text/css; charset=utf-8"),
 }
 MARKDOWN_REFERENCE = re.compile(
@@ -258,7 +265,7 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
-    bridge = deep_manual.ManualBridge(args.runs_dir, args.model_policy)
+    bridge = prompt_brief_manual.ManualBridge(args.runs_dir, args.model_policy)
     configured = type("ConfiguredHandler", (Handler,), {"bridge": bridge})
     server = ThreadingHTTPServer((args.host, args.port), configured)
     print(f"PSOS manual ChatGPT bridge: http://{args.host}:{args.port}")
