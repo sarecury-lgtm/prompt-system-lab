@@ -1,0 +1,46 @@
+name: PSOS approved prompt baselines
+
+on:
+  pull_request:
+    paths:
+      - "approved-prompts/**"
+      - "scripts/problem_solving_approved_prompt_baseline.py"
+      - "scripts/problem_solving_os_approved_quality_runtime.py"
+      - "scripts/problem_solving_prompt_approved_patch_review.py"
+      - "tests/test_problem_solving_approved_prompt_baseline.py"
+      - "tests/test_problem_solving_approved_prompt_integration.py"
+      - "docs/approved-prompt-baselines.md"
+      - ".github/workflows/psos-approved-prompt-baselines.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "approved-prompts/**"
+      - "scripts/problem_solving_approved_prompt_baseline.py"
+      - "scripts/problem_solving_os_approved_quality_runtime.py"
+      - "scripts/problem_solving_prompt_approved_patch_review.py"
+      - "tests/test_problem_solving_approved_prompt_baseline.py"
+      - "tests/test_problem_solving_approved_prompt_integration.py"
+      - "docs/approved-prompt-baselines.md"
+      - ".github/workflows/psos-approved-prompt-baselines.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile approved baseline tools
+        run: |
+          python -m py_compile scripts/problem_solving_approved_prompt_baseline.py
+          python -m py_compile scripts/problem_solving_os_approved_quality_runtime.py
+          python -m py_compile scripts/problem_solving_prompt_approved_patch_review.py
+      - name: Validate registry
+        run: python -m json.tool approved-prompts/registry.json > /dev/null
+      - name: Run approved baseline tests
+        run: |
+          python -m unittest tests.test_problem_solving_approved_prompt_baseline
+          python -m unittest tests.test_problem_solving_approved_prompt_integration
+          python -m unittest tests.test_problem_solving_prompt_patch_review
