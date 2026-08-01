@@ -124,6 +124,7 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
 
     def test_manual_mode_restores_each_chatgpt_handoff(self):
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
+        stylesheet = (ROOT / "web" / "renderer.css").read_text(encoding="utf-8")
 
         self.assertIn('const chatGptNewChatUrl = "https://chatgpt.com/"', script)
         self.assertIn("window.open(chatGptNewChatUrl", script)
@@ -133,6 +134,9 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertIn("받은 최종 프롬프트를 4단계에 붙입니다", script)
         self.assertIn("총 세 번의 AI 응답", script)
         self.assertIn("Ctrl+V로 붙여넣고", script)
+        self.assertIn(".manual-form > .manual-step:nth-of-type(-n + 3)", stylesheet)
+        self.assertIn(".approval-actions > button:first-child", stylesheet)
+        self.assertIn("Manual stages 1–3 have one action", stylesheet)
 
     def test_two_final_prompts_can_be_copied_together(self):
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
