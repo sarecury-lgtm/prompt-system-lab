@@ -19,6 +19,7 @@ const appliedPromptStorageKey = "psos-applied-prompt";
 const latestIntegratedPromptStorageKey = "psos-latest-integrated-prompt";
 const latestIntegratedRequestStorageKey = "psos-latest-integrated-request";
 const manualStateStorageKey = "psos-manual-workflow-state";
+const chatGptNewChatUrl = "https://chatgpt.com/";
 
 function selectedEngineMode() {
   return document.querySelector('input[name="engine-mode"]:checked')?.value || "codex";
@@ -41,6 +42,20 @@ async function copyText(text, statusElement, successText = "복사했습니다."
     statusElement.textContent = "자동 복사에 실패했습니다. 내용을 직접 선택해 복사해 주세요.";
     return false;
   }
+}
+
+function openChatGpt(statusElement) {
+  const opened = window.open(chatGptNewChatUrl, "_blank", "noopener,noreferrer");
+  if (!opened) {
+    statusElement.textContent = "팝업이 차단되었습니다. 브라우저 주소창에서 팝업을 허용해 주세요.";
+    return false;
+  }
+  return true;
+}
+
+async function copyAndOpenChatGpt(text, statusElement, successText) {
+  const copied = await copyText(text, statusElement, successText);
+  if (copied) openChatGpt(statusElement);
 }
 
 function queuePromptForNextCodexRequest(promptText, statusElement) {
@@ -239,7 +254,7 @@ function buildManualPanel() {
 
   const intro = document.createElement("div");
   intro.className = "renderer-intro";
-  intro.innerHTML = "<strong>예전 수동 PSOS 4단계</strong><p>각 단계 지시문을 복사해 AI에 보내고 결과를 다음 칸에 붙입니다. 마지막에는 통합 AI 1회 결과와 함께 복사할 수 있습니다.</p>";
+  intro.innerHTML = "<strong>예전 수동 PSOS 4단계</strong><p>각 단계에서 지시문을 ChatGPT 새 채팅에 보내고, 받은 결과를 바로 다음 칸에 붙입니다. 총 세 번의 AI 응답을 거쳐 4단계에서 최종 프롬프트가 완성됩니다.</p>";
 
   const form = document.createElement("div");
   form.className = "request-form renderer-form manual-form";
@@ -247,49 +262,65 @@ function buildManualPanel() {
   const requestStep = createManualStep(
     1,
     "원래 요청",
-    "비교할 요청을 적고 라우터 지시문을 복사합니다.",
+    "원래 요청을 적고 라우터 지시문을 ChatGPT 새 채팅에 보냅니다. 받은 Goal Ledger JSON은 바로 아래 2단계에 붙여 넣습니다.",
     "manual-request",
     "예: 첨부한 여러 시간대 차트를 보고 지금 진입할지, 손절과 분할익절을 어떻게 할지 판단하는 프롬프트를 만들어 줘.",
   );
+  requestStep.status.textContent = "다음: 라우터 지시문을 보내고, AI 결과를 2단계에 붙여 넣으세요.";
   const requestCopy = document.createElement("button");
   requestCopy.type = "button";
   requestCopy.className = "secondary-button";
   requestCopy.textContent = "1단계 라우터 지시문 복사";
-  requestStep.buttonBox.appendChild(requestCopy);
+  const requestOpen = document.createElement("button");
+  requestOpen.type = "button";
+  requestOpen.className = "secondary-button";
+  requestOpen.textContent = "복사하고 ChatGPT 새 채팅 열기";
+  requestStep.buttonBox.append(requestCopy, requestOpen);
 
   const ledgerStep = createManualStep(
     2,
     "Goal Ledger 결과",
-    "AI가 반환한 Goal Ledger JSON을 붙이고 Brief 컴파일러 지시문을 복사합니다.",
+    "1단계 ChatGPT가 반환한 Goal Ledger JSON을 붙입니다. 그다음 Brief 컴파일러 지시문을 새 채팅에 보내고, 받은 Brief JSON을 3단계에 붙입니다.",
     "manual-ledger",
     "1단계에서 받은 Goal Ledger JSON을 붙여 넣으세요.",
   );
+  ledgerStep.status.textContent = "다음: Goal Ledger를 붙인 뒤 Brief 컴파일러를 보내고, 결과를 3단계에 붙이세요.";
   const ledgerCopy = document.createElement("button");
   ledgerCopy.type = "button";
   ledgerCopy.className = "secondary-button";
   ledgerCopy.textContent = "2단계 Brief 컴파일러 복사";
-  ledgerStep.buttonBox.appendChild(ledgerCopy);
+  const ledgerOpen = document.createElement("button");
+  ledgerOpen.type = "button";
+  ledgerOpen.className = "secondary-button";
+  ledgerOpen.textContent = "복사하고 ChatGPT 새 채팅 열기";
+  ledgerStep.buttonBox.append(ledgerCopy, ledgerOpen);
 
   const briefStep = createManualStep(
     3,
     "Prompt Build Brief 결과",
-    "AI가 반환한 Brief JSON을 붙이고 최종 실행기 지시문을 복사합니다.",
+    "2단계 ChatGPT가 반환한 Prompt Build Brief JSON을 붙입니다. 최종 실행기 지시문을 새 채팅에 보내고, 받은 최종 프롬프트를 4단계에 붙입니다.",
     "manual-brief",
     "2단계에서 받은 Prompt Build Brief JSON을 붙여 넣으세요.",
   );
+  briefStep.status.textContent = "다음: Brief를 붙인 뒤 최종 실행기를 보내고, 결과를 4단계에 붙이세요.";
   const briefCopy = document.createElement("button");
   briefCopy.type = "button";
   briefCopy.className = "secondary-button";
   briefCopy.textContent = "3단계 최종 실행기 복사";
-  briefStep.buttonBox.appendChild(briefCopy);
+  const briefOpen = document.createElement("button");
+  briefOpen.type = "button";
+  briefOpen.className = "secondary-button";
+  briefOpen.textContent = "복사하고 ChatGPT 새 채팅 열기";
+  briefStep.buttonBox.append(briefCopy, briefOpen);
 
   const finalStep = createManualStep(
     4,
     "수동 PSOS 최종 프롬프트",
-    "3단계에서 나온 최종 프롬프트를 붙이면 복사·적용·비교가 가능합니다.",
+    "3단계 ChatGPT가 반환한 최종 프롬프트를 붙입니다. 이 칸이 수동 PSOS의 완성 결과이며, 아래에서 통합 결과와 함께 복사해 비교할 수 있습니다.",
     "manual-final",
-    "3단계에서 생성된 최종 프롬프트를 붙여 넣으세요.",
+    "3단계 ChatGPT가 생성한 최종 프롬프트를 붙여 넣으세요.",
   );
+  finalStep.status.textContent = "완성 단계: 최종 프롬프트를 붙인 뒤 복사하거나 아래에서 통합 결과와 비교하세요.";
   const finalCopy = document.createElement("button");
   finalCopy.type = "button";
   finalCopy.className = "secondary-button";
@@ -373,29 +404,58 @@ function buildManualPanel() {
     copyText(
       routerPrompt(requestStep.textarea.value),
       requestStep.status,
-      "라우터 지시문을 복사했습니다. AI에 보내고 결과를 2단계에 붙여 넣으세요.",
+      "라우터 지시문을 복사했습니다. ChatGPT에 보내고 받은 Goal Ledger를 2단계에 붙여 넣으세요.",
+    );
+  });
+  requestOpen.addEventListener("click", () => {
+    copyAndOpenChatGpt(
+      routerPrompt(requestStep.textarea.value),
+      requestStep.status,
+      "복사했습니다. 열린 ChatGPT 새 채팅에서 Ctrl+V로 붙여넣고, 받은 Goal Ledger를 2단계에 붙이세요.",
     );
   });
   ledgerCopy.addEventListener("click", () => {
     if (!requestStep.textarea.value.trim() || !ledgerStep.textarea.value.trim()) {
-      ledgerStep.status.textContent = "원래 요청과 Goal Ledger 결과를 먼저 입력해 주세요.";
+      ledgerStep.status.textContent = "원래 요청과 1단계의 Goal Ledger 결과를 먼저 입력해 주세요.";
       return;
     }
     copyText(
       briefCompilerPrompt(requestStep.textarea.value, ledgerStep.textarea.value),
       ledgerStep.status,
-      "Brief 컴파일러 지시문을 복사했습니다. 결과를 3단계에 붙여 넣으세요.",
+      "Brief 컴파일러 지시문을 복사했습니다. ChatGPT에 보내고 받은 Brief를 3단계에 붙여 넣으세요.",
+    );
+  });
+  ledgerOpen.addEventListener("click", () => {
+    if (!requestStep.textarea.value.trim() || !ledgerStep.textarea.value.trim()) {
+      ledgerStep.status.textContent = "원래 요청과 1단계의 Goal Ledger 결과를 먼저 입력해 주세요.";
+      return;
+    }
+    copyAndOpenChatGpt(
+      briefCompilerPrompt(requestStep.textarea.value, ledgerStep.textarea.value),
+      ledgerStep.status,
+      "복사했습니다. 열린 ChatGPT 새 채팅에서 Ctrl+V로 붙여넣고, 받은 Brief를 3단계에 붙이세요.",
     );
   });
   briefCopy.addEventListener("click", () => {
     if (!briefStep.textarea.value.trim()) {
-      briefStep.status.textContent = "Prompt Build Brief 결과를 먼저 입력해 주세요.";
+      briefStep.status.textContent = "2단계에서 받은 Prompt Build Brief 결과를 먼저 입력해 주세요.";
       return;
     }
     copyText(
       finalExecutorPrompt(briefStep.textarea.value),
       briefStep.status,
-      "최종 실행기 지시문을 복사했습니다. 결과를 4단계에 붙여 넣으세요.",
+      "최종 실행기 지시문을 복사했습니다. ChatGPT에 보내고 받은 최종 프롬프트를 4단계에 붙여 넣으세요.",
+    );
+  });
+  briefOpen.addEventListener("click", () => {
+    if (!briefStep.textarea.value.trim()) {
+      briefStep.status.textContent = "2단계에서 받은 Prompt Build Brief 결과를 먼저 입력해 주세요.";
+      return;
+    }
+    copyAndOpenChatGpt(
+      finalExecutorPrompt(briefStep.textarea.value),
+      briefStep.status,
+      "복사했습니다. 열린 ChatGPT 새 채팅에서 Ctrl+V로 붙여넣고, 받은 최종 프롬프트를 4단계에 붙이세요.",
     );
   });
   finalCopy.addEventListener("click", () => {
@@ -429,7 +489,7 @@ function installManualMode() {
     <input type="radio" name="engine-mode" value="manual">
     <span>
       <strong>수동 PSOS 4단계</strong>
-      <small>예전처럼 네 번 옮겨 붙여 만든 결과입니다.</small>
+      <small>세 번의 ChatGPT 응답을 다음 단계로 옮겨 붙여 최종 프롬프트를 만듭니다.</small>
     </span>`;
   selector.appendChild(option);
 
@@ -481,7 +541,7 @@ function updateEngineMode() {
   promptUi.sectionNote.textContent = mode === "integrated"
     ? "Goal Ledger와 Brief를 한 번에 설계한 뒤 로컬에서 최종 조립합니다."
     : mode === "manual"
-      ? "예전 4단계 결과를 만든 뒤 두 결과를 함께 복사해 비교합니다."
+      ? "지시문을 ChatGPT 새 채팅에 세 번 보내고, 각 결과를 다음 단계에 붙여 최종 프롬프트를 만듭니다."
       : "모델과 해결 방식은 시스템이 자동으로 고릅니다.";
   window.localStorage.setItem(engineStorageKey, mode);
   if (mode === "integrated") promptUi.request.focus();

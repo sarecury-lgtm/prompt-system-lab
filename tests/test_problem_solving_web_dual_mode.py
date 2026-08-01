@@ -122,6 +122,18 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertIn("3단계 최종 실행기 복사", script)
         self.assertIn("수동 PSOS 최종 프롬프트", script)
 
+    def test_manual_mode_restores_each_chatgpt_handoff(self):
+        script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
+
+        self.assertIn('const chatGptNewChatUrl = "https://chatgpt.com/"', script)
+        self.assertIn("window.open(chatGptNewChatUrl", script)
+        self.assertEqual(3, script.count('textContent = "복사하고 ChatGPT 새 채팅 열기"'))
+        self.assertIn("받은 Goal Ledger JSON은 바로 아래 2단계에 붙여 넣습니다", script)
+        self.assertIn("받은 Brief JSON을 3단계에 붙입니다", script)
+        self.assertIn("받은 최종 프롬프트를 4단계에 붙입니다", script)
+        self.assertIn("총 세 번의 AI 응답", script)
+        self.assertIn("Ctrl+V로 붙여넣고", script)
+
     def test_two_final_prompts_can_be_copied_together(self):
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
 
