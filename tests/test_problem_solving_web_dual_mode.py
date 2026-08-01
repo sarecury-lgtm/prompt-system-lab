@@ -91,17 +91,19 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertIn('document.addEventListener("click"', script)
         self.assertIn('status.setAttribute("aria-live", "polite")', script)
 
-    def test_blind_ab_execution_controls_randomize_and_hide_identity(self):
-        script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
+    def test_comparison_ui_shows_only_the_combined_copy_action(self):
+        stylesheet = (ROOT / "web" / "renderer.css").read_text(encoding="utf-8")
 
-        self.assertIn("블라인드 A 복사", script)
-        self.assertIn("블라인드 B 복사", script)
-        self.assertIn("A/B 다시 섞기", script)
-        self.assertIn("A/B 정답 확인", script)
-        self.assertIn("psos-blind-comparison-map", script)
-        self.assertIn("window.crypto.getRandomValues", script)
-        self.assertIn("같은 차트와 입력으로 새 채팅에서 실행", script)
-        self.assertIn("정답: A =", script)
+        for control_id in (
+            "#copy-blind-a",
+            "#copy-blind-b",
+            "#reshuffle-blind-map",
+            "#reveal-blind-map",
+        ):
+            self.assertIn(control_id, stylesheet)
+        self.assertIn("display: none !important", stylesheet)
+        self.assertIn("두 결과를 한 번에 복사해 ChatGPT에 붙여 비교합니다.", stylesheet)
+        self.assertIn("white-space: nowrap", stylesheet)
 
     def test_integrated_json_field_uses_full_width(self):
         stylesheet = (ROOT / "web" / "renderer.css").read_text(encoding="utf-8")
