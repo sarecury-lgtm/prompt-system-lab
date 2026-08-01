@@ -186,6 +186,38 @@
 
 .compare-copy-button {
   margin-left: auto;
+  white-space: nowrap;
+}
+
+/* The comparison is completed in ChatGPT after copying both named results.
+   Keep the local screen focused on that single action. */
+#copy-blind-a,
+#copy-blind-b,
+#reshuffle-blind-map,
+#reveal-blind-map {
+  display: none !important;
+}
+
+.blind-compare-actions {
+  margin-left: auto;
+}
+
+.manual-compare .manual-step-heading p {
+  font-size: 0;
+}
+
+.manual-compare .manual-step-heading p::after {
+  content: "두 결과를 한 번에 복사해 ChatGPT에 붙여 비교합니다.";
+  font-size: 12px;
+}
+
+body:has(input[name="engine-mode"][value="manual"]:checked) #request-section-note {
+  font-size: 0;
+}
+
+body:has(input[name="engine-mode"][value="manual"]:checked) #request-section-note::after {
+  content: "수동 결과를 완성한 뒤 두 최종 프롬프트를 함께 복사합니다.";
+  font-size: 12px;
 }
 
 @media (max-width: 980px) {
@@ -214,6 +246,10 @@
   .compare-copy-button,
   #copy-integrated-instruction {
     width: 100%;
+    margin-left: 0;
+  }
+
+  .blind-compare-actions {
     margin-left: 0;
   }
 }
