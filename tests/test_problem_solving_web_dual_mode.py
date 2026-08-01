@@ -82,6 +82,7 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
 
     def test_copy_feedback_and_chatgpt_shortcut_are_visible(self):
         script = (ROOT / "web" / "compare-no-codex.js").read_text(encoding="utf-8")
+        stylesheet = (ROOT / "web" / "renderer.css").read_text(encoding="utf-8")
 
         self.assertIn("복사됨 ✓", script)
         self.assertIn("복사하고 ChatGPT 새 채팅 열기", script)
@@ -90,6 +91,16 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertIn("Ctrl+V로 붙여넣으세요", script)
         self.assertIn('document.addEventListener("click"', script)
         self.assertIn('status.setAttribute("aria-live", "polite")', script)
+        self.assertIn("#copy-integrated-instruction", stylesheet)
+        self.assertIn("새 채팅만 엽니다", stylesheet)
+        self.assertIn("Ctrl+V 후 직접 전송하세요", stylesheet)
+
+    def test_manual_handoff_explains_hidden_transformation(self):
+        stylesheet = (ROOT / "web" / "renderer.css").read_text(encoding="utf-8")
+
+        self.assertIn("다음 단계용 지시문으로 변환해 복사", stylesheet)
+        self.assertIn("현재 칸의 내용은 그대로 남습니다", stylesheet)
+        self.assertIn("새 채팅에서 Ctrl+V 후 직접 전송하세요", stylesheet)
 
     def test_comparison_ui_shows_only_the_combined_copy_action(self):
         stylesheet = (ROOT / "web" / "renderer.css").read_text(encoding="utf-8")
@@ -136,7 +147,7 @@ class ProblemSolvingWebModeTests(unittest.TestCase):
         self.assertIn("Ctrl+V로 붙여넣고", script)
         self.assertIn(".manual-form > .manual-step:nth-of-type(-n + 3)", stylesheet)
         self.assertIn(".approval-actions > button:first-child", stylesheet)
-        self.assertIn("Manual stages 1–3 have one action", stylesheet)
+        self.assertIn("next-stage instruction", stylesheet)
 
     def test_two_final_prompts_can_be_copied_together(self):
         script = (ROOT / "web" / "renderer.js").read_text(encoding="utf-8")
