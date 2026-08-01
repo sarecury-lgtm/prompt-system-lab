@@ -69,18 +69,18 @@ class DeterministicPromptRendererTests(unittest.TestCase):
         prompt = RENDERER.render_prompt(brief, self.ledger(), "공통 정책")
 
         self.assertIn("도메인 판단 절차 9", prompt)
-        self.assertEqual(12, RENDERER.CORE_PROCEDURE_LIMIT)
+        self.assertEqual(100, RENDERER.CORE_PROCEDURE_LIMIT)
 
-    def test_renderer_rejects_more_than_twelve_domain_steps(self):
+    def test_renderer_rejects_more_than_one_hundred_domain_steps(self):
         brief = self.brief()
         brief["core_procedure"] = [
             f"도메인 판단 절차 {index}을 수행한다."
-            for index in range(1, 14)
+            for index in range(1, 102)
         ]
 
         with self.assertRaisesRegex(
             RENDERER.BRIEF.PromptBuildBriefError,
-            "0~12",
+            "0~100",
         ):
             RENDERER.render_prompt(brief, self.ledger(), "공통 정책")
 
