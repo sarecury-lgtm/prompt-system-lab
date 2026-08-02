@@ -21,30 +21,29 @@
         "important_uncertainties"
       ],
       "properties": {
-        "parent_goal": {"type": "string", "minLength": 1},
-        "current_goal_hypothesis": {"type": "string", "minLength": 1},
+        "parent_goal": {"type": "string"},
+        "current_goal_hypothesis": {"type": "string"},
         "fixed_constraints": {
           "type": "array",
-          "uniqueItems": true,
-          "items": {"type": "string", "minLength": 1}
+          "items": {"type": "string"}
         },
-        "current_position": {"type": "string", "minLength": 1},
+        "current_position": {"type": "string"},
         "selected_route": {
+          "type": "string",
           "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", "HYBRID"]
         },
         "secondary_route": {
           "type": ["string", "null"],
           "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", null]
         },
-        "route_reason": {"type": "string", "minLength": 1},
-        "current_step": {"type": "string", "minLength": 1},
-        "why_this_step_matters": {"type": "string", "minLength": 1},
-        "completion_condition": {"type": "string", "minLength": 1},
+        "route_reason": {"type": "string"},
+        "current_step": {"type": "string"},
+        "why_this_step_matters": {"type": "string"},
+        "completion_condition": {"type": "string"},
         "important_uncertainties": {
           "type": "array",
           "maxItems": 3,
-          "uniqueItems": true,
-          "items": {"type": "string", "minLength": 1}
+          "items": {"type": "string"}
         }
       }
     },
@@ -54,6 +53,7 @@
       "required": ["selected_route", "primary_route", "secondary_route", "route_reason"],
       "properties": {
         "selected_route": {
+          "type": "string",
           "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", "HYBRID"]
         },
         "primary_route": {
@@ -64,7 +64,7 @@
           "type": ["string", "null"],
           "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", null]
         },
-        "route_reason": {"type": "string", "minLength": 1}
+        "route_reason": {"type": "string"}
       }
     }
   }

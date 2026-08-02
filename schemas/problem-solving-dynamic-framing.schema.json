@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["framing"],
+  "properties": {
+    "framing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal_hypothesis",
+        "explicit_constraints",
+        "unknowns",
+        "external_landscape_matters"
+      ],
+      "properties": {
+        "goal_hypothesis": {"type": "string"},
+        "explicit_constraints": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "question_area",
+              "why_it_may_change_outcome",
+              "externally_discoverable"
+            ],
+            "properties": {
+              "question_area": {"type": "string"},
+              "why_it_may_change_outcome": {"type": "string"},
+              "externally_discoverable": {"type": "boolean"}
+            }
+          }
+        },
+        "external_landscape_matters": {"type": "boolean"}
+      }
+    }
+  }
+}

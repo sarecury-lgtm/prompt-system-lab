@@ -1,17 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "PSOS Visual Evidence Collector",
-  "version": "0.1.0",
-  "description": "Select visible web images and attach them to a PSOS run with an explicit candidate label.",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "name": "PSOS Browser Evidence Bridge",
+  "version": "0.2.0",
+  "description": "Verify live product pages in your signed-in Chrome session and attach visual evidence to PSOS.",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "host_permissions": [
     "http://127.0.0.1:8765/*",
     "http://localhost:8765/*"
   ],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "PSOS 사진 근거 수집"
+    "default_title": "PSOS 브라우저 검증",
+    "default_popup": "popup.html"
   }
 }
