@@ -8,6 +8,7 @@ SCHEMAS = [
     ROOT / "schemas" / "problem-solving-prompt-applied-answer.schema.json",
     ROOT / "schemas" / "problem-solving-prompt-applied-assessment.schema.json",
     ROOT / "schemas" / "problem-solving-goal-aware-assessment.schema.json",
+    ROOT / "schemas" / "problem-solving-source-scout.schema.json",
 ]
 UNSUPPORTED_KEYWORDS = {"minLength", "maxLength", "uniqueItems"}
 
