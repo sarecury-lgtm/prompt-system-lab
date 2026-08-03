@@ -36,11 +36,11 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             addons["app.js"],
         )
         self.assertEqual(
-            ["next-loop-workflow.js", "chatgpt-manual-fallback-v3.js"],
+            ["next-loop-workflow.js", "chatgpt-manual-fallback-v4.js"],
             addons["renderer.js"],
         )
         self.assertIn("next-loop-attachments.css", addons["styles.css"])
-        self.assertEqual("chatgpt-manual-fallback-v3.css", addons["styles.css"][-1])
+        self.assertEqual("chatgpt-manual-fallback-v4.css", addons["styles.css"][-1])
 
     def test_workflow_script_exposes_auto_routes_and_manual_diagnostics(self):
         script = (ROOT / "web" / "next-loop-workflow.js").read_text(encoding="utf-8")
@@ -68,12 +68,16 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             with self.subTest(marker=marker):
                 self.assertIn(marker, script)
 
-    def test_manual_chatgpt_fallback_is_three_step_and_finishes_decisions(self):
-        script = (ROOT / "web" / "chatgpt-manual-fallback-v3.js").read_text(
+    def test_manual_chatgpt_fallback_has_its_own_editable_request_field(self):
+        script = (ROOT / "web" / "chatgpt-manual-fallback-v4.js").read_text(
             encoding="utf-8"
         )
         for marker in (
             "Codex 없이 계속",
+            'id="chatgpt-manual-request"',
+            "무엇을 해결할까요?",
+            "아래 첫 번째 칸이 실제 입력칸입니다",
+            "manualRequest.focus()",
             "복사하고 ChatGPT 열기",
             "이 답변으로 끝내기",
             "이 결과를 ChatGPT에서 계속",
@@ -82,7 +86,7 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             "buildInitialPacket",
             "buildContinuationPacket",
             "PSOSManualChatGPT",
-            "version: 3",
+            "version: 4",
             "fallbackButton.hidden !== shouldHide",
         ):
             with self.subTest(marker=marker):
@@ -91,14 +95,15 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             "OPENAI_API_KEY",
             "api.openai.com",
             'fetch("/api/',
+            'id="chatgpt-manual-request" rows="5" readonly',
             'observe(errorPanel, {\n    attributes: true,\n    attributeFilter: ["hidden"],\n    childList: true,\n    subtree: true',
         ):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, script)
 
-    def test_workflow_styles_hide_advanced_controls_only_in_auto_mode(self):
+    def test_workflow_styles_make_manual_request_visibly_editable(self):
         styles = (ROOT / "web" / "next-loop-workflow.css").read_text(encoding="utf-8")
-        fallback_styles = (ROOT / "web" / "chatgpt-manual-fallback-v3.css").read_text(
+        fallback_styles = (ROOT / "web" / "chatgpt-manual-fallback-v4.css").read_text(
             encoding="utf-8"
         )
         attachment_styles = (ROOT / "web" / "next-loop-attachments.css").read_text(
@@ -106,8 +111,9 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
         )
         self.assertIn("body.workflow-auto:not(.workflow-show-advanced)", styles)
         self.assertIn("manual-current-step", styles)
-        self.assertIn("manual-v3-progress", fallback_styles)
-        self.assertIn("manual-v3-continue", fallback_styles)
+        self.assertIn("manual-v4-request-label", fallback_styles)
+        self.assertIn("manual-v4-progress", fallback_styles)
+        self.assertIn("manual-v4-continue", fallback_styles)
         self.assertIn("attachment-dropzone", attachment_styles)
 
 
