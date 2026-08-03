@@ -12,6 +12,7 @@ on:
       - "scripts/problem_solving_next_loop_*.py"
       - "scripts/problem_solving_quality_next_loop_*.py"
       - "scripts/problem_solving_source_scout_experiment.py"
+      - "scripts/problem_solving_web_attachments.py"
       - "schemas/problem-solving-candidate-*.json"
       - "schemas/problem-solving-dynamic-*.json"
       - "schemas/problem-solving-source-scout.schema.json"
@@ -20,6 +21,7 @@ on:
       - "tests/test_problem_solving_next_loop_*.py"
       - "tests/test_problem_solving_quality_next_loop_*.py"
       - "tests/test_problem_solving_source_scout_experiment.py"
+      - "tests/test_problem_solving_web_attachments.py"
       - "web/next-loop*.js"
       - "web/next-loop*.css"
       - "web/chatgpt-manual-fallback*.js"
@@ -51,10 +53,13 @@ jobs:
             scripts/problem_solving_dynamic_loop_experiment.py \
             scripts/problem_solving_next_loop_experiment.py \
             scripts/problem_solving_next_loop_runtime.py \
+            scripts/problem_solving_next_loop_materialized_runtime.py \
+            scripts/problem_solving_next_loop_replacement_runtime.py \
             scripts/problem_solving_quality_next_loop_web.py \
             scripts/problem_solving_quality_next_loop_runtime_web.py \
             scripts/problem_solving_quality_next_loop_smart_web.py \
-            scripts/problem_solving_source_scout_experiment.py
+            scripts/problem_solving_source_scout_experiment.py \
+            scripts/problem_solving_web_attachments.py
 
       - name: Run next-loop focused tests
         run: |
@@ -65,15 +70,18 @@ jobs:
             tests.test_problem_solving_next_loop_experiment \
             tests.test_problem_solving_next_loop_runtime \
             tests.test_problem_solving_next_loop_product_scenario \
+            tests.test_problem_solving_next_loop_replacement_runtime \
             tests.test_problem_solving_quality_next_loop_web \
             tests.test_problem_solving_quality_next_loop_smart_web \
-            tests.test_problem_solving_source_scout_experiment
+            tests.test_problem_solving_source_scout_experiment \
+            tests.test_problem_solving_web_attachments
 
       - name: Check next-loop browser scripts
         run: |
           node --check web/next-loop.js
           node --check web/next-loop-details.js
           node --check web/next-loop-workflow.js
+          node --check web/next-loop-attachments.js
           node --check web/chatgpt-manual-fallback-v2.js
 
       - name: Run full repository test suite
