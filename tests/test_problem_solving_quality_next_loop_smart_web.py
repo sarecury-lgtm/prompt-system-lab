@@ -27,13 +27,19 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
 
         self.assertEqual(before, SMART.web.STATIC_ADDONS)
         self.assertEqual(
-            ["quality-review.js", "next-loop.js", "next-loop-details.js"],
+            [
+                "quality-review.js",
+                "next-loop-attachments.js",
+                "next-loop.js",
+                "next-loop-details.js",
+            ],
             addons["app.js"],
         )
         self.assertEqual(
             ["next-loop-workflow.js", "chatgpt-manual-fallback-v2.js"],
             addons["renderer.js"],
         )
+        self.assertIn("next-loop-attachments.css", addons["styles.css"])
         self.assertEqual("chatgpt-manual-fallback.css", addons["styles.css"][-1])
 
     def test_workflow_script_exposes_auto_routes_and_manual_diagnostics(self):
@@ -46,6 +52,18 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             "파일 변경",
             "PSOSWorkflowRouter",
             "manual-progress",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
+
+    def test_attachment_script_supports_picker_paste_and_drop(self):
+        script = (ROOT / "web" / "next-loop-attachments.js").read_text(encoding="utf-8")
+        for marker in (
+            "/api/attachments",
+            "차트·스크린샷 첨부",
+            'addEventListener("paste"',
+            'addEventListener("drop"',
+            "PSOSAttachments",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, script)
@@ -79,9 +97,13 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
         fallback_styles = (ROOT / "web" / "chatgpt-manual-fallback.css").read_text(
             encoding="utf-8"
         )
+        attachment_styles = (ROOT / "web" / "next-loop-attachments.css").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("body.workflow-auto:not(.workflow-show-advanced)", styles)
         self.assertIn("manual-current-step", styles)
         self.assertIn("chatgpt-manual-panel", fallback_styles)
+        self.assertIn("attachment-dropzone", attachment_styles)
 
 
 if __name__ == "__main__":
