@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import problem_solving_manual_patch_web as manual_patch_support
 import problem_solving_next_loop_replacement_runtime as candidate_runtime
 import problem_solving_quality_next_loop_web as web
 import problem_solving_web_attachments as attachment_support
@@ -25,15 +26,18 @@ def build_static_addons() -> dict[str, list[str]]:
     renderer_addons.append("psos-manual-protocol.js")
     renderer_addons.append("psos-manual-route-policy.js")
     renderer_addons.append("chatgpt-manual-fallback-v5.js")
+    renderer_addons.append("chatgpt-manual-patch-v1.js")
 
     style_addons.append("next-loop-workflow.css")
     style_addons.append("chatgpt-manual-fallback-v5.css")
+    style_addons.append("chatgpt-manual-patch-v1.css")
     return addons
 
 
 def main() -> int:
     web.next_loop = candidate_runtime
     attachment_support.install(web)
+    manual_patch_support.install(web)
     web.STATIC_ADDONS = build_static_addons()
     return web.main()
 
