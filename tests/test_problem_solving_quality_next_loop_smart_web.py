@@ -40,6 +40,7 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             [
                 "next-loop-workflow.js",
                 "psos-manual-protocol.js",
+                "psos-manual-route-policy.js",
                 "chatgpt-manual-fallback-v5.js",
             ],
             addons["renderer.js"],
@@ -91,6 +92,20 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 self.assertIn(marker, script)
         self.assertNotIn("OPENAI_API_KEY", script)
         self.assertNotIn('fetch("/api/', script)
+
+    def test_manual_route_policy_prioritizes_specific_decisions(self):
+        script = (ROOT / "web" / "psos-manual-route-policy.js").read_text(
+            encoding="utf-8"
+        )
+        for marker in (
+            "decisionAction",
+            "broadSearch",
+            'return "DECISION"',
+            "base.inferRoute",
+            "PSOSManualProtocol",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
 
     def test_manual_ui_is_one_packet_one_import_flow(self):
         script = (ROOT / "web" / "chatgpt-manual-fallback-v5.js").read_text(
