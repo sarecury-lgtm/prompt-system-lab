@@ -84,7 +84,7 @@ class CandidateWorkingSetTests(unittest.TestCase):
 
     def test_source_scout_becomes_deduplicated_working_set_and_dynamic_scan(self):
         working = self.make_working()
-        scan = WORKING.source_scout_to_dynamic_scan(source_state())
+        scan = WORKING.source_scout_to_dynamic_scan(source_state())["scan"]
 
         self.assertEqual("awaiting_correction", working["state"])
         self.assertEqual(2, len(working["candidates"]))
