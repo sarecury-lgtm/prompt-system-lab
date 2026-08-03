@@ -19,6 +19,7 @@ SCHEMAS = [
     ROOT / "schemas" / "problem-solving-dynamic-assessment.schema.json",
     ROOT / "schemas" / "problem-solving-source-scout.schema.json",
     ROOT / "schemas" / "problem-solving-candidate-correction.schema.json",
+    ROOT / "schemas" / "problem-solving-candidate-update.schema.json",
 ]
 UNSUPPORTED_KEYWORDS = {"minLength", "maxLength", "uniqueItems"}
 
