@@ -23,7 +23,7 @@ ACTION_BY_TYPE = {
     "exclude_candidate": "RERANK",
     "constraint_change": "FILTER",
     "scope_expand": "PARTIAL_RESEARCH",
-    "scope_reduce": "FILTER",
+    "scope_reduce": "PARTIAL_RESEARCH",
     "preference_update": "RERANK",
     "request_more": "PARTIAL_RESEARCH",
     "request_verification": "VERIFY_CANDIDATE",
