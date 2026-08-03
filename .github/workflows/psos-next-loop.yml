@@ -22,6 +22,8 @@ on:
       - "tests/test_problem_solving_source_scout_experiment.py"
       - "web/next-loop*.js"
       - "web/next-loop*.css"
+      - "web/chatgpt-manual-fallback.js"
+      - "web/chatgpt-manual-fallback.css"
       - "start-psos-next-loop.cmd"
   workflow_dispatch:
 
@@ -72,6 +74,7 @@ jobs:
           node --check web/next-loop.js
           node --check web/next-loop-details.js
           node --check web/next-loop-workflow.js
+          node --check web/chatgpt-manual-fallback.js
 
       - name: Run full repository test suite
         run: python -B -m unittest discover -s tests
