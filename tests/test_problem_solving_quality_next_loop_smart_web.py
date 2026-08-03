@@ -21,15 +21,17 @@ SPEC.loader.exec_module(SMART)
 
 
 class QualityNextLoopSmartWebTests(unittest.TestCase):
-    def test_smart_assets_are_appended_after_existing_assets(self):
+    def test_smart_assets_are_built_without_mutating_base_assets(self):
+        before = {name: list(values) for name, values in SMART.web.STATIC_ADDONS.items()}
+        addons = SMART.build_static_addons()
+
+        self.assertEqual(before, SMART.web.STATIC_ADDONS)
         self.assertEqual(
-            ["next-loop-workflow.js"],
-            SMART.web.STATIC_ADDONS["renderer.js"],
+            ["quality-review.js", "next-loop.js", "next-loop-details.js"],
+            addons["app.js"],
         )
-        self.assertEqual(
-            "next-loop-workflow.css",
-            SMART.web.STATIC_ADDONS["styles.css"][-1],
-        )
+        self.assertEqual(["next-loop-workflow.js"], addons["renderer.js"])
+        self.assertEqual("next-loop-workflow.css", addons["styles.css"][-1])
 
     def test_workflow_script_exposes_auto_routes_and_manual_diagnostics(self):
         script = (ROOT / "web" / "next-loop-workflow.js").read_text(encoding="utf-8")
