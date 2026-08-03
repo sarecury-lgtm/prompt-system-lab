@@ -30,8 +30,11 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             ["quality-review.js", "next-loop.js", "next-loop-details.js"],
             addons["app.js"],
         )
-        self.assertEqual(["next-loop-workflow.js"], addons["renderer.js"])
-        self.assertEqual("next-loop-workflow.css", addons["styles.css"][-1])
+        self.assertEqual(
+            ["next-loop-workflow.js", "chatgpt-manual-fallback.js"],
+            addons["renderer.js"],
+        )
+        self.assertEqual("chatgpt-manual-fallback.css", addons["styles.css"][-1])
 
     def test_workflow_script_exposes_auto_routes_and_manual_diagnostics(self):
         script = (ROOT / "web" / "next-loop-workflow.js").read_text(encoding="utf-8")
@@ -47,10 +50,30 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             with self.subTest(marker=marker):
                 self.assertIn(marker, script)
 
+    def test_manual_chatgpt_fallback_has_no_api_engine_dependency(self):
+        script = (ROOT / "web" / "chatgpt-manual-fallback.js").read_text(encoding="utf-8")
+        for marker in (
+            "Codex 없이 사용",
+            "https://chatgpt.com/",
+            "buildInitialPacket",
+            "buildContinuationPacket",
+            "일반 ChatGPT로 계속",
+            "PSOSManualChatGPT",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
+        for forbidden in ("OPENAI_API_KEY", "api.openai.com", 'fetch("/api/'):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, script)
+
     def test_workflow_styles_hide_advanced_controls_only_in_auto_mode(self):
         styles = (ROOT / "web" / "next-loop-workflow.css").read_text(encoding="utf-8")
+        fallback_styles = (ROOT / "web" / "chatgpt-manual-fallback.css").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("body.workflow-auto:not(.workflow-show-advanced)", styles)
         self.assertIn("manual-current-step", styles)
+        self.assertIn("chatgpt-manual-panel", fallback_styles)
 
 
 if __name__ == "__main__":
