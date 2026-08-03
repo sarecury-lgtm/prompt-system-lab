@@ -3,13 +3,24 @@
 
 from __future__ import annotations
 
-import problem_solving_quality_next_loop_runtime_web as runtime_web
+import problem_solving_next_loop_runtime as candidate_runtime
+import problem_solving_quality_next_loop_web as web
 
 
-web = runtime_web.web
-web.STATIC_ADDONS.setdefault("renderer.js", []).append("next-loop-workflow.js")
-web.STATIC_ADDONS.setdefault("styles.css", []).append("next-loop-workflow.css")
+def build_static_addons() -> dict[str, list[str]]:
+    addons = {name: list(values) for name, values in web.STATIC_ADDONS.items()}
+    addons.setdefault("app.js", []).append("next-loop-details.js")
+    addons.setdefault("styles.css", []).append("next-loop-details.css")
+    addons.setdefault("renderer.js", []).append("next-loop-workflow.js")
+    addons.setdefault("styles.css", []).append("next-loop-workflow.css")
+    return addons
+
+
+def main() -> int:
+    web.next_loop = candidate_runtime
+    web.STATIC_ADDONS = build_static_addons()
+    return web.main()
 
 
 if __name__ == "__main__":
-    raise SystemExit(web.main())
+    raise SystemExit(main())
