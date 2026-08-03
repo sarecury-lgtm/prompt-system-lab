@@ -42,7 +42,20 @@ def working():
         "request": "후보를 찾아줘",
         "goal": "실제로 고를 후보를 압축한다",
         "constraints": {},
-        "source_plan": {"strategy": "MARKET_SCAN"},
+        "source_plan": {
+            "strategy": "MARKET_SCAN",
+            "primary_source_family": "MARKETPLACE",
+            "secondary_source_family": None,
+            "next_action": "판매 후보를 구조화한다.",
+            "probes": [
+                {
+                    "family": "MARKETPLACE",
+                    "score": 9,
+                    "signal_summary": "현재 후보가 확인됨",
+                    "verification_need": "current_state",
+                }
+            ],
+        },
         "candidates": [
             candidate("candidate-001", "후보 A", "https://example.test/a/", status="excluded"),
             candidate("candidate-002", "후보 B", "https://example.test/b"),
