@@ -27,6 +27,7 @@ on:
       - "web/next-loop*.js"
       - "web/next-loop*.css"
       - "web/psos-manual-protocol.js"
+      - "web/psos-manual-route-policy.js"
       - "web/chatgpt-manual-fallback*.js"
       - "web/chatgpt-manual-fallback*.css"
       - "start-psos-next-loop.cmd"
@@ -87,6 +88,7 @@ jobs:
           node --check web/next-loop-workflow.js
           node --check web/next-loop-attachments.js
           node --check web/psos-manual-protocol.js
+          node --check web/psos-manual-route-policy.js
           node --check web/chatgpt-manual-fallback-v5.js
           node tests/manual_protocol_smoke.js
 
