@@ -17,6 +17,7 @@ on:
       - "schemas/problem-solving-dynamic-*.json"
       - "schemas/problem-solving-manual-*.json"
       - "schemas/problem-solving-source-scout.schema.json"
+      - "tests/manual_protocol_smoke.js"
       - "tests/test_problem_solving_candidate_*.py"
       - "tests/test_problem_solving_dynamic_loop_experiment.py"
       - "tests/test_problem_solving_next_loop_*.py"
@@ -87,6 +88,7 @@ jobs:
           node --check web/next-loop-attachments.js
           node --check web/psos-manual-protocol.js
           node --check web/chatgpt-manual-fallback-v5.js
+          node tests/manual_protocol_smoke.js
 
       - name: Run full repository test suite
         run: python -B -m unittest discover -s tests
