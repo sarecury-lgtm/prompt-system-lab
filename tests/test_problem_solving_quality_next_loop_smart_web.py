@@ -31,7 +31,7 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             addons["app.js"],
         )
         self.assertEqual(
-            ["next-loop-workflow.js", "chatgpt-manual-fallback.js"],
+            ["next-loop-workflow.js", "chatgpt-manual-fallback-v2.js"],
             addons["renderer.js"],
         )
         self.assertEqual("chatgpt-manual-fallback.css", addons["styles.css"][-1])
@@ -50,8 +50,10 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             with self.subTest(marker=marker):
                 self.assertIn(marker, script)
 
-    def test_manual_chatgpt_fallback_has_no_api_engine_dependency(self):
-        script = (ROOT / "web" / "chatgpt-manual-fallback.js").read_text(encoding="utf-8")
+    def test_manual_chatgpt_fallback_has_no_api_engine_dependency_or_observer_loop(self):
+        script = (ROOT / "web" / "chatgpt-manual-fallback-v2.js").read_text(
+            encoding="utf-8"
+        )
         for marker in (
             "Codex 없이 사용",
             "https://chatgpt.com/",
@@ -59,10 +61,16 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             "buildContinuationPacket",
             "일반 ChatGPT로 계속",
             "PSOSManualChatGPT",
+            "fallbackButton.hidden !== shouldHide",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, script)
-        for forbidden in ("OPENAI_API_KEY", "api.openai.com", 'fetch("/api/'):
+        for forbidden in (
+            "OPENAI_API_KEY",
+            "api.openai.com",
+            'fetch("/api/',
+            'observe(errorPanel, {\n    attributes: true,\n    attributeFilter: ["hidden"],\n    childList: true,\n    subtree: true',
+        ):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, script)
 
