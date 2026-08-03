@@ -256,16 +256,21 @@ def source_scout_to_dynamic_scan(state: Mapping[str, Any]) -> dict[str, Any]:
     vocabulary: list[str] = []
     adjacent: list[dict[str, str]] = []
     observations: list[dict[str, str]] = []
+    seen_lead_urls: set[str] = set()
     for probe in scout["probes"]:
         for query in probe["queries"]:
             if query not in vocabulary:
                 vocabulary.append(query)
         for lead in probe["concrete_leads"]:
+            url = lead["url"].strip()
+            if not url or url in seen_lead_urls:
+                continue
+            seen_lead_urls.add(url)
             adjacent.append(
                 {
                     "name": lead["name"],
                     "relation": lead["why_actionable"],
-                    "source": lead["url"],
+                    "source": url,
                 }
             )
         observations.append(
@@ -277,11 +282,13 @@ def source_scout_to_dynamic_scan(state: Mapping[str, Any]) -> dict[str, Any]:
             }
         )
     return {
-        "terrain_summary": decision["selection_reason"],
-        "vocabulary": vocabulary[:12],
-        "adjacent_possibilities": adjacent[:6],
-        "observations": observations[:8],
-        "source_gaps": list(scout["scouting_limitations"])[:5],
+        "scan": {
+            "terrain_summary": decision["selection_reason"],
+            "vocabulary": vocabulary[:12],
+            "adjacent_possibilities": adjacent[:6],
+            "observations": observations[:8],
+            "source_gaps": list(scout["scouting_limitations"])[:5],
+        }
     }
 
 
@@ -385,18 +392,25 @@ def _matches(actual: Any, rule: Any) -> bool | None:
         return None
     op, expected = rule["op"], rule["value"]
     try:
-        return {
-            "eq": actual == expected,
-            "neq": actual != expected,
-            "lte": actual <= expected,
-            "lt": actual < expected,
-            "gte": actual >= expected,
-            "gt": actual > expected,
-            "in": actual in expected,
-            "contains": expected in actual,
-        }.get(op)
+        if op == "eq":
+            return actual == expected
+        if op == "neq":
+            return actual != expected
+        if op == "lte":
+            return actual <= expected
+        if op == "lt":
+            return actual < expected
+        if op == "gte":
+            return actual >= expected
+        if op == "gt":
+            return actual > expected
+        if op == "in":
+            return actual in expected
+        if op == "contains":
+            return expected in actual
     except (TypeError, ValueError):
         return None
+    return None
 
 
 def apply_known_constraint_filter(
