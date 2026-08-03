@@ -10,8 +10,17 @@
     return base.inferRoute(text, externalHint);
   }
 
+  function buildJobPacket(options = {}) {
+    const routeHint = inferRoute(options.request, options.routeHint);
+    return base.buildJobPacket({
+      ...options,
+      routeHint,
+    });
+  }
+
   window.PSOSManualProtocol = Object.freeze({
     ...base,
     inferRoute,
+    buildJobPacket,
   });
 })();
