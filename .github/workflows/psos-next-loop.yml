@@ -82,7 +82,7 @@ jobs:
           node --check web/next-loop-details.js
           node --check web/next-loop-workflow.js
           node --check web/next-loop-attachments.js
-          node --check web/chatgpt-manual-fallback-v3.js
+          node --check web/chatgpt-manual-fallback-v4.js
 
       - name: Run full repository test suite
         run: python -B -m unittest discover -s tests
