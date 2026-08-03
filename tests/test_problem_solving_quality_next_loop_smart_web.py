@@ -36,7 +36,11 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             addons["app.js"],
         )
         self.assertEqual(
-            ["next-loop-workflow.js", "chatgpt-manual-fallback-v4.js"],
+            [
+                "next-loop-workflow.js",
+                "chatgpt-manual-fallback-v4.js",
+                "chatgpt-manual-clipboard-fix.js",
+            ],
             addons["renderer.js"],
         )
         self.assertIn("next-loop-attachments.css", addons["styles.css"])
@@ -100,6 +104,25 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
         ):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, script)
+
+    def test_clipboard_fix_copies_before_opening_chatgpt(self):
+        script = (ROOT / "web" / "chatgpt-manual-clipboard-fix.js").read_text(
+            encoding="utf-8"
+        )
+        for marker in (
+            'document.execCommand("copy")',
+            "copyWithFallback(packet.value",
+            'window.open(\n          "https://chatgpt.com/"',
+            "복사 완료. ChatGPT를 엽니다.",
+            "event.stopImmediatePropagation()",
+            "PSOSManualClipboardFix",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
+        self.assertLess(
+            script.index("copyWithFallback(packet.value"),
+            script.index('window.open(\n          "https://chatgpt.com/"'),
+        )
 
     def test_workflow_styles_make_manual_request_visibly_editable(self):
         styles = (ROOT / "web" / "next-loop-workflow.css").read_text(encoding="utf-8")
