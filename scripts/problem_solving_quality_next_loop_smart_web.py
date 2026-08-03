@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import problem_solving_next_loop_runtime as candidate_runtime
+import problem_solving_next_loop_materialized_runtime as candidate_runtime
 import problem_solving_quality_next_loop_web as web
 
 
