@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -38,13 +39,13 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
         self.assertEqual(
             [
                 "next-loop-workflow.js",
-                "chatgpt-manual-fallback-v4.js",
-                "chatgpt-manual-clipboard-fix.js",
+                "psos-manual-protocol.js",
+                "chatgpt-manual-fallback-v5.js",
             ],
             addons["renderer.js"],
         )
         self.assertIn("next-loop-attachments.css", addons["styles.css"])
-        self.assertEqual("chatgpt-manual-fallback-v4.css", addons["styles.css"][-1])
+        self.assertEqual("chatgpt-manual-fallback-v5.css", addons["styles.css"][-1])
 
     def test_workflow_script_exposes_auto_routes_and_manual_diagnostics(self):
         script = (ROOT / "web" / "next-loop-workflow.js").read_text(encoding="utf-8")
@@ -72,26 +73,43 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             with self.subTest(marker=marker):
                 self.assertIn(marker, script)
 
-    def test_manual_chatgpt_fallback_has_its_own_editable_request_field(self):
-        script = (ROOT / "web" / "chatgpt-manual-fallback-v4.js").read_text(
+    def test_manual_protocol_builds_job_packet_and_imports_envelope(self):
+        script = (ROOT / "web" / "psos-manual-protocol.js").read_text(encoding="utf-8")
+        for marker in (
+            "PSOS Job Packet",
+            "goal_ledger_task",
+            "execution_contract",
+            "quality_gates",
+            "completion_rule",
+            "PSOS_RESULT_ENVELOPE_START",
+            "parseResultEnvelope",
+            "buildContinuationPrompt",
+            "PSOSManualProtocol",
+            "version: 1",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
+        self.assertNotIn("OPENAI_API_KEY", script)
+        self.assertNotIn('fetch("/api/', script)
+
+    def test_manual_ui_is_one_packet_one_import_flow(self):
+        script = (ROOT / "web" / "chatgpt-manual-fallback-v5.js").read_text(
             encoding="utf-8"
         )
         for marker in (
-            "Codex 없이 계속",
-            'id="chatgpt-manual-request"',
-            "무엇을 해결할까요?",
-            "아래 첫 번째 칸이 실제 입력칸입니다",
-            "manualRequest.focus()",
-            "복사하고 ChatGPT 열기",
-            "이 답변으로 끝내기",
-            "이 결과를 ChatGPT에서 계속",
-            "후보 작업대에서 멈추거나 사용자의 추가 교정을 기다리지 않는다",
-            "일반 ChatGPT는 PSOS의 로컬 파일 경로를 열 수 없다",
-            "buildInitialPacket",
-            "buildContinuationPacket",
+            "ChatGPT 수동 실행",
+            'id="manual-v5-request"',
+            "실행 패킷 복사",
+            "ChatGPT 열기",
+            "결과 가져오기",
+            "한 번 더 고치기",
+            "후속 패킷 복사",
+            "copyReliable",
+            'document.execCommand("copy")',
+            "parseResultEnvelope",
+            "toDisplayData",
             "PSOSManualChatGPT",
-            "version: 4",
-            "fallbackButton.hidden !== shouldHide",
+            "version: 5",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, script)
@@ -99,34 +117,30 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             "OPENAI_API_KEY",
             "api.openai.com",
             'fetch("/api/',
-            'id="chatgpt-manual-request" rows="5" readonly',
-            'observe(errorPanel, {\n    attributes: true,\n    attributeFilter: ["hidden"],\n    childList: true,\n    subtree: true',
+            "복사하고 ChatGPT 열기",
         ):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, script)
 
-    def test_clipboard_fix_copies_before_opening_chatgpt(self):
-        script = (ROOT / "web" / "chatgpt-manual-clipboard-fix.js").read_text(
-            encoding="utf-8"
+    def test_manual_contract_schemas_are_valid_json(self):
+        job_schema = json.loads(
+            (ROOT / "schemas" / "problem-solving-manual-job-packet.schema.json").read_text(
+                encoding="utf-8"
+            )
         )
-        for marker in (
-            'document.execCommand("copy")',
-            "copyWithFallback(packet.value",
-            'window.open(\n          "https://chatgpt.com/"',
-            "복사 완료. ChatGPT를 엽니다.",
-            "event.stopImmediatePropagation()",
-            "PSOSManualClipboardFix",
-        ):
-            with self.subTest(marker=marker):
-                self.assertIn(marker, script)
-        self.assertLess(
-            script.index("copyWithFallback(packet.value"),
-            script.index('window.open(\n          "https://chatgpt.com/"'),
+        result_schema = json.loads(
+            (ROOT / "schemas" / "problem-solving-manual-result-envelope.schema.json").read_text(
+                encoding="utf-8"
+            )
         )
+        self.assertEqual("PSOS Manual Job Packet", job_schema["title"])
+        self.assertEqual("PSOS Manual Result Envelope", result_schema["title"])
+        self.assertIn("output_contract", job_schema["required"])
+        self.assertIn("continuation", result_schema["required"])
 
-    def test_workflow_styles_make_manual_request_visibly_editable(self):
+    def test_workflow_styles_hide_legacy_manual_by_default(self):
         styles = (ROOT / "web" / "next-loop-workflow.css").read_text(encoding="utf-8")
-        fallback_styles = (ROOT / "web" / "chatgpt-manual-fallback-v4.css").read_text(
+        fallback_styles = (ROOT / "web" / "chatgpt-manual-fallback-v5.css").read_text(
             encoding="utf-8"
         )
         attachment_styles = (ROOT / "web" / "next-loop-attachments.css").read_text(
@@ -134,9 +148,9 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
         )
         self.assertIn("body.workflow-auto:not(.workflow-show-advanced)", styles)
         self.assertIn("manual-current-step", styles)
-        self.assertIn("manual-v4-request-label", fallback_styles)
-        self.assertIn("manual-v4-progress", fallback_styles)
-        self.assertIn("manual-v4-continue", fallback_styles)
+        self.assertIn("manual-v5-request-label", fallback_styles)
+        self.assertIn("manual-v5-progress", fallback_styles)
+        self.assertIn("body:not(.workflow-show-advanced) #manual-panel", fallback_styles)
         self.assertIn("attachment-dropzone", attachment_styles)
 
 
