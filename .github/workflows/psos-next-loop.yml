@@ -25,7 +25,7 @@ on:
       - "web/next-loop*.js"
       - "web/next-loop*.css"
       - "web/chatgpt-manual-fallback*.js"
-      - "web/chatgpt-manual-fallback.css"
+      - "web/chatgpt-manual-fallback*.css"
       - "start-psos-next-loop.cmd"
   workflow_dispatch:
 
@@ -82,7 +82,7 @@ jobs:
           node --check web/next-loop-details.js
           node --check web/next-loop-workflow.js
           node --check web/next-loop-attachments.js
-          node --check web/chatgpt-manual-fallback-v2.js
+          node --check web/chatgpt-manual-fallback-v3.js
 
       - name: Run full repository test suite
         run: python -B -m unittest discover -s tests
