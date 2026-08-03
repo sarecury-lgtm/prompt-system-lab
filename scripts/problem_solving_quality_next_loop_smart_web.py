@@ -16,14 +16,17 @@ def build_static_addons() -> dict[str, list[str]]:
     app_addons.insert(insert_at, "next-loop-attachments.js")
     app_addons.append("next-loop-details.js")
 
-    addons.setdefault("styles.css", []).append("next-loop-details.css")
-    addons.setdefault("styles.css", []).append("next-loop-attachments.css")
+    style_addons = addons.setdefault("styles.css", [])
+    style_addons.append("next-loop-details.css")
+    style_addons.append("next-loop-attachments.css")
+
     renderer_addons = addons.setdefault("renderer.js", [])
     renderer_addons.append("next-loop-workflow.js")
-    renderer_addons.append("chatgpt-manual-fallback-v4.js")
-    renderer_addons.append("chatgpt-manual-clipboard-fix.js")
-    addons.setdefault("styles.css", []).append("next-loop-workflow.css")
-    addons.setdefault("styles.css", []).append("chatgpt-manual-fallback-v4.css")
+    renderer_addons.append("psos-manual-protocol.js")
+    renderer_addons.append("chatgpt-manual-fallback-v5.js")
+
+    style_addons.append("next-loop-workflow.css")
+    style_addons.append("chatgpt-manual-fallback-v5.css")
     return addons
 
 
