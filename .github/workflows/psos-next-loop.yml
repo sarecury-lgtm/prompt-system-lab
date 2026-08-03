@@ -18,7 +18,7 @@ on:
       - "tests/test_problem_solving_candidate_*.py"
       - "tests/test_problem_solving_dynamic_loop_experiment.py"
       - "tests/test_problem_solving_next_loop_*.py"
-      - "tests/test_problem_solving_quality_next_loop_web.py"
+      - "tests/test_problem_solving_quality_next_loop_*.py"
       - "tests/test_problem_solving_source_scout_experiment.py"
       - "web/next-loop*.js"
       - "web/next-loop*.css"
@@ -51,6 +51,7 @@ jobs:
             scripts/problem_solving_next_loop_runtime.py \
             scripts/problem_solving_quality_next_loop_web.py \
             scripts/problem_solving_quality_next_loop_runtime_web.py \
+            scripts/problem_solving_quality_next_loop_smart_web.py \
             scripts/problem_solving_source_scout_experiment.py
 
       - name: Run next-loop focused tests
@@ -63,12 +64,14 @@ jobs:
             tests.test_problem_solving_next_loop_runtime \
             tests.test_problem_solving_next_loop_product_scenario \
             tests.test_problem_solving_quality_next_loop_web \
+            tests.test_problem_solving_quality_next_loop_smart_web \
             tests.test_problem_solving_source_scout_experiment
 
       - name: Check next-loop browser scripts
         run: |
           node --check web/next-loop.js
           node --check web/next-loop-details.js
+          node --check web/next-loop-workflow.js
 
       - name: Run full repository test suite
         run: python -B -m unittest discover -s tests
