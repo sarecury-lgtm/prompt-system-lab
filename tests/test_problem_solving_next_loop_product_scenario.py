@@ -45,11 +45,11 @@ def scout_output():
                     "family": "COMMUNITY",
                     "queries": ["삼겹살 실구매 후기"],
                     "concrete_leads": [],
-                    "repeated_specificity": "weak",
-                    "recency": "mixed",
+                    "repeated_specificity": "vague",
+                    "recency": "unknown",
                     "actionability": "lead",
                     "access": "open",
-                    "verification_need": "cross_check",
+                    "verification_need": "primary_check",
                     "signal_summary": "후기 신호는 보조적이다.",
                 },
             ],
@@ -153,54 +153,58 @@ def assessment_output(reason):
     }
 
 
-def candidate_update_after_price_research():
-    def item(candidate_id, name, url, price):
-        return {
-            "candidate_id": candidate_id,
-            "name": name,
-            "source_family": "MARKETPLACE",
-            "source_url": url,
-            "why_actionable": "배송비 포함 100g당 가격을 직접 확인함",
-            "attributes": [
-                {
-                    "key": "price_per_100g",
-                    "value": str(price),
-                    "source": url,
-                }
-            ],
-            "evidence": [
-                {
-                    "source": url,
-                    "finding": f"배송비 포함 100g당 {price}원",
-                    "kind": "web",
-                }
-            ],
-            "strengths": ["가격이 직접 확인됨"],
-            "risks": ["현재 판매 상태는 추가 확인 필요"],
-            "status": "kept",
-            "verification_status": "partially_verified",
-        }
+def update_item(candidate_id, name, url, *, price=None, availability=None, verified=False):
+    attributes = []
+    if price is not None:
+        attributes.append(
+            {"key": "price_per_100g", "value": str(price), "source": url}
+        )
+    if availability is not None:
+        attributes.append(
+            {"key": "availability", "value": availability, "source": url}
+        )
+    return {
+        "candidate_id": candidate_id,
+        "name": name,
+        "source_family": "MARKETPLACE",
+        "source_url": url,
+        "why_actionable": "가격과 판매 조건을 직접 확인함",
+        "attributes": attributes,
+        "evidence": [
+            {
+                "source": url,
+                "finding": "현재 후보 속성을 직접 확인함",
+                "kind": "web",
+            }
+        ],
+        "strengths": ["직접 출처에서 조건 확인"],
+        "risks": [] if verified else ["현재 판매 상태는 추가 확인 필요"],
+        "status": "kept",
+        "verification_status": "verified" if verified else "partially_verified",
+    }
 
+
+def price_update():
     return {
         "candidate_update": {
             "updates": [
-                item(
+                update_item(
                     "candidate-001",
                     "기존 냉장 삼겹살",
                     "https://example.test/pork-a",
-                    1450,
+                    price=1450,
                 ),
-                item(
+                update_item(
                     "candidate-002",
                     "기존 냉동 삼겹살",
                     "https://example.test/pork-b",
-                    1280,
+                    price=1280,
                 ),
-                item(
+                update_item(
                     "",
                     "추가 가성비 삼겹살",
                     "https://example.test/pork-c",
-                    950,
+                    price=950,
                 ),
             ],
             "resolved_requirements": [],
@@ -211,40 +215,18 @@ def candidate_update_after_price_research():
     }
 
 
-def candidate_update_after_availability_check():
+def availability_update():
     return {
         "candidate_update": {
             "updates": [
-                {
-                    "candidate_id": "candidate-003",
-                    "name": "추가 가성비 삼겹살",
-                    "source_family": "MARKETPLACE",
-                    "source_url": "https://example.test/pork-c",
-                    "why_actionable": "현재 주문 가능한 옵션을 직접 확인함",
-                    "attributes": [
-                        {
-                            "key": "availability",
-                            "value": "available",
-                            "source": "https://example.test/pork-c",
-                        },
-                        {
-                            "key": "price_per_100g",
-                            "value": "950",
-                            "source": "https://example.test/pork-c",
-                        },
-                    ],
-                    "evidence": [
-                        {
-                            "source": "https://example.test/pork-c",
-                            "finding": "현재 주문 가능",
-                            "kind": "web",
-                        }
-                    ],
-                    "strengths": ["가격 상한 충족", "현재 주문 가능"],
-                    "risks": [],
-                    "status": "kept",
-                    "verification_status": "verified",
-                }
+                update_item(
+                    "candidate-003",
+                    "추가 가성비 삼겹살",
+                    "https://example.test/pork-c",
+                    price=950,
+                    availability="available",
+                    verified=True,
+                )
             ],
             "resolved_requirements": ["현재 판매 상태 확인"],
             "unresolved_requirements": [],
@@ -282,7 +264,7 @@ class FakeEngine:
 
 
 class ProductNextLoopScenarioTests(unittest.TestCase):
-    def test_price_correction_research_merge_filter_and_verified_completion(self):
+    def test_price_correction_merge_filter_and_verified_completion(self):
         engine = FakeEngine(
             [
                 scout_output(),
@@ -294,7 +276,7 @@ class ProductNextLoopScenarioTests(unittest.TestCase):
                     "https://example.test/pork-c",
                 ),
                 assessment_output("가격 구간 조사가 충분하다."),
-                candidate_update_after_price_research(),
+                price_update(),
                 question_gate(),
                 plan_output("남은 후보의 현재 판매 상태 검증"),
                 execution_output(
@@ -302,7 +284,7 @@ class ProductNextLoopScenarioTests(unittest.TestCase):
                     "https://example.test/pork-c",
                 ),
                 assessment_output("현재 판매 상태까지 확인했다."),
-                candidate_update_after_availability_check(),
+                availability_update(),
             ]
         )
 
@@ -332,8 +314,10 @@ class ProductNextLoopScenarioTests(unittest.TestCase):
                 },
             )
 
-            candidates = after_price["candidate_working_set"]["candidates"]
-            by_id = {candidate["id"]: candidate for candidate in candidates}
+            by_id = {
+                candidate["id"]: candidate
+                for candidate in after_price["candidate_working_set"]["candidates"]
+            }
             self.assertEqual("awaiting_correction", after_price["state"])
             self.assertEqual("excluded", by_id["candidate-001"]["status"])
             self.assertEqual("excluded", by_id["candidate-002"]["status"])
