@@ -2,12 +2,19 @@ const assert = require("node:assert/strict");
 
 global.window = {};
 require("../web/psos-manual-protocol.js");
+require("../web/psos-manual-route-policy.js");
 
 const protocol = global.window.PSOSManualProtocol;
 assert.ok(protocol, "manual protocol must be installed");
+assert.equal(
+  protocol.inferRoute("토스트 주식을 오늘 매수하는 게 좋을까?", "CANDIDATE"),
+  "DECISION",
+  "specific action decisions must override a broad candidate hint",
+);
 
 const packet = protocol.buildJobPacket({
   request: "토스트 주식을 오늘 매수하는 게 좋을까? 내일 실적 발표야.",
+  routeHint: "CANDIDATE",
 });
 assert.equal(packet.version, 1);
 assert.equal(packet.route_hint, "DECISION");
