@@ -19,9 +19,9 @@ def build_static_addons() -> dict[str, list[str]]:
     addons.setdefault("styles.css", []).append("next-loop-details.css")
     addons.setdefault("styles.css", []).append("next-loop-attachments.css")
     addons.setdefault("renderer.js", []).append("next-loop-workflow.js")
-    addons.setdefault("renderer.js", []).append("chatgpt-manual-fallback-v2.js")
+    addons.setdefault("renderer.js", []).append("chatgpt-manual-fallback-v3.js")
     addons.setdefault("styles.css", []).append("next-loop-workflow.css")
-    addons.setdefault("styles.css", []).append("chatgpt-manual-fallback.css")
+    addons.setdefault("styles.css", []).append("chatgpt-manual-fallback-v3.css")
     return addons
 
 
