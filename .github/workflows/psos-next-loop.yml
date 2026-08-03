@@ -15,6 +15,7 @@ on:
       - "scripts/problem_solving_web_attachments.py"
       - "schemas/problem-solving-candidate-*.json"
       - "schemas/problem-solving-dynamic-*.json"
+      - "schemas/problem-solving-manual-*.json"
       - "schemas/problem-solving-source-scout.schema.json"
       - "tests/test_problem_solving_candidate_*.py"
       - "tests/test_problem_solving_dynamic_loop_experiment.py"
@@ -24,10 +25,11 @@ on:
       - "tests/test_problem_solving_web_attachments.py"
       - "web/next-loop*.js"
       - "web/next-loop*.css"
+      - "web/psos-manual-protocol.js"
       - "web/chatgpt-manual-fallback*.js"
       - "web/chatgpt-manual-fallback*.css"
-      - "web/chatgpt-manual-clipboard-fix.js"
       - "start-psos-next-loop.cmd"
+      - "start-psos-next-loop.ps1"
   workflow_dispatch:
 
 permissions:
@@ -83,8 +85,8 @@ jobs:
           node --check web/next-loop-details.js
           node --check web/next-loop-workflow.js
           node --check web/next-loop-attachments.js
-          node --check web/chatgpt-manual-fallback-v4.js
-          node --check web/chatgpt-manual-clipboard-fix.js
+          node --check web/psos-manual-protocol.js
+          node --check web/chatgpt-manual-fallback-v5.js
 
       - name: Run full repository test suite
         run: python -B -m unittest discover -s tests
