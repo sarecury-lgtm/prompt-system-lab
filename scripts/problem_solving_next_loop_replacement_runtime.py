@@ -26,10 +26,12 @@ _REMOVE_PATTERN = re.compile(
     r"(?:제외|제거|빼|없애|후보에서\s*내려|후보로\s*보지\s*마)",
     re.IGNORECASE,
 )
+_CANDIDATE_PATTERN = re.compile(
+    r"(?:후보|candidate|종목|상품|장소|업체|서비스)",
+    re.IGNORECASE,
+)
 _GENERATE_PATTERN = re.compile(
-    r"(?:새(?:로운)?\s*(?:후보|candidate)|실제\s*(?:종목|상품|장소|업체|서비스|후보)|"
-    r"후보\s*(?:\d+\s*[~～-]\s*\d+|몇|여러)?\s*(?:개)?\s*(?:뽑|찾|추리|만들|교체)|"
-    r"대신\s*(?:뽑|찾|추리|만들)|교체)",
+    r"(?:새로|새로운|다시|대신|교체|바꿔|뽑|찾|추리|만들|생성)",
     re.IGNORECASE,
 )
 _SOURCE_PATTERN = re.compile(
@@ -46,7 +48,11 @@ def replacement_requested(text: str, working_set: Mapping[str, Any]) -> bool:
     cleaned = str(text or "").strip()
     if not cleaned:
         return False
-    if not (_REMOVE_PATTERN.search(cleaned) and _GENERATE_PATTERN.search(cleaned)):
+    if not (
+        _REMOVE_PATTERN.search(cleaned)
+        and _CANDIDATE_PATTERN.search(cleaned)
+        and _GENERATE_PATTERN.search(cleaned)
+    ):
         return False
     candidates = working_set.get("candidates")
     if not isinstance(candidates, list) or not candidates:
