@@ -1,5 +1,4 @@
 @echo off
-setlocal
 cd /d "%~dp0"
-python -B scripts\problem_solving_quality_next_loop_smart_web.py --open-browser chrome
-endlocal
+start "PSOS next-loop" powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0start-psos-next-loop.ps1"
+exit /b 0
