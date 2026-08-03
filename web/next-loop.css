@@ -1,0 +1,141 @@
+.next-loop-control {
+  align-items: flex-start;
+  max-width: 31rem;
+}
+
+.next-loop-control span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.next-loop-control small {
+  color: var(--muted, #667085);
+  line-height: 1.35;
+}
+
+.next-loop-panel {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line, #d9dee8);
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.next-loop-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.next-loop-heading h3 {
+  margin: 0.25rem 0 0.35rem;
+}
+
+.next-loop-heading p,
+.next-loop-candidate p,
+.next-loop-message {
+  margin: 0;
+}
+
+.next-loop-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted, #667085);
+}
+
+.next-loop-state {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: #eef2f7;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.next-loop-candidate-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.next-loop-candidate {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line, #d9dee8);
+  border-radius: 0.75rem;
+}
+
+.next-loop-candidate.excluded {
+  opacity: 0.58;
+}
+
+.next-loop-candidate > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.next-loop-candidate a {
+  color: inherit;
+  font-weight: 700;
+}
+
+.next-loop-candidate p {
+  margin-top: 0.35rem;
+  color: var(--muted, #667085);
+}
+
+.next-loop-form {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line, #d9dee8);
+}
+
+.next-loop-form label,
+#next-loop-questions label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.next-loop-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
+.next-loop-form textarea,
+.next-loop-form input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.next-loop-form button {
+  min-height: 2.75rem;
+}
+
+#next-loop-questions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.next-loop-message {
+  min-height: 1.4rem;
+  margin-top: 0.65rem;
+  color: var(--muted, #667085);
+}
+
+@media (max-width: 720px) {
+  .next-loop-heading,
+  .next-loop-candidate > div {
+    display: grid;
+  }
+
+  .next-loop-input-row {
+    grid-template-columns: 1fr;
+  }
+}
