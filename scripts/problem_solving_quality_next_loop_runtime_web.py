@@ -8,6 +8,8 @@ import problem_solving_quality_next_loop_web as web
 
 
 web.next_loop = candidate_runtime
+web.STATIC_ADDONS["app.js"].append("next-loop-details.js")
+web.STATIC_ADDONS["styles.css"].append("next-loop-details.css")
 
 
 if __name__ == "__main__":
