@@ -6,7 +6,12 @@ on:
       - codex/problem-solving-os-next-loop
   pull_request:
     paths:
+      - "AGENTS.md"
+      - "ACTIVE_GOAL.json"
+      - "governance/PSOS_*.json"
       - ".github/workflows/psos-next-loop.yml"
+      - "docs/psos-goal-guard.md"
+      - "scripts/problem_solving_goal_guard.py"
       - "scripts/problem_solving_adaptive_*.py"
       - "scripts/problem_solving_candidate_*.py"
       - "scripts/problem_solving_dynamic_loop_experiment.py"
@@ -20,6 +25,7 @@ on:
       - "schemas/problem-solving-manual-*.json"
       - "schemas/problem-solving-source-scout.schema.json"
       - "tests/manual_protocol_smoke.js"
+      - "tests/test_problem_solving_goal_guard.py"
       - "tests/test_problem_solving_adaptive_*.py"
       - "tests/test_problem_solving_candidate_*.py"
       - "tests/test_problem_solving_dynamic_loop_experiment.py"
@@ -47,6 +53,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -56,6 +64,7 @@ jobs:
       - name: Compile next-loop Python
         run: |
           python -m py_compile \
+            scripts/problem_solving_goal_guard.py \
             scripts/problem_solving_adaptive_context.py \
             scripts/problem_solving_adaptive_shopping.py \
             scripts/problem_solving_candidate_working_set.py \
@@ -72,6 +81,11 @@ jobs:
             scripts/problem_solving_quality_next_loop_final_web.py \
             scripts/problem_solving_source_scout_experiment.py \
             scripts/problem_solving_web_attachments.py
+
+      - name: Enforce PSOS parent goal and scope
+        run: |
+          python -B -m unittest tests.test_problem_solving_goal_guard
+          python -B scripts/problem_solving_goal_guard.py --base origin/main
 
       - name: Run adaptive controller tests
         run: |
