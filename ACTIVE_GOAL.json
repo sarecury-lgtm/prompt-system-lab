@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "project": "Personal Problem-Solving OS",
+  "parent_goal": "Accept an ordinary user request and use the smallest sufficient combination of AI reasoning, direct answering, research, reuse, prompts, code, files, tools, verification, and limited replanning to produce the fastest high-quality usable result while preserving the user's actual goal and constraints.",
+  "optimization_order": [
+    "goal fidelity",
+    "usable result quality",
+    "reliable evidence and execution",
+    "time and interaction cost",
+    "model and token cost",
+    "implementation complexity"
+  ],
+  "non_goals": [
+    "a shopping-only system",
+    "a candidate-correction-only system",
+    "a prompt-generation-only system",
+    "a stock-analysis-only system",
+    "increasing the number of agents or model calls as an end in itself",
+    "promoting a single-domain experiment to the default product without cross-domain evidence"
+  ],
+  "invariants": [
+    "The user's parent goal and fixed constraints remain traceable through execution.",
+    "The system selects the smallest sufficient route or tool combination instead of requiring the user to design the workflow.",
+    "Model claims are distinguished from verified external or workspace results.",
+    "A failed or incomplete result is not presented as completed or recommended.",
+    "A retry changes one material dimension and is bounded unless the user explicitly authorizes more work.",
+    "Domain tools remain optional and cannot redefine the PSOS parent goal.",
+    "Weak continuation language continues only the recorded current task and never silently expands scope."
+  ],
+  "current_task": {
+    "id": "goal-drift-guard-v1",
+    "objective": "Turn the existing PSOS purpose into repository-enforced instructions, change classification, drift checks, and cross-domain promotion gates before adding or promoting more domain behavior.",
+    "allowed_change_classes": [
+      "CORE",
+      "TEST"
+    ],
+    "explicitly_out_of_scope": [
+      "running or improving the shopping experiment",
+      "adding another domain-specific collector",
+      "connecting an experimental domain path to the default UI",
+      "merging pull request 100",
+      "redesigning the PSOS parent goal"
+    ],
+    "completion_conditions": [
+      "Repository-level agent instructions load the master goal before work begins.",
+      "Every changed file on the active branch is classified as CORE, ADAPTER, DOMAIN, or TEST.",
+      "The guard rejects unclassified files and prohibited DOMAIN or TEST default promotion.",
+      "CORE promotion requires evidence from at least four distinct regression domains.",
+      "CI runs the goal guard and its tests.",
+      "Existing shopping and candidate-loop work is explicitly recorded as DOMAIN or TEST rather than the system core."
+    ]
+  },
+  "continuation_policy": {
+    "weak_continuations": [
+      "ㄱㄱ",
+      "진행",
+      "진행시켜",
+      "계속",
+      "go ahead",
+      "continue"
+    ],
+    "meaning": "Continue only the current_task within its allowed change classes and explicit scope.",
+    "requires_explicit_approval": [
+      "changing parent_goal",
+      "changing current_task objective",
+      "promoting DOMAIN or TEST work into CORE",
+      "enabling an experimental path by default",
+      "merging a pull request",
+      "expanding to a new domain-specific implementation"
+    ]
+  },
+  "promotion_policy": {
+    "minimum_distinct_domains_for_core": 4,
+    "required_domains": [
+      "direct-analysis",
+      "current-research-decision",
+      "code-and-files",
+      "reuse-or-build",
+      "prompt-as-output",
+      "shopping"
+    ],
+    "requirements": [
+      "The same domain-neutral interface is used across the evidence cases.",
+      "At least four distinct domains show a measurable improvement or correct route decision.",
+      "No single domain supplies more than half of the passing evidence.",
+      "The change does not require domain vocabulary in the core interface.",
+      "Failure and partial states remain visible.",
+      "Default enablement is separately and explicitly approved by the user."
+    ]
+  },
+  "required_reading": [
+    "PSOS_MASTER.md",
+    "specs/PSOS_SYSTEM_BLUEPRINT.md",
+    "AGENTS.md",
+    "governance/PSOS_CHANGE_SCOPE.json",
+    "governance/PSOS_CROSS_DOMAIN_REGRESSION.json"
+  ]
+}
