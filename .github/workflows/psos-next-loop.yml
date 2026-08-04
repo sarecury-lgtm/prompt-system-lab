@@ -7,17 +7,20 @@ on:
   pull_request:
     paths:
       - ".github/workflows/psos-next-loop.yml"
+      - "scripts/problem_solving_adaptive_*.py"
       - "scripts/problem_solving_candidate_*.py"
       - "scripts/problem_solving_dynamic_loop_experiment.py"
       - "scripts/problem_solving_next_loop_*.py"
       - "scripts/problem_solving_quality_next_loop_*.py"
       - "scripts/problem_solving_source_scout_experiment.py"
       - "scripts/problem_solving_web_attachments.py"
+      - "schemas/problem-solving-adaptive-*.json"
       - "schemas/problem-solving-candidate-*.json"
       - "schemas/problem-solving-dynamic-*.json"
       - "schemas/problem-solving-manual-*.json"
       - "schemas/problem-solving-source-scout.schema.json"
       - "tests/manual_protocol_smoke.js"
+      - "tests/test_problem_solving_adaptive_*.py"
       - "tests/test_problem_solving_candidate_*.py"
       - "tests/test_problem_solving_dynamic_loop_experiment.py"
       - "tests/test_problem_solving_next_loop_*.py"
@@ -53,6 +56,8 @@ jobs:
       - name: Compile next-loop Python
         run: |
           python -m py_compile \
+            scripts/problem_solving_adaptive_context.py \
+            scripts/problem_solving_adaptive_shopping.py \
             scripts/problem_solving_candidate_working_set.py \
             scripts/problem_solving_candidate_update_runtime.py \
             scripts/problem_solving_dynamic_loop_experiment.py \
@@ -67,6 +72,12 @@ jobs:
             scripts/problem_solving_quality_next_loop_final_web.py \
             scripts/problem_solving_source_scout_experiment.py \
             scripts/problem_solving_web_attachments.py
+
+      - name: Run adaptive controller tests
+        run: |
+          python -B -m unittest \
+            tests.test_problem_solving_adaptive_context \
+            tests.test_problem_solving_adaptive_shopping
 
       - name: Run next-loop focused tests
         run: |
