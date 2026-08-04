@@ -48,6 +48,22 @@ def _quote_exists(context: str, quote: str) -> bool:
     return _normalize(quote) in _normalize(context)
 
 
+def _subject_terms_from_quote(quote: str) -> list[str]:
+    """Extract only a conservative sentence-initial subject for hard negatives."""
+
+    cleaned = re.sub(r"^[\s>*•\-]+", "", quote).strip()
+    match = re.match(
+        r"^([가-힣A-Za-z0-9][가-힣A-Za-z0-9 _+\-]{0,40}?)(?:은|는|이|가|을|를)\s",
+        cleaned,
+    )
+    if not match:
+        return []
+    subject = match.group(1).strip()
+    if not subject or len(subject) > 30:
+        return []
+    return [subject]
+
+
 def _strong_context_lines(context: str) -> list[dict[str, Any]]:
     """Keep explicit user claims even when the model fails to select them."""
 
@@ -76,12 +92,14 @@ def _strong_context_lines(context: str) -> list[dict[str, Any]]:
         if normalized in seen:
             continue
         category = None
+        subject_terms: list[str] = []
         if any(marker in quote for marker in negative):
             category = (
                 "prior_experience"
                 if any(marker in quote for marker in experience)
                 else "avoidance"
             )
+            subject_terms = _subject_terms_from_quote(quote)
         elif any(marker in quote for marker in preference):
             category = "preference"
         elif any(marker in quote for marker in constraint):
@@ -95,7 +113,7 @@ def _strong_context_lines(context: str) -> list[dict[str, Any]]:
                 "category": category,
                 "statement": quote,
                 "source_quote": quote,
-                "subject_terms": [],
+                "subject_terms": subject_terms,
                 "must_preserve": True,
             }
         )
