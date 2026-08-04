@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "purpose": "Prevent a successful single-domain experiment from being mislabeled or promoted as PSOS core capability.",
+  "minimum_distinct_domains_for_core": 4,
+  "cases": [
+    {
+      "id": "direct-argument-analysis",
+      "domain": "direct-analysis",
+      "request_type": "Analyze a supplied argument and identify the actual disagreement without external facts.",
+      "representative_request": "이 댓글에서 서로 엇갈린 전제와 핵심 논리 오류를 분석해 줘.",
+      "expected_primary_capability": "DIRECT",
+      "required_behavior": [
+        "Preserve the user's definition and wording.",
+        "Do not browse or create a project when the supplied text is sufficient.",
+        "Return the analysis itself rather than a workflow description."
+      ],
+      "forbidden_overreach": [
+        "shopping collector",
+        "candidate workbench",
+        "unnecessary user questionnaire"
+      ]
+    },
+    {
+      "id": "current-stock-decision",
+      "domain": "current-research-decision",
+      "request_type": "Choose a present action where current market facts and an upcoming event change the answer.",
+      "representative_request": "실적 발표가 임박한 이 종목을 오늘 살지 기다릴지 하나를 정해 줘.",
+      "expected_primary_capability": "RESEARCH",
+      "required_behavior": [
+        "Use current evidence and confirmation time.",
+        "Choose an action or explicitly choose no action.",
+        "Separate event-gap risk from ordinary stop-loss assumptions."
+      ],
+      "forbidden_overreach": [
+        "stop at an unranked candidate list",
+        "reuse stale prices",
+        "present missing verification as certainty"
+      ]
+    },
+    {
+      "id": "bounded-repository-fix",
+      "domain": "code-and-files",
+      "request_type": "Inspect an existing repository, make the smallest safe file change, test it, and roll back on failure.",
+      "representative_request": "기존 웹페이지의 좌석 선택 버그를 최소 변경으로 고치고 테스트해 줘.",
+      "expected_primary_capability": "CODE",
+      "required_behavior": [
+        "Read the existing files before editing.",
+        "Limit writes to the approved workspace scope.",
+        "Run relevant checks and preserve rollback evidence."
+      ],
+      "forbidden_overreach": [
+        "rewrite the whole application without need",
+        "claim tests ran when they did not",
+        "infer file changes from prose only"
+      ]
+    },
+    {
+      "id": "reuse-before-build",
+      "domain": "reuse-or-build",
+      "request_type": "Determine whether an existing asset, method, or open-source tool should be reused before creating a new one.",
+      "representative_request": "이미 존재하는 도구로 해결 가능한지 먼저 확인하고, 부족할 때만 새로 만들어 줘.",
+      "expected_primary_capability": "REUSE",
+      "required_behavior": [
+        "Inspect the actual asset rather than assuming it exists.",
+        "Compare reuse cost with new construction.",
+        "Build only the missing portion when reuse is sufficient."
+      ],
+      "forbidden_overreach": [
+        "invent an existing asset",
+        "default to a new project",
+        "treat a template name as verified functionality"
+      ]
+    },
+    {
+      "id": "prompt-is-the-artifact",
+      "domain": "prompt-as-output",
+      "request_type": "Produce a reusable instruction for a separate AI environment when the instruction itself is the requested artifact.",
+      "representative_request": "다른 AI가 영화 예매 웹페이지를 실제로 구현하도록 실행 프롬프트를 만들어 줘.",
+      "expected_primary_capability": "PROMPT",
+      "required_behavior": [
+        "Preserve the actual implementation goal and constraints.",
+        "Return the executable prompt rather than executing an unrelated substitute task.",
+        "Avoid repeated meta-instructions that do not change execution."
+      ],
+      "forbidden_overreach": [
+        "route every ordinary request through prompt generation",
+        "return only a planning brief",
+        "change the requested execution environment"
+      ]
+    },
+    {
+      "id": "structured-product-purchase",
+      "domain": "shopping",
+      "request_type": "Collect current purchasable options, normalize price and availability, then make one buying decision.",
+      "representative_request": "온라인 삼겹살을 실제 판매 옵션과 배송 포함 가격으로 비교해서 3kg 이하 1순위를 정해 줘.",
+      "expected_primary_capability": "RESEARCH",
+      "required_behavior": [
+        "Treat shopping collection as an optional domain tool.",
+        "Verify exact option, quantity, price, and availability.",
+        "Do not promote the collector as the PSOS core."
+      ],
+      "forbidden_overreach": [
+        "call shopping the product goal",
+        "recommend before collection quality passes",
+        "silently omit explicit prior dislikes"
+      ]
+    }
+  ]
+}
