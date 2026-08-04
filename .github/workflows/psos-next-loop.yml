@@ -63,6 +63,8 @@ jobs:
             scripts/problem_solving_quality_next_loop_web.py \
             scripts/problem_solving_quality_next_loop_runtime_web.py \
             scripts/problem_solving_quality_next_loop_smart_web.py \
+            scripts/problem_solving_quality_next_loop_job_packet.py \
+            scripts/problem_solving_quality_next_loop_final_web.py \
             scripts/problem_solving_source_scout_experiment.py \
             scripts/problem_solving_web_attachments.py
 
@@ -78,6 +80,8 @@ jobs:
             tests.test_problem_solving_next_loop_replacement_runtime \
             tests.test_problem_solving_quality_next_loop_web \
             tests.test_problem_solving_quality_next_loop_smart_web \
+            tests.test_problem_solving_quality_next_loop_job_packet \
+            tests.test_problem_solving_quality_next_loop_final_web \
             tests.test_problem_solving_source_scout_experiment \
             tests.test_problem_solving_web_attachments
 
@@ -87,9 +91,11 @@ jobs:
           node --check web/next-loop-details.js
           node --check web/next-loop-workflow.js
           node --check web/next-loop-attachments.js
+          node --check web/next-loop-job-packet.js
           node --check web/psos-manual-protocol.js
           node --check web/psos-manual-route-policy.js
           node --check web/chatgpt-manual-fallback-v5.js
+          node --check web/chatgpt-manual-patch-v1.js
           node tests/manual_protocol_smoke.js
 
       - name: Run full repository test suite
