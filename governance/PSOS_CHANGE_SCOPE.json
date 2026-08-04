@@ -103,7 +103,7 @@
       "runtime_default_enabled": false,
       "purpose": "Regression tests, CI, smoke checks, and explanatory material are evidence rather than product-core claims.",
       "patterns": [
-        ".github/workflows/*",
+        "github/workflows/*",
         "USAGE.md",
         "docs/psos-goal-guard.md",
         "tests/*"
