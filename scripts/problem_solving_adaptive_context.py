@@ -132,15 +132,51 @@ def context_evidence_prompt(request: str, context: str) -> str:
 {context}
 
 규칙:
-- 각 fact는 원문에 실제로 존재하는 source_quote와 반드시 연결합니다.
-- source_quote는 원문 표현을 그대로 복사하고 요약하거나 교정하지 않습니다.
+- [현재 요청]은 관련성을 판단하는 기준일 뿐이며 fact나 source_quote의 출처로 사용하지 않습니다.
+- 각 fact의 source_quote는 반드시 [관련 대화 원문]에서 그대로 복사합니다.
+- source_quote는 요약하거나 교정하지 않습니다.
 - 사용자가 이미 써보거나 먹어본 뒤 싫다고 한 대상은 prior_experience로 분류하고 must_preserve를 true로 둡니다.
 - 명시적 제외, 금지와 불호는 avoidance로 분류합니다.
 - subject_terms에는 그 인용 안에 실제로 적힌 제품명·대상명만 넣습니다.
 - 현재 요청의 결과를 바꾸지 않는 일반 신상정보나 추측은 제외합니다.
-- 사실이 부족하면 unresolved에 적고 빈 내용을 만들어내지 않습니다.
+- 관련 대화 원문에 근거가 부족하면 unresolved에 적고 빈 내용을 만들어내지 않습니다.
 - summary는 추출된 사실의 용도를 한 문장으로 설명합니다.
 """
+
+
+def _remove_request_only_facts(
+    payload: Any,
+    request: str,
+    context: str,
+) -> Any:
+    """Drop redundant facts quoted from the request instead of failing the run.
+
+    The current request is already preserved separately. It is shown to the model only
+    to decide which prior context matters, so echoing it as a context fact is harmless
+    but invalid. Quotes found in neither source are still rejected by the validator.
+    """
+
+    if not isinstance(payload, dict):
+        return payload
+    value = payload.get("context_evidence")
+    if not isinstance(value, dict):
+        return payload
+    facts = value.get("facts")
+    if not isinstance(facts, list):
+        return payload
+
+    filtered: list[Any] = []
+    for fact in facts:
+        quote = fact.get("source_quote") if isinstance(fact, dict) else None
+        request_only = (
+            isinstance(quote, str)
+            and _quote_exists(request, quote)
+            and not _quote_exists(context, quote)
+        )
+        if not request_only:
+            filtered.append(fact)
+    value["facts"] = filtered
+    return payload
 
 
 def validate_context_evidence(payload: Any, context: str) -> dict[str, Any]:
@@ -265,6 +301,7 @@ def extract_context_evidence(
         run_dir,
         invocation,
     )
+    raw = _remove_request_only_facts(raw, cleaned_request, cleaned_context)
     evidence = validate_context_evidence(raw, cleaned_context)
     (run_dir / "context-evidence.json").write_text(
         json.dumps(evidence, ensure_ascii=False, indent=2) + "\n",
