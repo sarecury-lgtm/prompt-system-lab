@@ -88,6 +88,53 @@ class AdaptiveContextTests(unittest.TestCase):
         with self.assertRaisesRegex(CONTEXT.AdaptiveContextError, "인용 안에 없는"):
             CONTEXT.validate_context_evidence(payload, "이 제품은 별로였다")
 
+    def test_request_only_quote_is_dropped_before_context_validation(self):
+        request = "온라인에서 살 수 있는 삼겹살 중 내 취향에 가장 맞는 제품을 조사해 줘."
+        context = "두꺼운 삼겹살의 육즙과 식감을 중요하게 본다."
+        response = {
+            "context_evidence": {
+                "summary": "관련 맥락만 사용한다.",
+                "facts": [
+                    {
+                        "id": "request-echo",
+                        "category": "goal",
+                        "statement": "온라인 삼겹살 조사",
+                        "source_quote": request,
+                        "subject_terms": [],
+                        "must_preserve": True,
+                    },
+                    {
+                        "id": "context-fact",
+                        "category": "preference",
+                        "statement": "두꺼운 식감 선호",
+                        "source_quote": context,
+                        "subject_terms": [],
+                        "must_preserve": True,
+                    },
+                ],
+                "unresolved": [],
+            }
+        }
+        engine = FakeEngine(response)
+        profile = OS.ModelProfile(
+            model="fake",
+            reasoning_effort="low",
+            web_search=False,
+            sandbox="read-only",
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            evidence = CONTEXT.extract_context_evidence(
+                request,
+                context,
+                engine=engine,
+                run_dir=Path(temp_dir),
+                policy={"router_fallback": profile},
+            )
+
+        quotes = [fact["source_quote"] for fact in evidence["facts"]]
+        self.assertNotIn(request, quotes)
+        self.assertIn(context, quotes)
+
     def test_strong_prior_experience_is_preserved_when_model_omits_it(self):
         context = "템포크를 실제로 먹어봤는데 매우 별로였다.\n두꺼운 삼겹살을 선호한다."
         engine = FakeEngine(empty_response())
