@@ -42,11 +42,12 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 "psos-manual-protocol.js",
                 "psos-manual-route-policy.js",
                 "chatgpt-manual-fallback-v5.js",
+                "chatgpt-manual-patch-v1.js",
             ],
             addons["renderer.js"],
         )
         self.assertIn("next-loop-attachments.css", addons["styles.css"])
-        self.assertEqual("chatgpt-manual-fallback-v5.css", addons["styles.css"][-1])
+        self.assertEqual("chatgpt-manual-patch-v1.css", addons["styles.css"][-1])
 
     def test_workflow_script_exposes_auto_routes_and_manual_diagnostics(self):
         script = (ROOT / "web" / "next-loop-workflow.js").read_text(encoding="utf-8")
