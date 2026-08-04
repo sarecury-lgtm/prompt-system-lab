@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "problem-solving-adaptive-context-evidence.schema.json",
+  "title": "PSOS Adaptive Context Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["context_evidence"],
+  "properties": {
+    "context_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "facts", "unresolved"],
+      "properties": {
+        "summary": {"type": "string", "minLength": 1},
+        "facts": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "category",
+              "statement",
+              "source_quote",
+              "subject_terms",
+              "must_preserve"
+            ],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "category": {
+                "type": "string",
+                "enum": [
+                  "goal",
+                  "preference",
+                  "avoidance",
+                  "prior_experience",
+                  "constraint",
+                  "other"
+                ]
+              },
+              "statement": {"type": "string", "minLength": 1},
+              "source_quote": {"type": "string", "minLength": 1},
+              "subject_terms": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {"type": "string", "minLength": 1}
+              },
+              "must_preserve": {"type": "boolean"}
+            }
+          }
+        },
+        "unresolved": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
