@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "branch": "codex/problem-solving-os-next-loop",
+  "base": "main",
+  "declared_purpose": "Evaluate bounded convergence and execution adapters without allowing a candidate loop, shopping collector, or manual fallback to redefine or silently replace the general PSOS product goal.",
+  "parent_goal_link": "ACTIVE_GOAL.json",
+  "branch_status": "experimental",
+  "default_product_promotion_approved": false,
+  "components": [
+    {
+      "id": "goal-drift-guard",
+      "change_class": "CORE",
+      "promotion_status": "candidate",
+      "runtime_default_enabled": false,
+      "purpose": "Make the already-defined PSOS goal and scope rules machine-readable and enforceable for repository work.",
+      "patterns": [
+        "AGENTS.md",
+        "ACTIVE_GOAL.json",
+        "governance/PSOS_CHANGE_SCOPE.json",
+        "governance/PSOS_CROSS_DOMAIN_REGRESSION.json",
+        "scripts/problem_solving_goal_guard.py"
+      ]
+    },
+    {
+      "id": "core-kernel-candidate-changes",
+      "change_class": "CORE",
+      "promotion_status": "candidate",
+      "runtime_default_enabled": false,
+      "purpose": "Changes touching the domain-neutral PSOS execution contract remain candidate core work until cross-domain evidence and separate approval exist.",
+      "patterns": [
+        "scripts/problem_solving_os.py",
+        "scripts/problem_solving_os_contract_runtime.py",
+        "schemas/problem-solving-os-*.json"
+      ]
+    },
+    {
+      "id": "execution-and-route-adapters",
+      "change_class": "ADAPTER",
+      "promotion_status": "experimental",
+      "runtime_default_enabled": false,
+      "purpose": "Connect the PSOS core to browsers, manual ChatGPT, prompt rendering, file patching, attachments, and other execution surfaces.",
+      "patterns": [
+        "extensions/*",
+        "schemas/problem-solving-integrated-prompt-design.schema.json",
+        "schemas/problem-solving-manual-*.json",
+        "schemas/problem-solving-prompt-build-brief.schema.json",
+        "scripts/problem_solving_compare_web.py",
+        "scripts/problem_solving_connected_browser.py",
+        "scripts/problem_solving_live_browser.py",
+        "scripts/problem_solving_manual_patch_web.py",
+        "scripts/problem_solving_prompt_build_brief.py",
+        "scripts/problem_solving_prompt_renderer.py",
+        "scripts/problem_solving_quality_web.py",
+        "scripts/problem_solving_web_attachments.py",
+        "web/chatgpt-manual-*.js",
+        "web/chatgpt-manual-*.css",
+        "web/compare-no-codex.js",
+        "web/psos-manual-*.js"
+      ]
+    },
+    {
+      "id": "shopping-domain-prototype",
+      "change_class": "DOMAIN",
+      "promotion_status": "test-only",
+      "runtime_default_enabled": false,
+      "purpose": "Use shopping as one demanding test of context preservation, structured collection, deterministic filtering, and honest partial results.",
+      "patterns": [
+        "docs/adaptive-shopping-experiment.md",
+        "schemas/problem-solving-adaptive-*.json",
+        "scripts/problem_solving_adaptive_context.py",
+        "scripts/problem_solving_adaptive_shopping.py"
+      ]
+    },
+    {
+      "id": "bounded-loop-experiments",
+      "change_class": "TEST",
+      "promotion_status": "test-only",
+      "runtime_default_enabled": false,
+      "purpose": "Evaluate source scouting, candidate correction, bounded replanning, and experimental next-loop interfaces without treating them as the PSOS core.",
+      "patterns": [
+        "docs/dynamic-loop-experiment.md",
+        "docs/next-loop-experiment.md",
+        "docs/next-loop-web.md",
+        "docs/source-scout-experiment.md",
+        "schemas/problem-solving-candidate-*.json",
+        "schemas/problem-solving-dynamic-*.json",
+        "schemas/problem-solving-source-scout.schema.json",
+        "scripts/problem_solving_candidate_*.py",
+        "scripts/problem_solving_dynamic_loop_experiment.py",
+        "scripts/problem_solving_next_loop_*.py",
+        "scripts/problem_solving_quality_next_loop_*.py",
+        "scripts/problem_solving_source_scout_experiment.py",
+        "start-psos-next-loop.cmd",
+        "start-psos-next-loop.ps1",
+        "web/next-loop*.js",
+        "web/next-loop*.css"
+      ]
+    },
+    {
+      "id": "tests-ci-and-usage",
+      "change_class": "TEST",
+      "promotion_status": "test-only",
+      "runtime_default_enabled": false,
+      "purpose": "Regression tests, CI, smoke checks, and explanatory material are evidence rather than product-core claims.",
+      "patterns": [
+        ".github/workflows/*",
+        "USAGE.md",
+        "docs/psos-goal-guard.md",
+        "tests/*"
+      ]
+    }
+  ],
+  "explicit_reclassification": [
+    {
+      "subject": "adaptive shopping collector",
+      "classification": "DOMAIN",
+      "reason": "It is a task-specific acquisition tool and a regression case, not the general controller."
+    },
+    {
+      "subject": "candidate working set and correction loop",
+      "classification": "TEST",
+      "reason": "It tests one possible bounded interaction pattern and cannot become the default response path from one scenario."
+    },
+    {
+      "subject": "manual ChatGPT and Codex job packet paths",
+      "classification": "ADAPTER",
+      "reason": "They change how the same work is executed, not the parent problem-solving goal."
+    }
+  ]
+}
