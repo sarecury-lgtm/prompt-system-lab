@@ -66,8 +66,7 @@
           "attempt": {"type": "integer", "minimum": 1, "maximum": 2},
           "run_path": {"type": "string"},
           "route": {
-            "type": "string",
-            "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", "HYBRID"]
+            "enum": [null, "DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", "HYBRID"]
           },
           "execution_status": {
             "type": "string",
