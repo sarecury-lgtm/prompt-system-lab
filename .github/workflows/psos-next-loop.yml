@@ -12,6 +12,7 @@ on:
       - ".github/workflows/psos-next-loop.yml"
       - "docs/psos-goal-guard.md"
       - "scripts/problem_solving_goal_guard.py"
+      - "scripts/problem_solving_controller.py"
       - "scripts/problem_solving_adaptive_*.py"
       - "scripts/problem_solving_candidate_*.py"
       - "scripts/problem_solving_dynamic_loop_experiment.py"
@@ -19,6 +20,7 @@ on:
       - "scripts/problem_solving_quality_next_loop_*.py"
       - "scripts/problem_solving_source_scout_experiment.py"
       - "scripts/problem_solving_web_attachments.py"
+      - "schemas/problem-solving-controller-*.json"
       - "schemas/problem-solving-adaptive-*.json"
       - "schemas/problem-solving-candidate-*.json"
       - "schemas/problem-solving-dynamic-*.json"
@@ -26,6 +28,7 @@ on:
       - "schemas/problem-solving-source-scout.schema.json"
       - "tests/manual_protocol_smoke.js"
       - "tests/test_problem_solving_goal_guard.py"
+      - "tests/test_problem_solving_controller.py"
       - "tests/test_problem_solving_adaptive_*.py"
       - "tests/test_problem_solving_candidate_*.py"
       - "tests/test_problem_solving_dynamic_loop_experiment.py"
@@ -65,6 +68,7 @@ jobs:
         run: |
           python -m py_compile \
             scripts/problem_solving_goal_guard.py \
+            scripts/problem_solving_controller.py \
             scripts/problem_solving_adaptive_context.py \
             scripts/problem_solving_adaptive_shopping.py \
             scripts/problem_solving_candidate_working_set.py \
@@ -86,6 +90,9 @@ jobs:
         run: |
           python -B -m unittest tests.test_problem_solving_goal_guard
           python -B scripts/problem_solving_goal_guard.py --base origin/main
+
+      - name: Run domain-neutral controller tests
+        run: python -B -m unittest tests.test_problem_solving_controller
 
       - name: Run adaptive controller tests
         run: |
