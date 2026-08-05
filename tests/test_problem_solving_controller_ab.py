@@ -32,7 +32,7 @@ class ControllerABTests(unittest.TestCase):
             allow_more_cases=False,
         )
         self.assertEqual(2, len(selected))
-        with self.assertRaisesRegex(AB.EvaluationError, "최대 2개"):
+        with self.assertRaisesRegex(AB.EvaluationError, "2개까지만"):
             AB.select_cases(
                 self.suite,
                 [case["id"] for case in self.suite["cases"]],
