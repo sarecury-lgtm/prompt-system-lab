@@ -11,8 +11,10 @@ on:
       - "governance/PSOS_*.json"
       - ".github/workflows/psos-next-loop.yml"
       - "docs/psos-goal-guard.md"
+      - "evaluation/psos-controller/**"
       - "scripts/problem_solving_goal_guard.py"
       - "scripts/problem_solving_controller.py"
+      - "scripts/problem_solving_controller_ab.py"
       - "scripts/problem_solving_adaptive_*.py"
       - "scripts/problem_solving_candidate_*.py"
       - "scripts/problem_solving_dynamic_loop_experiment.py"
@@ -29,6 +31,7 @@ on:
       - "tests/manual_protocol_smoke.js"
       - "tests/test_problem_solving_goal_guard.py"
       - "tests/test_problem_solving_controller.py"
+      - "tests/test_problem_solving_controller_ab.py"
       - "tests/test_problem_solving_adaptive_*.py"
       - "tests/test_problem_solving_candidate_*.py"
       - "tests/test_problem_solving_dynamic_loop_experiment.py"
@@ -69,6 +72,7 @@ jobs:
           python -m py_compile \
             scripts/problem_solving_goal_guard.py \
             scripts/problem_solving_controller.py \
+            scripts/problem_solving_controller_ab.py \
             scripts/problem_solving_adaptive_context.py \
             scripts/problem_solving_adaptive_shopping.py \
             scripts/problem_solving_candidate_working_set.py \
@@ -92,7 +96,11 @@ jobs:
           python -B scripts/problem_solving_goal_guard.py --base origin/main
 
       - name: Run domain-neutral controller tests
-        run: python -B -m unittest tests.test_problem_solving_controller
+        run: |
+          python -B -m unittest \
+            tests.test_problem_solving_controller \
+            tests.test_problem_solving_controller_ab
+          python -B scripts/problem_solving_controller_ab.py validate
 
       - name: Run adaptive controller tests
         run: |
