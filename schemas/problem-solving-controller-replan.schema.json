@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/problem-solving-controller-replan.schema.json",
+  "title": "PSOS Controller Replan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["replan"],
+  "properties": {
+    "replan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "target_route",
+        "changed_dimension",
+        "reason",
+        "expected_gain"
+      ],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["change_method", "stop"]
+        },
+        "target_route": {
+          "enum": [null, "DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT"]
+        },
+        "changed_dimension": {
+          "type": "string",
+          "enum": ["route", "tool", "information_source", "interaction", "none"]
+        },
+        "reason": {"type": "string"},
+        "expected_gain": {"type": "string"}
+      }
+    }
+  }
+}
