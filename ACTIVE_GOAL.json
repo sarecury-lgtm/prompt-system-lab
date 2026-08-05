@@ -28,29 +28,29 @@
     "Weak continuation language continues only the recorded current task and never silently expands scope."
   ],
   "current_task": {
-    "id": "domain-neutral-controller-v1",
-    "objective": "Implement the smallest domain-neutral Controller that wraps the canonical Result Contract runtime, records one stable state, finishes immediately when the result is sufficient, and changes to one materially different PSOS route only when the first result is incomplete and automatic retry is safe.",
+    "id": "controller-ab-evaluation-prep-v1",
+    "objective": "Prepare a pre-registered, low-waste A/B evaluation harness that can later compare the canonical Result Contract runtime against the bounded domain-neutral Controller across four distinct problem domains without spending Codex usage during implementation.",
     "allowed_change_classes": [
       "CORE",
       "TEST"
     ],
     "explicitly_out_of_scope": [
+      "running live Codex evaluation before the user says usage is available",
       "running or improving the shopping experiment",
       "adding another domain-specific collector",
       "connecting the Controller to the default UI",
       "merging pull request 100",
-      "redesigning the PSOS parent goal",
       "promoting the Controller from candidate to canonical CORE"
     ],
     "completion_conditions": [
-      "The Controller preserves the accepted Goal Ledger and observable completion condition from the canonical runtime.",
-      "The Controller reuses the Result Contract runtime instead of duplicating route execution or verification.",
-      "A satisfied first attempt exits without an additional model or route attempt.",
-      "An incomplete safe attempt may change to exactly one different single PSOS route.",
-      "Blocked capability, mutating CODE or PROJECT routes, and actual file side effects prevent automatic method change.",
-      "The second attempt cannot replace the first when it ignores the Controller-selected route.",
-      "The same Controller state and decision interface is tested across at least four distinct problem domains.",
-      "CI compiles the Controller, runs its focused tests, and still passes the goal-drift guard and full repository suite."
+      "Four pre-registered cases cover DIRECT, current RESEARCH, bounded CODE and REUSE or build decisions.",
+      "Each case fixes the request, preserved constraints, expected route, observable completion checks and critical failure behaviors before live execution.",
+      "A runner supports validation and dry-run preparation without invoking Codex.",
+      "Live mode limits the default pilot to at most two cases and records route, status, model-call count, elapsed time and method changes for both arms.",
+      "Blind review material hides the baseline and Controller arm identity while preserving the exact outputs and review rubric.",
+      "A report template separates quality judgment from unblinded cost and routing metrics.",
+      "Mocked tests exercise validation, deterministic arm blinding, pilot limits and report generation without model calls.",
+      "CI passes the new focused tests, goal-drift guard and full repository suite."
     ]
   },
   "continuation_policy": {
