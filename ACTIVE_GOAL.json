@@ -28,8 +28,8 @@
     "Weak continuation language continues only the recorded current task and never silently expands scope."
   ],
   "current_task": {
-    "id": "goal-drift-guard-v1",
-    "objective": "Turn the existing PSOS purpose into repository-enforced instructions, change classification, drift checks, and cross-domain promotion gates before adding or promoting more domain behavior.",
+    "id": "domain-neutral-controller-v1",
+    "objective": "Implement the smallest domain-neutral Controller that wraps the canonical Result Contract runtime, records one stable state, finishes immediately when the result is sufficient, and changes to one materially different PSOS route only when the first result is incomplete and automatic retry is safe.",
     "allowed_change_classes": [
       "CORE",
       "TEST"
@@ -37,17 +37,20 @@
     "explicitly_out_of_scope": [
       "running or improving the shopping experiment",
       "adding another domain-specific collector",
-      "connecting an experimental domain path to the default UI",
+      "connecting the Controller to the default UI",
       "merging pull request 100",
-      "redesigning the PSOS parent goal"
+      "redesigning the PSOS parent goal",
+      "promoting the Controller from candidate to canonical CORE"
     ],
     "completion_conditions": [
-      "Repository-level agent instructions load the master goal before work begins.",
-      "Every changed file on the active branch is classified as CORE, ADAPTER, DOMAIN, or TEST.",
-      "The guard rejects unclassified files and prohibited DOMAIN or TEST default promotion.",
-      "CORE promotion requires evidence from at least four distinct regression domains.",
-      "CI runs the goal guard and its tests.",
-      "Existing shopping and candidate-loop work is explicitly recorded as DOMAIN or TEST rather than the system core."
+      "The Controller preserves the accepted Goal Ledger and observable completion condition from the canonical runtime.",
+      "The Controller reuses the Result Contract runtime instead of duplicating route execution or verification.",
+      "A satisfied first attempt exits without an additional model or route attempt.",
+      "An incomplete safe attempt may change to exactly one different single PSOS route.",
+      "Blocked capability, mutating CODE or PROJECT routes, and actual file side effects prevent automatic method change.",
+      "The second attempt cannot replace the first when it ignores the Controller-selected route.",
+      "The same Controller state and decision interface is tested across at least four distinct problem domains.",
+      "CI compiles the Controller, runs its focused tests, and still passes the goal-drift guard and full repository suite."
     ]
   },
   "continuation_policy": {
