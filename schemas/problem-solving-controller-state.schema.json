@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/problem-solving-controller-state.schema.json",
+  "title": "PSOS Controller State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "controller_id",
+    "request",
+    "goal",
+    "budget",
+    "attempts",
+    "decisions",
+    "chosen_attempt",
+    "outcome",
+    "result_path"
+  ],
+  "properties": {
+    "version": {"type": "integer", "const": 1},
+    "controller_id": {"type": "string"},
+    "request": {"type": "string"},
+    "goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent_goal", "fixed_constraints", "completion_condition"],
+      "properties": {
+        "parent_goal": {"type": "string"},
+        "fixed_constraints": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "completion_condition": {"type": "string"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_method_changes", "used_method_changes"],
+      "properties": {
+        "max_method_changes": {"type": "integer", "const": 1},
+        "used_method_changes": {"type": "integer", "minimum": 0, "maximum": 1}
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attempt",
+          "run_path",
+          "route",
+          "execution_status",
+          "contract_status",
+          "missing_conditions",
+          "side_effects",
+          "mutating_route",
+          "route_matches_controller",
+          "score",
+          "outcome"
+        ],
+        "properties": {
+          "attempt": {"type": "integer", "minimum": 1, "maximum": 2},
+          "run_path": {"type": "string"},
+          "route": {
+            "type": "string",
+            "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT", "HYBRID"]
+          },
+          "execution_status": {
+            "type": "string",
+            "enum": ["completed", "partial", "blocked_by_capability", "handoff"]
+          },
+          "contract_status": {
+            "type": "string",
+            "enum": ["satisfied", "missing", "unverifiable", "not_applicable", "unknown"]
+          },
+          "missing_conditions": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "side_effects": {"type": "boolean"},
+          "mutating_route": {"type": "boolean"},
+          "route_matches_controller": {"type": "boolean"},
+          "score": {"type": "integer"},
+          "outcome": {
+            "type": "string",
+            "enum": ["completed", "partial", "blocked", "handoff"]
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["after_attempt", "action", "target_route", "changed_dimension", "reason"],
+        "properties": {
+          "after_attempt": {"type": "integer", "minimum": 1, "maximum": 2},
+          "action": {
+            "type": "string",
+            "enum": ["finish", "change_method", "stop_incomplete"]
+          },
+          "target_route": {
+            "enum": [null, "DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT"]
+          },
+          "changed_dimension": {
+            "type": "string",
+            "enum": ["route", "tool", "information_source", "interaction", "none"]
+          },
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "chosen_attempt": {"type": "integer", "minimum": 1, "maximum": 2},
+    "outcome": {
+      "type": "string",
+      "enum": ["completed", "partial", "blocked", "handoff"]
+    },
+    "result_path": {"type": "string"}
+  }
+}
