@@ -22,6 +22,17 @@
       ]
     },
     {
+      "id": "domain-neutral-controller-candidate",
+      "change_class": "CORE",
+      "promotion_status": "candidate",
+      "runtime_default_enabled": false,
+      "purpose": "Wrap the canonical Result Contract runtime with one stable state, immediate completion, and at most one safe material route change without adding domain vocabulary.",
+      "patterns": [
+        "schemas/problem-solving-controller-*.json",
+        "scripts/problem_solving_controller.py"
+      ]
+    },
+    {
       "id": "core-kernel-candidate-changes",
       "change_class": "CORE",
       "promotion_status": "candidate",
