@@ -112,11 +112,13 @@
       "change_class": "TEST",
       "promotion_status": "test-only",
       "runtime_default_enabled": false,
-      "purpose": "Regression tests, CI, smoke checks, and explanatory material are evidence rather than product-core claims.",
+      "purpose": "Regression tests, evaluation fixtures, CI, smoke checks, and explanatory material are evidence rather than product-core claims.",
       "patterns": [
         "github/workflows/*",
         "USAGE.md",
         "docs/psos-goal-guard.md",
+        "evaluation/psos-controller/*",
+        "scripts/problem_solving_controller_ab.py",
         "tests/*"
       ]
     }
@@ -136,6 +138,11 @@
       "subject": "manual ChatGPT and Codex job packet paths",
       "classification": "ADAPTER",
       "reason": "They change how the same work is executed, not the parent problem-solving goal."
+    },
+    {
+      "subject": "controller A/B evaluation harness and fixtures",
+      "classification": "TEST",
+      "reason": "They measure the candidate Controller without changing the domain-neutral runtime or promoting it."
     }
   ]
 }
