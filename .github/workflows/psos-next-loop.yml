@@ -45,6 +45,8 @@ on:
       - "web/psos-manual-route-policy.js"
       - "web/chatgpt-manual-fallback*.js"
       - "web/chatgpt-manual-fallback*.css"
+      - "web/chatgpt-manual-focus*.js"
+      - "web/chatgpt-manual-focus*.css"
       - "start-psos-next-loop.cmd"
       - "start-psos-next-loop.ps1"
   workflow_dispatch:
@@ -135,6 +137,7 @@ jobs:
           node --check web/psos-manual-protocol.js
           node --check web/psos-manual-route-policy.js
           node --check web/chatgpt-manual-fallback-v5.js
+          node --check web/chatgpt-manual-focus-v1.js
           node --check web/chatgpt-manual-patch-v1.js
           node tests/manual_protocol_smoke.js
 
