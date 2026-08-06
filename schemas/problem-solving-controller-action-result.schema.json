@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/problem-solving-controller-action-result.schema.json",
+  "title": "PSOS Controller Action Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "session_id",
+    "action_id",
+    "route",
+    "status",
+    "completion",
+    "evidence",
+    "artifacts",
+    "limitations",
+    "continuation"
+  ],
+  "properties": {
+    "version": {"const": 1},
+    "session_id": {"type": "string", "minLength": 1},
+    "action_id": {"type": "string", "minLength": 1},
+    "route": {
+      "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT"]
+    },
+    "status": {"enum": ["completed", "partial", "blocked", "needs_user_input"]},
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["met", "missing"],
+      "properties": {
+        "met": {"type": "boolean"},
+        "missing": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "evidence": {"type": "array", "items": {"type": "object"}},
+    "artifacts": {"type": "array", "items": {"type": "object"}},
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "continuation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objective", "suggested_route", "changed_dimension", "question"],
+      "properties": {
+        "objective": {"type": "string"},
+        "suggested_route": {
+          "type": ["string", "null"],
+          "enum": [null, "DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT"]
+        },
+        "changed_dimension": {
+          "enum": ["none", "route", "tool", "information_source", "interaction"]
+        },
+        "question": {"type": "string"}
+      }
+    }
+  }
+}
