@@ -91,12 +91,13 @@ def build_execution_prompt(packet: Mapping[str, Any]) -> str:
 2. evidence_obligations는 Controller가 완료를 인정하기 위해 실제로 확인할 기록이다.
 3. 검색·비교·선택을 했다고 말하는 것으로는 부족하다. coverage에 후보 범위, 확인 시점, 공통 비교, 선택, 행동 적합성과 가정 출처를 구조화한다.
 4. 계정 메모리나 다른 대화에서 얻은 정보는 user 또는 context 근거로 속이지 않는다.
-5. material=true인 가정은 basis를 user, context 또는 explicit_default로 기록한다. explicit_default이면 sensitivity를 적는다.
-6. 현재 상태를 썼다면 evidence의 id/source/url을 coverage의 evidence_refs에서 실제로 참조한다.
-7. completion을 스스로 선언할 수는 있지만 Controller가 별도로 재검증한다. 증거가 없으면 partial로 기록한다.
-8. 사용자용 실제 결과를 먼저 작성하고 내부 사고 과정은 출력하지 않는다.
-9. 마지막에는 두 마커 사이에 JSON Action Result 하나만 넣는다.
-10. needs_user_input은 합리적인 명시적 기본값이나 민감도 분석으로 진행할 수 없고, 답이 결론을 크게 바꿀 때만 사용한다.
+5. material=true인 가정은 basis를 user, context 또는 explicit_default로 기록한다. user/context이면 실제 request_contract에 있는 짧은 원문을 source_excerpt에 그대로 넣고, explicit_default이면 결론이 달라지는 조건을 sensitivity에 적는다.
+6. 현재 상태나 후보 범위를 썼다면 evidence의 id/source/url을 coverage.current_state, coverage.search_scope와 관련 domain record의 evidence_refs에서 실제로 참조한다.
+7. request_contract.domain_requirements.coverage_template가 있으면 그 구조를 coverage.domain 아래에 그대로 채운다.
+8. completion을 스스로 선언할 수는 있지만 Controller가 별도로 재검증한다. 증거가 없으면 partial로 기록한다.
+9. 사용자용 실제 결과를 먼저 작성하고 내부 사고 과정은 출력하지 않는다.
+10. 마지막에는 두 마커 사이에 JSON Action Result 하나만 넣는다.
+11. needs_user_input은 합리적인 명시적 기본값이나 민감도 분석으로 진행할 수 없고, 답이 결론을 크게 바꿀 때만 사용한다.
 
 [Action Result 형식]
 {BASE.START_MARKER}
