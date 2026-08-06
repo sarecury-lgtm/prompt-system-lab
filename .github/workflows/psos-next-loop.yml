@@ -162,6 +162,7 @@ jobs:
           node --check web/psos-manual-protocol.js
           node --check web/psos-manual-route-policy.js
           node --check web/psos-manual-controller-v1.js
+          node --check web/psos-manual-request-switch-v1.js
           node --check web/psos-manual-verification-v1.js
           node --check web/chatgpt-manual-fallback-v5.js
           node --check web/chatgpt-manual-focus-v1.js
