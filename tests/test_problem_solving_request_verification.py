@@ -42,6 +42,7 @@ def stock_contract(request="오늘 사면 좋은 주식 하나를 추천해 줘.
 
 def complete_stock_result():
     evidence = [
+        {"id": "screen-001", "source": "market screener export", "finding": "120 liquid stocks screened"},
         {"id": "px-aaa", "source": "official market data", "finding": "AAA current price"},
         {"id": "px-bbb", "source": "official market data", "finding": "BBB current price"},
         {"id": "px-ccc", "source": "official market data", "finding": "CCC current price"},
@@ -62,6 +63,7 @@ def complete_stock_result():
                 "screened_count": 120,
                 "filters": ["liquidity", "fresh catalyst", "current downside control"],
                 "finalist_ids": ["AAA", "BBB", "CCC"],
+                "evidence_refs": ["screen-001"],
             },
             "current_state": {
                 "checked_at": "2026-08-06T22:15:00+09:00",
@@ -99,9 +101,10 @@ def complete_stock_result():
                 {
                     "name": "holding horizon",
                     "value": "2 to 6 weeks",
-                    "basis": "user",
+                    "basis": "explicit_default",
+                    "source_excerpt": "",
                     "material": True,
-                    "sensitivity": "",
+                    "sensitivity": "A much shorter horizon would require a different setup; a longer horizon would increase the weight on valuation and earnings durability.",
                 }
             ],
             "obligation_evidence": [],
@@ -113,6 +116,7 @@ def complete_stock_result():
                         "screened_count": 120,
                         "filters": ["liquidity", "fresh catalyst", "current downside control"],
                         "finalist_ids": ["AAA", "BBB", "CCC"],
+                        "evidence_refs": ["screen-001"],
                     },
                     "selected_entry_fit": {
                         "ticker": "AAA",
@@ -209,6 +213,24 @@ class RequestVerificationTests(unittest.TestCase):
         self.assertIn("보유 기간", joined)
         self.assertTrue((FIXTURE / "request.txt").is_file())
 
+    def test_false_user_assumption_label_does_not_pass(self):
+        _adapter_id, contract, obligations = stock_contract()
+        result = complete_stock_result()
+        result["coverage"]["assumptions"] = [
+            {
+                "name": "holding horizon",
+                "value": "6 to 12 months",
+                "basis": "user",
+                "source_excerpt": "6 to 12 months",
+                "material": True,
+                "sensitivity": "",
+            }
+        ]
+        verdict = VERIFIER.verify_result(contract, obligations, "AAA", result)
+
+        self.assertFalse(verdict["satisfied"])
+        self.assertIn("물질적 가정", "\n".join(verdict["missing_conditions"]))
+
     def test_complete_stock_evidence_can_pass_without_fixed_ticker_or_no_buy_rule(self):
         adapter_id, contract, obligations = stock_contract()
         result = complete_stock_result()
@@ -220,6 +242,7 @@ class RequestVerificationTests(unittest.TestCase):
             domain_adapter=DOMAINS.get_adapter(adapter_id),
         )
 
+        self.assertEqual("act_now", contract["requested_action"])
         self.assertTrue(verdict["satisfied"], verdict["missing_conditions"])
         self.assertEqual([], verdict["missing_conditions"])
 
@@ -253,10 +276,12 @@ class RequestVerificationTests(unittest.TestCase):
                 raw_action_result(state, unsupported, answer="MSFT is the winner."),
             )
             public = VERIFIED.public_session(state, session_dir=session_dir)
+            objective = state["current_action"]["packet"]["objective"].lower()
 
             self.assertEqual("awaiting_execution", state["status"])
             self.assertFalse(public["last_verification"]["satisfied"])
-            self.assertIn("candidate", state["current_action"]["packet"]["objective"].lower())
+            self.assertIn("screening universe", objective)
+            self.assertIn("current entry fit", objective)
             self.assertIn("request_contract", state["current_action"]["packet"])
             self.assertIn("evidence_obligations", state["current_action"]["packet"])
 
