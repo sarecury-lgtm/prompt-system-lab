@@ -40,8 +40,9 @@
     try {
       const session = controller.getSession();
       const hasSession = Boolean(session);
-      switchButton.hidden = !hasSession;
-      currentRequest.hidden = !hasSession;
+      const shouldHide = !hasSession;
+      if (switchButton.hidden !== shouldHide) switchButton.hidden = shouldHide;
+      if (currentRequest.hidden !== shouldHide) currentRequest.hidden = shouldHide;
       const nextText = hasSession ? String(session.request || "").trim() : "";
       if (currentRequestText.textContent !== nextText) {
         currentRequestText.textContent = nextText;
