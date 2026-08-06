@@ -28,29 +28,31 @@
     "Weak continuation language continues only the recorded current task and never silently expands scope."
   ],
   "current_task": {
-    "id": "controller-ab-evaluation-prep-v1",
-    "objective": "Prepare a pre-registered, low-waste A/B evaluation harness that can later compare the canonical Result Contract runtime against the bounded domain-neutral Controller across four distinct problem domains without spending Codex usage during implementation.",
+    "id": "manual-controller-session-adapter-v1",
+    "objective": "Connect a persisted, domain-neutral stepwise Controller session to the ChatGPT manual execution path so manual and automatic execution can share goal state, bounded next-action selection, observable completion checks, and honest partial termination while differing only in how an action is transported to an AI engine.",
     "allowed_change_classes": [
       "CORE",
+      "ADAPTER",
       "TEST"
     ],
     "explicitly_out_of_scope": [
-      "running live Codex evaluation before the user says usage is available",
-      "running or improving the shopping experiment",
-      "adding another domain-specific collector",
-      "connecting the Controller to the default UI",
       "merging pull request 100",
-      "promoting the Controller from candidate to canonical CORE"
+      "promoting the Controller to the canonical default runtime",
+      "deep integration with ChatGPT project memory or account memory",
+      "running live Codex evaluation",
+      "adding a domain-specific collector",
+      "allowing more than four manual AI actions or more than one material method change",
+      "claiming that the first manual session implementation already proves full general capability"
     ],
     "completion_conditions": [
-      "Four pre-registered cases cover DIRECT, current RESEARCH, bounded CODE and REUSE or build decisions.",
-      "Each case fixes the request, preserved constraints, expected route, observable completion checks and critical failure behaviors before live execution.",
-      "A runner supports validation and dry-run preparation without invoking Codex.",
-      "Live mode limits the default pilot to at most two cases and records route, status, model-call count, elapsed time and method changes for both arms.",
-      "Blind review material hides the baseline and Controller arm identity while preserving the exact outputs and review rubric.",
-      "A report template separates quality judgment from unblinded cost and routing metrics.",
-      "Mocked tests exercise validation, deterministic arm blinding, pilot limits and report generation without model calls.",
-      "CI passes the new focused tests, goal-drift guard and full repository suite."
+      "A persisted Controller session supports start, action-result submission, optional user-input resumption, completion, blocked and honest partial states.",
+      "The session owns the goal, fixed constraints, evidence, unresolved gaps, action history, action budget and one method-change budget.",
+      "A shared domain-neutral Action Packet and Action Result contract uses canonical PSOS routes rather than shopping or candidate-specific vocabulary.",
+      "The manual ChatGPT adapter exposes only the Controller-selected current action, imports the structured result, and asks the Controller for the next state.",
+      "The manual UI shows exactly one of current action, user question, completed result, blocked result or bounded partial result.",
+      "The existing one-shot Job Packet remains available as a hidden fallback but is no longer the primary manual flow.",
+      "Focused tests cover DIRECT completion, RESEARCH gap closing, one route change, duplicate-action blocking, user-input resumption, persistence and HTTP adapter behavior.",
+      "CI passes JavaScript checks, goal guard, focused tests and the full repository suite."
     ]
   },
   "continuation_policy": {
