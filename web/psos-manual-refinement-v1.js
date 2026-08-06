@@ -4,10 +4,120 @@
   const terminal = panel?.querySelector("#manual-controller-terminal");
   if (!panel || !controller || !terminal || typeof requestJson !== "function") return;
 
+  function setHidden(node, hidden) {
+    if (!node) return;
+    const next = Boolean(hidden);
+    if (node.hidden !== next) node.hidden = next;
+  }
+
+  function setText(node, text) {
+    if (!node) return;
+    const next = String(text || "");
+    if (node.textContent !== next) node.textContent = next;
+  }
+
   const legacyContinue = document.querySelector("#manual-v5-continue-current");
-  if (legacyContinue) {
-    legacyContinue.textContent = "이 결과에 수정 의견 반영하기";
-    legacyContinue.title = "현재 결과를 기준으로 이유와 수정 방향을 입력해 이어갑니다.";
+  let externalSection = null;
+  if (legacyContinue && typeof elements !== "undefined") {
+    legacyContinue.textContent = "이 결과에 의견 반영해 계속";
+    legacyContinue.title = "현재 결과를 보존하고 이유와 다음 방향을 입력해 이어갑니다.";
+
+    externalSection = document.createElement("section");
+    externalSection.id = "manual-controller-external-refinement";
+    externalSection.className = "manual-controller-external-refinement";
+    externalSection.hidden = true;
+    externalSection.innerHTML = `
+      <strong>현재 결과에서 무엇을 바꿀까요?</strong>
+      <p>이전 결과를 버리지 않고 새 Controller 세션의 명시적 문맥으로 가져갑니다.</p>
+      <label class="field-label" for="manual-controller-external-reason">
+        <span>왜 바꾸려는지</span>
+        <textarea id="manual-controller-external-reason" rows="3" maxlength="8000" placeholder="예: 결론은 괜찮지만 내 질문의 핵심과 어긋난 이유가 있다."></textarea>
+      </label>
+      <label class="field-label" for="manual-controller-external-direction">
+        <span>다음에는 어떤 방향으로 갈지</span>
+        <textarea id="manual-controller-external-direction" rows="4" maxlength="8000" placeholder="예: 기존 장점은 유지하고, 지금 실행할 행동을 기준으로 다시 판단해 줘."></textarea>
+      </label>
+      <div class="manual-controller-refinement-actions">
+        <span id="manual-controller-external-status" role="status" aria-live="polite"></span>
+        <div>
+          <button id="manual-controller-external-cancel" type="button" class="secondary-button">취소</button>
+          <button id="manual-controller-external-submit" type="button">이 의견으로 계속</button>
+        </div>
+      </div>
+    `;
+    legacyContinue.insertAdjacentElement("afterend", externalSection);
+
+    const externalReason = externalSection.querySelector("#manual-controller-external-reason");
+    const externalDirection = externalSection.querySelector("#manual-controller-external-direction");
+    const externalStatus = externalSection.querySelector("#manual-controller-external-status");
+    const externalCancel = externalSection.querySelector("#manual-controller-external-cancel");
+    const externalSubmit = externalSection.querySelector("#manual-controller-external-submit");
+
+    legacyContinue.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setHidden(externalSection, false);
+        externalReason.focus();
+        externalSection.scrollIntoView({ behavior: "smooth", block: "center" });
+      },
+      true,
+    );
+
+    externalCancel.addEventListener("click", () => {
+      setHidden(externalSection, true);
+      setText(externalStatus, "");
+    });
+
+    externalSubmit.addEventListener("click", async () => {
+      const reason = externalReason.value.trim();
+      const direction = externalDirection.value.trim();
+      const request = String(elements.request?.value || "").trim();
+      const previousResult = String(elements.resultContent?.innerText || "").trim().slice(0, 20000);
+      if (!direction) {
+        externalDirection.focus();
+        setText(externalStatus, "다음 방향을 적어 주세요.");
+        return;
+      }
+      if (!request || !previousResult) {
+        setText(externalStatus, "이어갈 원래 요청이나 결과를 찾지 못했습니다.");
+        return;
+      }
+
+      externalSubmit.disabled = true;
+      externalCancel.disabled = true;
+      setText(externalStatus, "이전 결과와 피드백으로 새 Controller 세션을 만들고 있습니다.");
+      try {
+        panel.querySelector("#manual-controller-reset")?.click();
+        const toggle = document.querySelector("#chatgpt-manual-enabled");
+        if (toggle && !toggle.checked) {
+          toggle.checked = true;
+          toggle.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        const requestField = panel.querySelector("#manual-controller-request");
+        const contextField = panel.querySelector("#manual-controller-context");
+        requestField.value = request;
+        contextField.value = [
+          "[이전 결과]",
+          previousResult,
+          "",
+          "[사용자 결과 피드백]",
+          reason ? `이유: ${reason}` : "이유: 사용자가 수정 방향을 직접 지정함",
+          `다음 방향: ${direction}`,
+        ].join("\n");
+        await controller.start();
+        externalReason.value = "";
+        externalDirection.value = "";
+        setHidden(externalSection, true);
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (error) {
+        setText(externalStatus, error.message);
+      } finally {
+        externalSubmit.disabled = false;
+        externalCancel.disabled = false;
+      }
+    });
   }
 
   const section = document.createElement("section");
@@ -56,16 +166,6 @@
   let busy = false;
   let formOpened = false;
   let rendering = false;
-
-  function setHidden(node, hidden) {
-    const next = Boolean(hidden);
-    if (node.hidden !== next) node.hidden = next;
-  }
-
-  function setText(node, text) {
-    const next = String(text || "");
-    if (node.textContent !== next) node.textContent = next;
-  }
 
   function isTerminal(status) {
     return ["completed", "partial", "blocked"].includes(status);
