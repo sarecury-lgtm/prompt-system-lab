@@ -44,12 +44,14 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 "chatgpt-manual-fallback-v5.js",
                 "chatgpt-manual-focus-v1.js",
                 "psos-manual-controller-v1.js",
+                "psos-manual-verification-v1.js",
                 "chatgpt-manual-patch-v1.js",
             ],
             addons["renderer.js"],
         )
         self.assertIn("next-loop-attachments.css", addons["styles.css"])
         self.assertIn("psos-manual-controller-v1.css", addons["styles.css"])
+        self.assertIn("psos-manual-verification-v1.css", addons["styles.css"])
         self.assertEqual("chatgpt-manual-patch-v1.css", addons["styles.css"][-1])
 
     def test_workflow_script_exposes_auto_routes_and_manual_diagnostics(self):
@@ -165,6 +167,25 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
         self.assertNotIn("OPENAI_API_KEY", script)
         self.assertNotIn("api.openai.com", script)
 
+    def test_manual_verification_ui_shows_failures_and_next_action(self):
+        script = (ROOT / "web" / "psos-manual-verification-v1.js").read_text(
+            encoding="utf-8"
+        )
+        styles = (ROOT / "web" / "psos-manual-verification-v1.css").read_text(
+            encoding="utf-8"
+        )
+        for marker in (
+            "Controller 검증 실패",
+            "missing_conditions",
+            "last_verification",
+            "request_contract",
+            "current_action",
+            "PSOSManualVerification",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
+        self.assertIn("manual-controller-verification-next", styles)
+
     def test_manual_contract_schemas_are_valid_json(self):
         job_schema = json.loads(
             (ROOT / "schemas" / "problem-solving-manual-job-packet.schema.json").read_text(
@@ -181,16 +202,35 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+        action_result_schema = json.loads(
+            (ROOT / "schemas" / "problem-solving-controller-action-result.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
         session_schema = json.loads(
             (ROOT / "schemas" / "problem-solving-controller-session.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        request_schema = json.loads(
+            (ROOT / "schemas" / "problem-solving-request-contract.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        obligation_schema = json.loads(
+            (ROOT / "schemas" / "problem-solving-evidence-obligation.schema.json").read_text(
                 encoding="utf-8"
             )
         )
         self.assertEqual("PSOS Manual Job Packet", job_schema["title"])
         self.assertEqual("PSOS Manual Result Envelope", result_schema["title"])
         self.assertEqual("PSOS Controller Action Packet", action_schema["title"])
+        self.assertEqual("PSOS Controller Action Result", action_result_schema["title"])
         self.assertEqual("PSOS Controller Session State", session_schema["title"])
-        self.assertIn("output_contract", job_schema["required"])
+        self.assertEqual("PSOS Request Contract", request_schema["title"])
+        self.assertEqual("PSOS Evidence Obligation", obligation_schema["title"])
+        self.assertIn("request_contract", action_schema["required"])
+        self.assertIn("coverage", action_result_schema["required"])
         self.assertIn("continuation", result_schema["required"])
 
     def test_workflow_styles_hide_legacy_manual_and_show_controller(self):
