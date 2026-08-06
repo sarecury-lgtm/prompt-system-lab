@@ -138,7 +138,7 @@
       "reason": "It tests one possible bounded interaction pattern and cannot become the default response path from one scenario."
     },
     {
-      "subject": "manual ChatGPT and Codex action transport paths",
+      "subject": "manual ChatGPT and Codex job packet paths",
       "classification": "ADAPTER",
       "reason": "They change how the same Controller-selected action is executed, not the parent problem-solving goal."
     },
