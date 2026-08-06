@@ -15,7 +15,12 @@ on:
       - "scripts/problem_solving_goal_guard.py"
       - "scripts/problem_solving_controller.py"
       - "scripts/problem_solving_controller_session.py"
+      - "scripts/problem_solving_controller_session_verified.py"
       - "scripts/problem_solving_controller_ab.py"
+      - "scripts/problem_solving_request_contract.py"
+      - "scripts/problem_solving_evidence_verifier.py"
+      - "scripts/problem_solving_domain_adapters.py"
+      - "scripts/problem_solving_stock_decision_adapter.py"
       - "scripts/problem_solving_manual_controller_web.py"
       - "scripts/problem_solving_adaptive_*.py"
       - "scripts/problem_solving_candidate_*.py"
@@ -25,6 +30,8 @@ on:
       - "scripts/problem_solving_source_scout_experiment.py"
       - "scripts/problem_solving_web_attachments.py"
       - "schemas/problem-solving-controller-*.json"
+      - "schemas/problem-solving-request-contract.schema.json"
+      - "schemas/problem-solving-evidence-obligation.schema.json"
       - "schemas/problem-solving-adaptive-*.json"
       - "schemas/problem-solving-candidate-*.json"
       - "schemas/problem-solving-dynamic-*.json"
@@ -34,6 +41,7 @@ on:
       - "tests/test_problem_solving_goal_guard.py"
       - "tests/test_problem_solving_controller.py"
       - "tests/test_problem_solving_controller_session.py"
+      - "tests/test_problem_solving_request_verification.py"
       - "tests/test_problem_solving_controller_ab.py"
       - "tests/test_problem_solving_manual_controller_web.py"
       - "tests/test_problem_solving_adaptive_*.py"
@@ -79,7 +87,12 @@ jobs:
             scripts/problem_solving_goal_guard.py \
             scripts/problem_solving_controller.py \
             scripts/problem_solving_controller_session.py \
+            scripts/problem_solving_controller_session_verified.py \
             scripts/problem_solving_controller_ab.py \
+            scripts/problem_solving_request_contract.py \
+            scripts/problem_solving_evidence_verifier.py \
+            scripts/problem_solving_domain_adapters.py \
+            scripts/problem_solving_stock_decision_adapter.py \
             scripts/problem_solving_manual_controller_web.py \
             scripts/problem_solving_adaptive_context.py \
             scripts/problem_solving_adaptive_shopping.py \
@@ -111,6 +124,10 @@ jobs:
             tests.test_problem_solving_controller_ab \
             tests.test_problem_solving_manual_controller_web
           python -B scripts/problem_solving_controller_ab.py validate
+
+      - name: Run request and evidence verification tests
+        run: |
+          python -B -m unittest tests.test_problem_solving_request_verification
 
       - name: Run adaptive controller tests
         run: |
@@ -145,6 +162,7 @@ jobs:
           node --check web/psos-manual-protocol.js
           node --check web/psos-manual-route-policy.js
           node --check web/psos-manual-controller-v1.js
+          node --check web/psos-manual-verification-v1.js
           node --check web/chatgpt-manual-fallback-v5.js
           node --check web/chatgpt-manual-focus-v1.js
           node --check web/chatgpt-manual-patch-v1.js
