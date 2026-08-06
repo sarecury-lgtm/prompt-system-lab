@@ -28,7 +28,7 @@
   const missingList = section.querySelector("#manual-controller-verification-missing");
   const nextBox = section.querySelector("#manual-controller-verification-next");
   const nextText = section.querySelector("#manual-controller-verification-next-text");
-  let rendering = false;
+  let lastSignature = "";
 
   function contractSummary(contract) {
     if (!contract) return "";
@@ -38,38 +38,49 @@
     return `${contract.requested_action || "answer"} · ${time} · ${scope}${count}`;
   }
 
-  function renderVerification() {
-    if (rendering) return;
-    rendering = true;
-    try {
-      const session = window.PSOSManualController.getSession();
-      const verification = session?.last_verification;
-      if (!session || !verification) {
-        section.hidden = true;
-        return;
-      }
-      section.hidden = false;
-      const satisfied = Boolean(verification.satisfied);
-      title.textContent = satisfied ? "Controller 검증 통과" : "Controller 검증 실패";
-      badge.textContent = satisfied ? "충족" : `${verification.missing_conditions?.length || 0}개 누락`;
-      badge.dataset.route = satisfied ? "direct" : "research";
-      summary.textContent = contractSummary(session.request_contract);
-      missingList.replaceChildren();
-      (verification.missing_conditions || []).forEach((text) => {
-        const item = document.createElement("li");
-        item.textContent = text;
-        missingList.appendChild(item);
-      });
-      missingList.hidden = satisfied || !missingList.children.length;
+  function renderSignature(session) {
+    return JSON.stringify({
+      sessionId: session?.session_id || "",
+      verification: session?.last_verification || null,
+      contract: session?.request_contract || null,
+      nextAction: session?.current_action?.packet
+        ? {
+            actionId: session.current_action.packet.action_id,
+            route: session.current_action.packet.route,
+            objective: session.current_action.packet.objective,
+          }
+        : null,
+    });
+  }
 
-      const next = session.current_action?.packet;
-      nextBox.hidden = !next || satisfied;
-      if (next && !satisfied) {
-        nextText.textContent = `${next.route} · ${next.objective}`;
-      }
-    } finally {
-      rendering = false;
+  function renderVerification() {
+    const session = window.PSOSManualController.getSession();
+    const signature = renderSignature(session);
+    if (signature === lastSignature) return;
+    lastSignature = signature;
+
+    const verification = session?.last_verification;
+    if (!session || !verification) {
+      section.hidden = true;
+      return;
     }
+    section.hidden = false;
+    const satisfied = Boolean(verification.satisfied);
+    title.textContent = satisfied ? "Controller 검증 통과" : "Controller 검증 실패";
+    badge.textContent = satisfied ? "충족" : `${verification.missing_conditions?.length || 0}개 누락`;
+    badge.dataset.route = satisfied ? "direct" : "research";
+    summary.textContent = contractSummary(session.request_contract);
+    missingList.replaceChildren();
+    (verification.missing_conditions || []).forEach((text) => {
+      const item = document.createElement("li");
+      item.textContent = text;
+      missingList.appendChild(item);
+    });
+    missingList.hidden = satisfied || !missingList.children.length;
+
+    const next = session.current_action?.packet;
+    nextBox.hidden = !next || satisfied;
+    nextText.textContent = next && !satisfied ? `${next.route} · ${next.objective}` : "";
   }
 
   new MutationObserver(renderVerification).observe(panel, {
