@@ -24,12 +24,13 @@
     "Model claims are distinguished from verified external or workspace results.",
     "A failed or incomplete result is not presented as completed or recommended.",
     "A retry changes one material dimension and is bounded unless the user explicitly authorizes more work.",
+    "Explicit user feedback may reopen a terminal result without being miscounted as an automatic method change.",
     "Domain tools remain optional and cannot redefine the PSOS parent goal.",
     "Weak continuation language continues only the recorded current task and never silently expands scope."
   ],
   "current_task": {
-    "id": "request-contract-evidence-verifier-v1",
-    "objective": "Add a structured Request Contract, generated evidence obligations, an independent generic verifier, and an optional stock-decision adapter so the stepwise Controller rejects unsupported completion claims and derives the next action from observable missing evidence rather than accumulating prompt-specific warning sentences.",
+    "id": "request-contract-evidence-verifier-and-refinement-v1",
+    "objective": "Keep the structured Request Contract and independent evidence verifier, while allowing a user who has seen a completed result to state why it should change and what direction to take next. Preserve the previous result and evidence, record that feedback as an explicit constraint, and create a new Controller action without treating the user-directed change as an automatic method change.",
     "allowed_change_classes": [
       "CORE",
       "ADAPTER",
@@ -43,7 +44,7 @@
       "turning stock analysis into the PSOS parent goal",
       "running live Codex evaluation",
       "claiming verified market-wide stock coverage from model declarations alone",
-      "allowing more than four manual AI actions or more than one material method change"
+      "allowing more than four manual AI actions or more than one automatic material method change"
     ],
     "completion_conditions": [
       "A domain-neutral Request Contract records requested action, time sensitivity, target-set openness, selection count, comparison need, current-condition need and assumption policy.",
@@ -55,6 +56,9 @@
       "The supplied MSFT recommendation is fixed as a regression fixture and must fail for narrow unexplained search scope, absent current entry-fit evidence and unsupported material assumptions.",
       "A complete structured stock result can pass without requiring a fixed ticker, fixed return threshold or forced no-buy outcome.",
       "The manual UI displays Controller verification failures and the newly selected next action.",
+      "A terminal manual result exposes a clear feedback control that separately captures why the result should change and what direction should be taken next.",
+      "User-directed refinement preserves the previous answer and evidence, updates explicit context and Request Contract constraints, creates a new action, and does not consume automatic method-change budget.",
+      "The unclear legacy continuation control is hidden in Controller mode and relabeled when used outside it.",
       "Cross-domain tests show that DIRECT and non-selection requests are not burdened with stock-specific obligations.",
       "CI passes goal guard, focused Python tests, browser JavaScript checks and the full repository suite."
     ]
