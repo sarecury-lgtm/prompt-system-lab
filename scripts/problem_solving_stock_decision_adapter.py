@@ -14,7 +14,7 @@ ADAPTER_ID = "stock-decision-v1"
 def matches(request: str) -> bool:
     text = str(request or "")
     subject = re.search(r"주식|종목|티커|ticker|나스닥|코스피|코스닥|미국장|미국 주식", text, re.I)
-    decision = re.search(r"추천|매수|사도|살까|진입|1순위|골라|오늘|지금", text, re.I)
+    decision = re.search(r"추천|매수|사도|사면|살까|진입|1순위|골라|오늘|지금", text, re.I)
     return bool(subject and decision)
 
 
@@ -39,7 +39,7 @@ def additional_obligations(contract: Mapping[str, Any]) -> list[dict[str, Any]]:
             "category": "domain_search",
             "required": True,
             "verifier": ADAPTER_ID,
-            "description": "The stock recommendation records the tradable universe, screening time, filters, screened count and finalists before naming a winner.",
+            "description": "The stock recommendation records the tradable universe, screening time, filters, screened count, finalists and screening evidence before naming a winner.",
         },
         {
             "version": 1,
@@ -110,18 +110,26 @@ def verify(
     screening = _mapping(stock.get("screening_record"))
     entry = _mapping(stock.get("selected_entry_fit"))
     selection = _mapping(coverage.get("selection"))
+    known_evidence = _evidence_ids(result)
 
     universe = _text(screening.get("universe"))
     as_of = _text(screening.get("as_of"))
     filters = [_text(item) for item in _list(screening.get("filters")) if _text(item)]
     finalists = [_text(item) for item in _list(screening.get("finalist_ids")) if _text(item)]
     screened_count = screening.get("screened_count")
+    screening_refs = [
+        _text(item) for item in _list(screening.get("evidence_refs")) if _text(item)
+    ]
+    screening_refs_resolve = bool(screening_refs) and all(
+        ref in known_evidence for ref in screening_refs
+    )
     universe_ok = bool(
         universe
         and as_of
         and filters
         and isinstance(screened_count, int)
         and screened_count > len(finalists) >= 1
+        and screening_refs_resolve
     )
     checks.append(
         {
@@ -133,12 +141,14 @@ def verify(
                 "screened_count": screened_count,
                 "finalist_count": len(finalists),
                 "filters": filters,
+                "evidence_refs": screening_refs,
+                "evidence_refs_resolve": screening_refs_resolve,
             },
         }
     )
     if not universe_ok:
         missing.append(
-            "주식 후보군의 시장 범위, 확인 시점, 필터, 실제 선별 수와 최종 후보 기록이 부족합니다."
+            "주식 후보군의 시장 범위, 확인 시점, 필터, 실제 선별 수, 최종 후보와 선별 근거 참조가 부족합니다."
         )
 
     selected_id = _text(selection.get("selected_id"))
@@ -154,13 +164,13 @@ def verify(
         "downside_reference": _text(entry.get("downside_reference")),
         "chase_risk": _text(entry.get("chase_risk")),
     }
-    known_evidence = _evidence_ids(result)
     refs_resolve = bool(evidence_refs) and all(ref in known_evidence for ref in evidence_refs)
+    finalist_keys = {item.upper() for item in finalists}
     entry_ok = bool(
         ticker
         and selected_id
         and ticker.upper() == selected_id.upper()
-        and ticker in finalists
+        and ticker.upper() in finalist_keys
         and isinstance(current_price, (int, float))
         and current_price > 0
         and isinstance(risk_reward, (int, float))
@@ -198,8 +208,10 @@ def verify(
     horizon_basis = _text(horizon.get("basis")) if isinstance(horizon, Mapping) else ""
     horizon_sensitivity = _text(horizon.get("sensitivity")) if isinstance(horizon, Mapping) else ""
     horizon_ok = bool(
-        horizon
-        and horizon_basis in {"user", "context"}
+        (
+            horizon
+            and horizon_basis in {"user", "context"}
+        )
         or (
             horizon
             and horizon_basis == "explicit_default"
