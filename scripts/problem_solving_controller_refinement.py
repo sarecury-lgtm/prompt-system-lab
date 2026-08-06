@@ -78,6 +78,7 @@ def submit_user_refinement(
 
     last_route = state["actions"][-1]["packet"]["route"]
     next_route = _next_route(last_route, clean_direction)
+    state["goal"]["completion_condition"] = BASE.completion_condition(next_route)
     objective = (
         "기존 결과를 그대로 반복하지 말고, 사용자 피드백의 이유를 반영해 "
         f"다음 방향으로 결과를 수정한다: {clean_direction}"
