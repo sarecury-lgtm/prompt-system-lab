@@ -25,6 +25,30 @@ def augment_contract(contract: Mapping[str, Any]) -> dict[str, Any]:
         "candidate_universe_record": True,
         "selected_current_entry_fit": True,
         "material_horizon_basis": True,
+        "coverage_template": {
+            "stock_decision": {
+                "screening_record": {
+                    "universe": "",
+                    "as_of": "",
+                    "screened_count": 0,
+                    "filters": [],
+                    "finalist_ids": [],
+                    "evidence_refs": [],
+                },
+                "selected_entry_fit": {
+                    "ticker": "",
+                    "current_price": 0,
+                    "checked_at": "",
+                    "entry_zone": "",
+                    "invalidation": "",
+                    "upside_reference": "",
+                    "downside_reference": "",
+                    "risk_reward": 0,
+                    "chase_risk": "",
+                    "evidence_refs": [],
+                },
+            }
+        },
     }
     return output
 
