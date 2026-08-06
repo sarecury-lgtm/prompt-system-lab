@@ -11,6 +11,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import problem_solving_controller_session as SESSION
+import problem_solving_evidence_verifier as VERIFIER
 import problem_solving_manual_controller_web as WEB
 
 
@@ -24,6 +25,7 @@ def completed_answer(public_state):
         "status": "completed",
         "completion": {"met": True, "missing": []},
         "evidence": [],
+        "coverage": VERIFIER.empty_coverage(),
         "artifacts": [],
         "limitations": [],
         "continuation": {
@@ -57,6 +59,9 @@ class ManualControllerWebTests(unittest.TestCase):
             self.assertEqual(created["session_id"], loaded["session_id"])
             self.assertEqual("completed", completed["status"])
             self.assertEqual("usable result", completed["display_data"]["result_markdown"])
+            self.assertTrue(completed["last_verification"]["satisfied"])
+            self.assertIn("request_contract", created)
+            self.assertIn("evidence_obligations", created)
 
     def test_manager_rejects_unsafe_session_id(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -75,7 +80,7 @@ class ManualControllerWebTests(unittest.TestCase):
         manager = WEB.install(DummyWeb)
         self.assertIsInstance(manager, WEB.ManualControllerManager)
         self.assertTrue(issubclass(DummyWeb.NextLoopQualityRequestHandler, BaseHandler))
-        self.assertEqual("PSOSManualControllerWeb/1", DummyWeb.NextLoopQualityRequestHandler.server_version)
+        self.assertEqual("PSOSManualControllerWeb/2", DummyWeb.NextLoopQualityRequestHandler.server_version)
 
     def test_script_exposes_session_result_and_input_endpoints(self):
         source = (SCRIPTS / "problem_solving_manual_controller_web.py").read_text(encoding="utf-8")
@@ -85,6 +90,7 @@ class ManualControllerWebTests(unittest.TestCase):
             'action == "input"',
             "SESSION.submit_action_result",
             "SESSION.submit_user_input",
+            "problem_solving_controller_session_verified",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, source)
