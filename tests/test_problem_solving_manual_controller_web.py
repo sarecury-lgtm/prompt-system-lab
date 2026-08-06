@@ -46,7 +46,7 @@ def completed_answer(public_state):
 
 
 class ManualControllerWebTests(unittest.TestCase):
-    def test_manager_creates_reads_and_completes_session(self):
+    def test_manager_creates_reads_completes_and_refines_session(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             manager = WEB.ManualControllerManager(Path(temp_dir))
             created = manager.create({"request": "주어진 글을 분석해 줘"})
@@ -55,11 +55,21 @@ class ManualControllerWebTests(unittest.TestCase):
                 created["session_id"],
                 {"answer": completed_answer(created)},
             )
+            refined = manager.submit_refinement(
+                created["session_id"],
+                {
+                    "reason": "결론은 맞지만 이유가 약하다.",
+                    "direction": "결론은 유지하고 반례와 이유를 보강해 줘.",
+                },
+            )
 
             self.assertEqual(created["session_id"], loaded["session_id"])
             self.assertEqual("completed", completed["status"])
             self.assertEqual("usable result", completed["display_data"]["result_markdown"])
             self.assertTrue(completed["last_verification"]["satisfied"])
+            self.assertEqual("awaiting_execution", refined["status"])
+            self.assertIn("반례와 이유", refined["current_action"]["packet"]["objective"])
+            self.assertEqual(0, refined["budget"]["used_method_changes"])
             self.assertIn("request_contract", created)
             self.assertIn("evidence_obligations", created)
 
@@ -80,16 +90,18 @@ class ManualControllerWebTests(unittest.TestCase):
         manager = WEB.install(DummyWeb)
         self.assertIsInstance(manager, WEB.ManualControllerManager)
         self.assertTrue(issubclass(DummyWeb.NextLoopQualityRequestHandler, BaseHandler))
-        self.assertEqual("PSOSManualControllerWeb/2", DummyWeb.NextLoopQualityRequestHandler.server_version)
+        self.assertEqual("PSOSManualControllerWeb/3", DummyWeb.NextLoopQualityRequestHandler.server_version)
 
-    def test_script_exposes_session_result_and_input_endpoints(self):
+    def test_script_exposes_session_result_input_and_refine_endpoints(self):
         source = (SCRIPTS / "problem_solving_manual_controller_web.py").read_text(encoding="utf-8")
         for marker in (
             "/api/manual-controller/sessions",
             'action == "result"',
             'action == "input"',
+            'action == "refine"',
             "SESSION.submit_action_result",
             "SESSION.submit_user_input",
+            "REFINEMENT.submit_user_refinement",
             "problem_solving_controller_session_verified",
         ):
             with self.subTest(marker=marker):
