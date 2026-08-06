@@ -43,12 +43,13 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 "psos-manual-route-policy.js",
                 "chatgpt-manual-fallback-v5.js",
                 "chatgpt-manual-focus-v1.js",
+                "psos-manual-controller-v1.js",
                 "chatgpt-manual-patch-v1.js",
             ],
             addons["renderer.js"],
         )
         self.assertIn("next-loop-attachments.css", addons["styles.css"])
-        self.assertIn("chatgpt-manual-focus-v1.css", addons["styles.css"])
+        self.assertIn("psos-manual-controller-v1.css", addons["styles.css"])
         self.assertEqual("chatgpt-manual-patch-v1.css", addons["styles.css"][-1])
 
     def test_workflow_script_exposes_auto_routes_and_manual_diagnostics(self):
@@ -110,7 +111,7 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             with self.subTest(marker=marker):
                 self.assertIn(marker, script)
 
-    def test_manual_ui_is_one_packet_one_import_flow(self):
+    def test_legacy_manual_ui_remains_as_hidden_fallback(self):
         script = (ROOT / "web" / "chatgpt-manual-fallback-v5.js").read_text(
             encoding="utf-8"
         )
@@ -118,27 +119,13 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             "ChatGPT 수동 실행",
             'id="manual-v5-request"',
             "실행 패킷 복사",
-            "ChatGPT 열기",
             "결과 가져오기",
             "한 번 더 고치기",
-            "후속 패킷 복사",
-            "copyReliable",
-            'document.execCommand("copy")',
-            "parseResultEnvelope",
-            "toDisplayData",
             "PSOSManualChatGPT",
             "version: 5",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, script)
-        for forbidden in (
-            "OPENAI_API_KEY",
-            "api.openai.com",
-            'fetch("/api/',
-            "복사하고 ChatGPT 열기",
-        ):
-            with self.subTest(forbidden=forbidden):
-                self.assertNotIn(forbidden, script)
 
     def test_manual_focus_hides_unrelated_engines_and_marks_completion(self):
         script = (ROOT / "web" / "chatgpt-manual-focus-v1.js").read_text(
@@ -151,7 +138,6 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             ".engine-selector",
             ".workspace > .section-heading",
             "수동 실행 완료",
-            "다른 실행 방식을 다시 고를 필요가 없습니다",
             "새 요청 시작",
             "PSOSManualFocus",
         ):
@@ -159,6 +145,25 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 self.assertIn(marker, script)
         self.assertIn("body.manual-v5-enabled .engine-selector", styles)
         self.assertIn("manual-v5-focus-note", styles)
+
+    def test_manual_controller_ui_uses_server_owned_next_action(self):
+        script = (ROOT / "web" / "psos-manual-controller-v1.js").read_text(
+            encoding="utf-8"
+        )
+        for marker in (
+            "같은 Controller · 수동 전송",
+            "/api/manual-controller/sessions",
+            "현재 행동 패킷 복사",
+            "결과를 Controller에 제출",
+            "awaiting_user_input",
+            "used_method_changes",
+            "PSOSManualController",
+            "version: 1",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
+        self.assertNotIn("OPENAI_API_KEY", script)
+        self.assertNotIn("api.openai.com", script)
 
     def test_manual_contract_schemas_are_valid_json(self):
         job_schema = json.loads(
@@ -171,14 +176,29 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+        action_schema = json.loads(
+            (ROOT / "schemas" / "problem-solving-controller-action.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        session_schema = json.loads(
+            (ROOT / "schemas" / "problem-solving-controller-session.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
         self.assertEqual("PSOS Manual Job Packet", job_schema["title"])
         self.assertEqual("PSOS Manual Result Envelope", result_schema["title"])
+        self.assertEqual("PSOS Controller Action Packet", action_schema["title"])
+        self.assertEqual("PSOS Controller Session State", session_schema["title"])
         self.assertIn("output_contract", job_schema["required"])
         self.assertIn("continuation", result_schema["required"])
 
-    def test_workflow_styles_hide_legacy_manual_by_default(self):
+    def test_workflow_styles_hide_legacy_manual_and_show_controller(self):
         styles = (ROOT / "web" / "next-loop-workflow.css").read_text(encoding="utf-8")
         fallback_styles = (ROOT / "web" / "chatgpt-manual-fallback-v5.css").read_text(
+            encoding="utf-8"
+        )
+        controller_styles = (ROOT / "web" / "psos-manual-controller-v1.css").read_text(
             encoding="utf-8"
         )
         attachment_styles = (ROOT / "web" / "next-loop-attachments.css").read_text(
@@ -189,6 +209,8 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
         self.assertIn("manual-v5-request-label", fallback_styles)
         self.assertIn("manual-v5-progress", fallback_styles)
         self.assertIn("body:not(.workflow-show-advanced) #manual-panel", fallback_styles)
+        self.assertIn("body.manual-controller-enabled #chatgpt-manual-panel", controller_styles)
+        self.assertIn("manual-controller-budget", controller_styles)
         self.assertIn("attachment-dropzone", attachment_styles)
 
 
