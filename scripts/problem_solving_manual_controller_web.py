@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Mapping
 from urllib.parse import unquote, urlparse
 
+import problem_solving_controller_refinement as REFINEMENT
 import problem_solving_controller_session_verified as SESSION
 
 
@@ -81,6 +82,15 @@ class ManualControllerManager:
         state = SESSION.submit_user_input(session_dir, answer)
         return SESSION.public_session(state, session_dir=session_dir)
 
+    def submit_refinement(self, session_id: str, payload: Mapping[str, Any]) -> dict[str, Any]:
+        session_dir = self._dir(session_id)
+        state = REFINEMENT.submit_user_refinement(
+            session_dir,
+            reason=str(payload.get("reason") or ""),
+            direction=str(payload.get("direction") or ""),
+        )
+        return SESSION.public_session(state, session_dir=session_dir)
+
 
 def install(web_module: Any) -> ManualControllerManager:
     """Install manual Controller endpoints on the current next-loop handler."""
@@ -91,7 +101,7 @@ def install(web_module: Any) -> ManualControllerManager:
     base_handler = web_module.NextLoopQualityRequestHandler
 
     class ManualControllerRequestHandler(base_handler):
-        server_version = "PSOSManualControllerWeb/2"
+        server_version = "PSOSManualControllerWeb/3"
 
         def do_GET(self) -> None:
             parts = urlparse(self.path).path.strip("/").split("/")
@@ -124,6 +134,9 @@ def install(web_module: Any) -> ManualControllerManager:
                         return
                     if action == "input":
                         self.send_json(manager.submit_user_input(session_id, payload))
+                        return
+                    if action == "refine":
+                        self.send_json(manager.submit_refinement(session_id, payload))
                         return
             except FileNotFoundError as exc:
                 self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
