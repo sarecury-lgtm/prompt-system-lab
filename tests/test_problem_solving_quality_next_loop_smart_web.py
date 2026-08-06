@@ -46,6 +46,7 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 "psos-manual-controller-v1.js",
                 "psos-manual-request-switch-v1.js",
                 "psos-manual-verification-v1.js",
+                "psos-manual-refinement-v1.js",
                 "chatgpt-manual-patch-v1.js",
             ],
             addons["renderer.js"],
@@ -54,6 +55,7 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
         self.assertIn("psos-manual-controller-v1.css", addons["styles.css"])
         self.assertIn("psos-manual-request-switch-v1.css", addons["styles.css"])
         self.assertIn("psos-manual-verification-v1.css", addons["styles.css"])
+        self.assertIn("psos-manual-refinement-v1.css", addons["styles.css"])
         self.assertEqual("chatgpt-manual-patch-v1.css", addons["styles.css"][-1])
 
     def test_workflow_script_exposes_auto_routes_and_manual_diagnostics(self):
@@ -206,6 +208,26 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
             with self.subTest(marker=marker):
                 self.assertIn(marker, script)
         self.assertIn("manual-controller-verification-next", styles)
+
+    def test_manual_refinement_collects_reason_and_direction(self):
+        script = (ROOT / "web" / "psos-manual-refinement-v1.js").read_text(
+            encoding="utf-8"
+        )
+        styles = (ROOT / "web" / "psos-manual-refinement-v1.css").read_text(
+            encoding="utf-8"
+        )
+        for marker in (
+            "결과에 의견 반영하기",
+            "왜 바꾸려는지",
+            "다음에는 어떤 방향으로 갈지",
+            "/refine",
+            "controller.reload",
+            "PSOSManualRefinement",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
+        self.assertIn("body.manual-controller-enabled #manual-v5-continue-current", styles)
+        self.assertIn("manual-controller-refinement-form", styles)
 
     def test_manual_contract_schemas_are_valid_json(self):
         job_schema = json.loads(
