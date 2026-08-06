@@ -2,7 +2,7 @@
   "version": 1,
   "branch": "codex/problem-solving-os-next-loop",
   "base": "main",
-  "declared_purpose": "Evaluate bounded convergence and execution adapters without allowing a candidate loop, shopping collector, or manual fallback to redefine or silently replace the general PSOS product goal.",
+  "declared_purpose": "Evaluate bounded convergence and interchangeable automatic or manual execution adapters without allowing a candidate loop, shopping collector, or transport-specific fallback to redefine the general PSOS product goal.",
   "parent_goal_link": "ACTIVE_GOAL.json",
   "branch_status": "experimental",
   "default_product_promotion_approved": false,
@@ -26,10 +26,11 @@
       "change_class": "CORE",
       "promotion_status": "candidate",
       "runtime_default_enabled": false,
-      "purpose": "Wrap the canonical Result Contract runtime with one stable state, immediate completion, and at most one safe material route change without adding domain vocabulary.",
+      "purpose": "Provide bounded one-shot and persisted stepwise Controller state, immediate completion, and at most one safe material method change without domain vocabulary.",
       "patterns": [
         "schemas/problem-solving-controller-*.json",
-        "scripts/problem_solving_controller.py"
+        "scripts/problem_solving_controller.py",
+        "scripts/problem_solving_controller_session.py"
       ]
     },
     {
@@ -58,6 +59,7 @@
         "scripts/problem_solving_compare_web.py",
         "scripts/problem_solving_connected_browser.py",
         "scripts/problem_solving_live_browser.py",
+        "scripts/problem_solving_manual_controller_web.py",
         "scripts/problem_solving_manual_patch_web.py",
         "scripts/problem_solving_prompt_build_brief.py",
         "scripts/problem_solving_prompt_renderer.py",
@@ -66,7 +68,8 @@
         "web/chatgpt-manual-*.js",
         "web/chatgpt-manual-*.css",
         "web/compare-no-codex.js",
-        "web/psos-manual-*.js"
+        "web/psos-manual-*.js",
+        "web/psos-manual-*.css"
       ]
     },
     {
@@ -135,9 +138,9 @@
       "reason": "It tests one possible bounded interaction pattern and cannot become the default response path from one scenario."
     },
     {
-      "subject": "manual ChatGPT and Codex job packet paths",
+      "subject": "manual ChatGPT and Codex action transport paths",
       "classification": "ADAPTER",
-      "reason": "They change how the same work is executed, not the parent problem-solving goal."
+      "reason": "They change how the same Controller-selected action is executed, not the parent problem-solving goal."
     },
     {
       "subject": "controller A/B evaluation harness and fixtures",
