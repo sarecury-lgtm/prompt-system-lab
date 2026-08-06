@@ -83,10 +83,9 @@
       "change_class": "DOMAIN",
       "promotion_status": "test-only",
       "runtime_default_enabled": false,
-      "purpose": "Verify candidate-universe and current-entry evidence for stock decision requests as one optional domain adapter and regression case, without selecting a fixed ticker or defining the general Controller.",
+      "purpose": "Verify candidate-universe and current-entry evidence for stock decision requests as one optional domain adapter, without selecting a fixed ticker or defining the general Controller.",
       "patterns": [
-        "scripts/problem_solving_stock_decision_adapter.py",
-        "evaluation/psos-controller/fixtures/stock-timing-msft-failure/*"
+        "scripts/problem_solving_stock_decision_adapter.py"
       ]
     },
     {
