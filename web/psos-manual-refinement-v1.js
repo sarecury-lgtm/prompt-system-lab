@@ -57,6 +57,16 @@
   let formOpened = false;
   let rendering = false;
 
+  function setHidden(node, hidden) {
+    const next = Boolean(hidden);
+    if (node.hidden !== next) node.hidden = next;
+  }
+
+  function setText(node, text) {
+    const next = String(text || "");
+    if (node.textContent !== next) node.textContent = next;
+  }
+
   function isTerminal(status) {
     return ["completed", "partial", "blocked"].includes(status);
   }
@@ -67,20 +77,23 @@
     try {
       const session = controller.getSession();
       const terminalSession = Boolean(session && isTerminal(session.status));
-      section.hidden = !terminalSession;
+      setHidden(section, !terminalSession);
       if (!terminalSession) {
-        form.hidden = true;
+        setHidden(form, true);
         formOpened = false;
         return;
       }
 
       const exhausted = session.budget.used_actions >= session.budget.max_actions;
-      openButton.hidden = exhausted || formOpened;
-      form.hidden = exhausted || !formOpened;
-      limitNode.hidden = !exhausted;
-      limitNode.textContent = exhausted
-        ? "이 세션은 허용된 AI 행동을 모두 사용했습니다. 이 경우에는 ‘요청 바꾸기’로 새 세션을 시작해야 합니다."
-        : "";
+      setHidden(openButton, exhausted || formOpened);
+      setHidden(form, exhausted || !formOpened);
+      setHidden(limitNode, !exhausted);
+      setText(
+        limitNode,
+        exhausted
+          ? "이 세션은 허용된 AI 행동을 모두 사용했습니다. 이 경우에는 ‘요청 바꾸기’로 새 세션을 시작해야 합니다."
+          : "",
+      );
     } finally {
       rendering = false;
     }
@@ -88,7 +101,7 @@
 
   function openForm() {
     formOpened = true;
-    statusNode.textContent = "";
+    setText(statusNode, "");
     render();
     reasonField.focus();
     section.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -96,7 +109,7 @@
 
   function closeForm() {
     formOpened = false;
-    statusNode.textContent = "";
+    setText(statusNode, "");
     render();
   }
 
@@ -105,19 +118,19 @@
     const reason = reasonField.value.trim();
     const direction = directionField.value.trim();
     if (!session || !isTerminal(session.status)) {
-      statusNode.textContent = "수정할 완료 결과가 없습니다.";
+      setText(statusNode, "수정할 완료 결과가 없습니다.");
       return;
     }
     if (!direction) {
       directionField.focus();
-      statusNode.textContent = "다음 방향을 적어 주세요.";
+      setText(statusNode, "다음 방향을 적어 주세요.");
       return;
     }
 
     busy = true;
     submitButton.disabled = true;
     cancelButton.disabled = true;
-    statusNode.textContent = "기존 결과와 근거를 보존하고 다음 행동을 만들고 있습니다.";
+    setText(statusNode, "기존 결과와 근거를 보존하고 다음 행동을 만들고 있습니다.");
     try {
       await requestJson(
         `/api/manual-controller/sessions/${encodeURIComponent(session.session_id)}/refine`,
@@ -131,13 +144,13 @@
       directionField.value = "";
       formOpened = false;
       await controller.reload();
-      statusNode.textContent = "사용자 의견을 반영한 다음 행동을 만들었습니다.";
+      setText(statusNode, "사용자 의견을 반영한 다음 행동을 만들었습니다.");
       panel.querySelector("#manual-controller-progress")?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
     } catch (error) {
-      statusNode.textContent = error.message;
+      setText(statusNode, error.message);
     } finally {
       busy = false;
       submitButton.disabled = false;
