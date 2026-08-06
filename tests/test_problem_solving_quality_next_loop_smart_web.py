@@ -44,6 +44,7 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 "chatgpt-manual-fallback-v5.js",
                 "chatgpt-manual-focus-v1.js",
                 "psos-manual-controller-v1.js",
+                "psos-manual-request-switch-v1.js",
                 "psos-manual-verification-v1.js",
                 "chatgpt-manual-patch-v1.js",
             ],
@@ -51,6 +52,7 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
         )
         self.assertIn("next-loop-attachments.css", addons["styles.css"])
         self.assertIn("psos-manual-controller-v1.css", addons["styles.css"])
+        self.assertIn("psos-manual-request-switch-v1.css", addons["styles.css"])
         self.assertIn("psos-manual-verification-v1.css", addons["styles.css"])
         self.assertEqual("chatgpt-manual-patch-v1.css", addons["styles.css"][-1])
 
@@ -166,6 +168,25 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 self.assertIn(marker, script)
         self.assertNotIn("OPENAI_API_KEY", script)
         self.assertNotIn("api.openai.com", script)
+
+    def test_manual_request_switch_is_visible_for_restored_sessions(self):
+        script = (ROOT / "web" / "psos-manual-request-switch-v1.js").read_text(
+            encoding="utf-8"
+        )
+        styles = (ROOT / "web" / "psos-manual-request-switch-v1.css").read_text(
+            encoding="utf-8"
+        )
+        for marker in (
+            "요청 바꾸기",
+            "현재 요청",
+            "manual-controller-reset",
+            "getSession",
+            "PSOSManualRequestSwitch",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
+        self.assertIn("manual-controller-head-actions", styles)
+        self.assertIn("manual-controller-current-request", styles)
 
     def test_manual_verification_ui_shows_failures_and_next_action(self):
         script = (ROOT / "web" / "psos-manual-verification-v1.js").read_text(
