@@ -24,6 +24,7 @@ def main() -> int:
     job_packet_support.install(smart.web)
     smart.attachment_support.install(smart.web)
     smart.manual_patch_support.install(smart.web)
+    smart.manual_controller_support.install(smart.web)
     smart.web.STATIC_ADDONS = build_static_addons()
     return smart.web.main()
 
