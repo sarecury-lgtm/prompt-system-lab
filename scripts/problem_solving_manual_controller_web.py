@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Expose persisted PSOS Controller sessions to the manual ChatGPT web adapter."""
+"""Expose verified persisted PSOS Controller sessions to the manual ChatGPT adapter."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Mapping
 from urllib.parse import unquote, urlparse
 
-import problem_solving_controller_session as SESSION
+import problem_solving_controller_session_verified as SESSION
 
 
 MAX_BODY_BYTES = 2_500_000
@@ -36,7 +36,7 @@ def _read_json_body(handler: Any) -> dict[str, Any]:
 
 
 class ManualControllerManager:
-    """Create and resume manual Controller sessions under one local output root."""
+    """Create and resume verified manual Controller sessions."""
 
     def __init__(self, root: Path) -> None:
         self.root = root.expanduser().resolve()
@@ -56,27 +56,30 @@ class ManualControllerManager:
         request = str(payload.get("request") or "").strip()
         context = str(payload.get("context") or "").strip()
         route_hint = str(payload.get("route_hint") or "").strip()
-        _session_dir, state = SESSION.create_session(
+        session_dir, state = SESSION.create_session(
             request,
             context=context,
             route_hint=route_hint,
             output_root=self.root,
         )
-        return SESSION.public_session(state)
+        return SESSION.public_session(state, session_dir=session_dir)
 
     def get(self, session_id: str) -> dict[str, Any]:
-        state = SESSION.load_session(self._dir(session_id))
-        return SESSION.public_session(state)
+        session_dir = self._dir(session_id)
+        state = SESSION.load_session(session_dir)
+        return SESSION.public_session(state, session_dir=session_dir)
 
     def submit_result(self, session_id: str, payload: Mapping[str, Any]) -> dict[str, Any]:
+        session_dir = self._dir(session_id)
         raw_answer = str(payload.get("answer") or "").strip()
-        state = SESSION.submit_action_result(self._dir(session_id), raw_answer)
-        return SESSION.public_session(state)
+        state = SESSION.submit_action_result(session_dir, raw_answer)
+        return SESSION.public_session(state, session_dir=session_dir)
 
     def submit_user_input(self, session_id: str, payload: Mapping[str, Any]) -> dict[str, Any]:
+        session_dir = self._dir(session_id)
         answer = str(payload.get("answer") or "").strip()
-        state = SESSION.submit_user_input(self._dir(session_id), answer)
-        return SESSION.public_session(state)
+        state = SESSION.submit_user_input(session_dir, answer)
+        return SESSION.public_session(state, session_dir=session_dir)
 
 
 def install(web_module: Any) -> ManualControllerManager:
@@ -88,7 +91,7 @@ def install(web_module: Any) -> ManualControllerManager:
     base_handler = web_module.NextLoopQualityRequestHandler
 
     class ManualControllerRequestHandler(base_handler):
-        server_version = "PSOSManualControllerWeb/1"
+        server_version = "PSOSManualControllerWeb/2"
 
         def do_GET(self) -> None:
             parts = urlparse(self.path).path.strip("/").split("/")
