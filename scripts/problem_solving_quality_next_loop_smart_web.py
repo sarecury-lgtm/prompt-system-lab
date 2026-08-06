@@ -31,6 +31,7 @@ def build_static_addons() -> dict[str, list[str]]:
     renderer_addons.append("psos-manual-controller-v1.js")
     renderer_addons.append("psos-manual-request-switch-v1.js")
     renderer_addons.append("psos-manual-verification-v1.js")
+    renderer_addons.append("psos-manual-refinement-v1.js")
     renderer_addons.append("chatgpt-manual-patch-v1.js")
 
     style_addons.append("next-loop-workflow.css")
@@ -39,6 +40,7 @@ def build_static_addons() -> dict[str, list[str]]:
     style_addons.append("psos-manual-controller-v1.css")
     style_addons.append("psos-manual-request-switch-v1.css")
     style_addons.append("psos-manual-verification-v1.css")
+    style_addons.append("psos-manual-refinement-v1.css")
     style_addons.append("chatgpt-manual-patch-v1.css")
     return addons
 
