@@ -26,7 +26,7 @@ def _contains(pattern: str, text: str) -> bool:
 
 
 def _infer_requested_action(text: str) -> str:
-    if _contains(r"매수|사도|살까|구매|예약|신청|지원|진입", text):
+    if _contains(r"매수|사도|사면|살까|살 만|지금 사|오늘 사|구매|예약|신청|지원|진입", text):
         return "act_now"
     if _contains(r"매도|팔까|손절|청산|취소", text):
         return "exit_or_avoid"
