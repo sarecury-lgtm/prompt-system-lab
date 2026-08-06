@@ -2,7 +2,7 @@
   "version": 1,
   "branch": "codex/problem-solving-os-next-loop",
   "base": "main",
-  "declared_purpose": "Evaluate bounded convergence and interchangeable automatic or manual execution adapters without allowing a candidate loop, shopping collector, or transport-specific fallback to redefine the general PSOS product goal.",
+  "declared_purpose": "Evaluate bounded convergence, explicit evidence obligations, and interchangeable automatic or manual execution adapters without allowing a domain adapter or transport-specific fallback to redefine the general PSOS product goal.",
   "parent_goal_link": "ACTIVE_GOAL.json",
   "branch_status": "experimental",
   "default_product_promotion_approved": false,
@@ -26,11 +26,16 @@
       "change_class": "CORE",
       "promotion_status": "candidate",
       "runtime_default_enabled": false,
-      "purpose": "Provide bounded one-shot and persisted stepwise Controller state, immediate completion, and at most one safe material method change without domain vocabulary.",
+      "purpose": "Provide bounded Controller state, a domain-neutral Request Contract, generated evidence obligations, and independent completion verification without domain vocabulary in the core interface.",
       "patterns": [
         "schemas/problem-solving-controller-*.json",
+        "schemas/problem-solving-request-contract.schema.json",
+        "schemas/problem-solving-evidence-obligation.schema.json",
         "scripts/problem_solving_controller.py",
-        "scripts/problem_solving_controller_session.py"
+        "scripts/problem_solving_controller_session.py",
+        "scripts/problem_solving_controller_session_verified.py",
+        "scripts/problem_solving_request_contract.py",
+        "scripts/problem_solving_evidence_verifier.py"
       ]
     },
     {
@@ -50,7 +55,7 @@
       "change_class": "ADAPTER",
       "promotion_status": "experimental",
       "runtime_default_enabled": false,
-      "purpose": "Connect the PSOS core to browsers, manual ChatGPT, prompt rendering, file patching, attachments, and other execution surfaces.",
+      "purpose": "Connect the PSOS core to browsers, manual ChatGPT, prompt rendering, file patching, attachments, domain adapter discovery, and other execution surfaces.",
       "patterns": [
         "extensions/*",
         "schemas/problem-solving-integrated-prompt-design.schema.json",
@@ -58,6 +63,7 @@
         "schemas/problem-solving-prompt-build-brief.schema.json",
         "scripts/problem_solving_compare_web.py",
         "scripts/problem_solving_connected_browser.py",
+        "scripts/problem_solving_domain_adapters.py",
         "scripts/problem_solving_live_browser.py",
         "scripts/problem_solving_manual_controller_web.py",
         "scripts/problem_solving_manual_patch_web.py",
@@ -70,6 +76,17 @@
         "web/compare-no-codex.js",
         "web/psos-manual-*.js",
         "web/psos-manual-*.css"
+      ]
+    },
+    {
+      "id": "stock-decision-domain-adapter",
+      "change_class": "DOMAIN",
+      "promotion_status": "test-only",
+      "runtime_default_enabled": false,
+      "purpose": "Verify candidate-universe and current-entry evidence for stock decision requests as one optional domain adapter and regression case, without selecting a fixed ticker or defining the general Controller.",
+      "patterns": [
+        "scripts/problem_solving_stock_decision_adapter.py",
+        "evaluation/psos-controller/fixtures/stock-timing-msft-failure/*"
       ]
     },
     {
@@ -131,6 +148,11 @@
       "subject": "adaptive shopping collector",
       "classification": "DOMAIN",
       "reason": "It is a task-specific acquisition tool and a regression case, not the general controller."
+    },
+    {
+      "subject": "stock decision evidence adapter",
+      "classification": "DOMAIN",
+      "reason": "It supplies stock-specific evidence checks to a domain-neutral obligation interface and cannot redefine the PSOS core."
     },
     {
       "subject": "candidate working set and correction loop",
