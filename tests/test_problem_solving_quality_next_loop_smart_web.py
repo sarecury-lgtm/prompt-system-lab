@@ -42,11 +42,13 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
                 "psos-manual-protocol.js",
                 "psos-manual-route-policy.js",
                 "chatgpt-manual-fallback-v5.js",
+                "chatgpt-manual-focus-v1.js",
                 "chatgpt-manual-patch-v1.js",
             ],
             addons["renderer.js"],
         )
         self.assertIn("next-loop-attachments.css", addons["styles.css"])
+        self.assertIn("chatgpt-manual-focus-v1.css", addons["styles.css"])
         self.assertEqual("chatgpt-manual-patch-v1.css", addons["styles.css"][-1])
 
     def test_workflow_script_exposes_auto_routes_and_manual_diagnostics(self):
@@ -137,6 +139,26 @@ class QualityNextLoopSmartWebTests(unittest.TestCase):
         ):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, script)
+
+    def test_manual_focus_hides_unrelated_engines_and_marks_completion(self):
+        script = (ROOT / "web" / "chatgpt-manual-focus-v1.js").read_text(
+            encoding="utf-8"
+        )
+        styles = (ROOT / "web" / "chatgpt-manual-focus-v1.css").read_text(
+            encoding="utf-8"
+        )
+        for marker in (
+            ".engine-selector",
+            ".workspace > .section-heading",
+            "수동 실행 완료",
+            "다른 실행 방식을 다시 고를 필요가 없습니다",
+            "새 요청 시작",
+            "PSOSManualFocus",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
+        self.assertIn("body.manual-v5-enabled .engine-selector", styles)
+        self.assertIn("manual-v5-focus-note", styles)
 
     def test_manual_contract_schemas_are_valid_json(self):
         job_schema = json.loads(
