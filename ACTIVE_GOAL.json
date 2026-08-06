@@ -28,31 +28,35 @@
     "Weak continuation language continues only the recorded current task and never silently expands scope."
   ],
   "current_task": {
-    "id": "manual-controller-session-adapter-v1",
-    "objective": "Connect a persisted, domain-neutral stepwise Controller session to the ChatGPT manual execution path so manual and automatic execution can share goal state, bounded next-action selection, observable completion checks, and honest partial termination while differing only in how an action is transported to an AI engine.",
+    "id": "request-contract-evidence-verifier-v1",
+    "objective": "Add a structured Request Contract, generated evidence obligations, an independent generic verifier, and an optional stock-decision adapter so the stepwise Controller rejects unsupported completion claims and derives the next action from observable missing evidence rather than accumulating prompt-specific warning sentences.",
     "allowed_change_classes": [
       "CORE",
       "ADAPTER",
+      "DOMAIN",
       "TEST"
     ],
     "explicitly_out_of_scope": [
       "merging pull request 100",
-      "promoting the Controller to the canonical default runtime",
-      "deep integration with ChatGPT project memory or account memory",
+      "promoting the Controller or stock adapter to the canonical default runtime",
+      "hard-coding Microsoft or a fixed recent-gain rejection threshold into the core",
+      "turning stock analysis into the PSOS parent goal",
       "running live Codex evaluation",
-      "adding a domain-specific collector",
-      "allowing more than four manual AI actions or more than one material method change",
-      "claiming that the first manual session implementation already proves full general capability"
+      "claiming verified market-wide stock coverage from model declarations alone",
+      "allowing more than four manual AI actions or more than one material method change"
     ],
     "completion_conditions": [
-      "A persisted Controller session supports start, action-result submission, optional user-input resumption, completion, blocked and honest partial states.",
-      "The session owns the goal, fixed constraints, evidence, unresolved gaps, action history, action budget and one method-change budget.",
-      "A shared domain-neutral Action Packet and Action Result contract uses canonical PSOS routes rather than shopping or candidate-specific vocabulary.",
-      "The manual ChatGPT adapter exposes only the Controller-selected current action, imports the structured result, and asks the Controller for the next state.",
-      "The manual UI shows exactly one of current action, user question, completed result, blocked result or bounded partial result.",
-      "The existing one-shot Job Packet remains available as a hidden fallback but is no longer the primary manual flow.",
-      "Focused tests cover DIRECT completion, RESEARCH gap closing, one route change, duplicate-action blocking, user-input resumption, persistence and HTTP adapter behavior.",
-      "CI passes JavaScript checks, goal guard, focused tests and the full repository suite."
+      "A domain-neutral Request Contract records requested action, time sensitivity, target-set openness, selection count, comparison need, current-condition need and assumption policy.",
+      "Evidence obligations are generated from the Request Contract instead of being handwritten for one stock or one failure example.",
+      "A generic verifier checks goal fidelity, search-scope records, current-state records, comparable evaluation, final selection and material-assumption traceability before accepting completed status.",
+      "The manual Controller session stores the Request Contract, evidence obligations and verification history and includes them in every Action Packet.",
+      "A result marked completed is downgraded to partial when observable obligation evidence is missing, and the next action is derived from those missing obligations.",
+      "A stock-decision adapter remains optional and verifies candidate-universe evidence plus selected-candidate current-action fit without defining the general Controller interface.",
+      "The supplied MSFT recommendation is fixed as a regression fixture and must fail for narrow unexplained search scope, absent current entry-fit evidence and unsupported material assumptions.",
+      "A complete structured stock result can pass without requiring a fixed ticker, fixed return threshold or forced no-buy outcome.",
+      "The manual UI displays Controller verification failures and the newly selected next action.",
+      "Cross-domain tests show that DIRECT and non-selection requests are not burdened with stock-specific obligations.",
+      "CI passes goal guard, focused Python tests, browser JavaScript checks and the full repository suite."
     ]
   },
   "continuation_policy": {
