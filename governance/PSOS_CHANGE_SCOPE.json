@@ -2,7 +2,7 @@
   "version": 1,
   "branch": "codex/problem-solving-os-next-loop",
   "base": "main",
-  "declared_purpose": "Evaluate bounded convergence, explicit evidence obligations, and interchangeable automatic or manual execution adapters without allowing a domain adapter or transport-specific fallback to redefine the general PSOS product goal.",
+  "declared_purpose": "Evaluate bounded convergence, explicit evidence obligations, user-directed refinement, and interchangeable automatic or manual execution adapters without allowing a domain adapter or transport-specific fallback to redefine the general PSOS product goal.",
   "parent_goal_link": "ACTIVE_GOAL.json",
   "branch_status": "experimental",
   "default_product_promotion_approved": false,
@@ -26,7 +26,7 @@
       "change_class": "CORE",
       "promotion_status": "candidate",
       "runtime_default_enabled": false,
-      "purpose": "Provide bounded Controller state, a domain-neutral Request Contract, generated evidence obligations, and independent completion verification without domain vocabulary in the core interface.",
+      "purpose": "Provide bounded Controller state, a domain-neutral Request Contract, generated evidence obligations, independent completion verification, and explicit user-directed refinement without domain vocabulary in the core interface.",
       "patterns": [
         "schemas/problem-solving-controller-*.json",
         "schemas/problem-solving-request-contract.schema.json",
@@ -34,6 +34,7 @@
         "scripts/problem_solving_controller.py",
         "scripts/problem_solving_controller_session.py",
         "scripts/problem_solving_controller_session_verified.py",
+        "scripts/problem_solving_controller_refinement.py",
         "scripts/problem_solving_request_contract.py",
         "scripts/problem_solving_evidence_verifier.py"
       ]
