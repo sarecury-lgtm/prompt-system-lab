@@ -12,6 +12,7 @@
     "status",
     "completion",
     "evidence",
+    "coverage",
     "artifacts",
     "limitations",
     "continuation"
@@ -34,6 +35,30 @@
       }
     },
     "evidence": {"type": "array", "items": {"type": "object"}},
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "search_scope",
+        "current_state",
+        "comparison",
+        "selection",
+        "action_fit",
+        "assumptions",
+        "obligation_evidence",
+        "domain"
+      ],
+      "properties": {
+        "search_scope": {"type": "object"},
+        "current_state": {"type": "object"},
+        "comparison": {"type": "object"},
+        "selection": {"type": "object"},
+        "action_fit": {"type": "object"},
+        "assumptions": {"type": "array", "items": {"type": "object"}},
+        "obligation_evidence": {"type": "array", "items": {"type": "object"}},
+        "domain": {"type": "object"}
+      }
+    },
     "artifacts": {"type": "array", "items": {"type": "object"}},
     "limitations": {"type": "array", "items": {"type": "string"}},
     "continuation": {
