@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/problem-solving-controller-action.schema.json",
+  "title": "PSOS Controller Action Packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "session_id",
+    "action_id",
+    "action_number",
+    "route",
+    "objective",
+    "changed_dimension",
+    "reason",
+    "goal",
+    "known_state",
+    "required_output",
+    "completion_checks",
+    "forbidden",
+    "output_contract"
+  ],
+  "properties": {
+    "version": {"const": 1},
+    "session_id": {"type": "string", "minLength": 1},
+    "action_id": {"type": "string", "minLength": 1},
+    "action_number": {"type": "integer", "minimum": 1, "maximum": 4},
+    "route": {
+      "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT"]
+    },
+    "objective": {"type": "string", "minLength": 1},
+    "changed_dimension": {
+      "enum": ["none", "route", "tool", "information_source", "interaction"]
+    },
+    "reason": {"type": "string", "minLength": 1},
+    "goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent_goal", "fixed_constraints", "completion_condition"],
+      "properties": {
+        "parent_goal": {"type": "string", "minLength": 1},
+        "fixed_constraints": {"type": "array", "items": {"type": "string"}},
+        "completion_condition": {"type": "string", "minLength": 1}
+      }
+    },
+    "known_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["context", "verified_findings", "unresolved", "previous_answer"],
+      "properties": {
+        "context": {"type": "string"},
+        "verified_findings": {"type": "array", "items": {"type": "object"}},
+        "unresolved": {"type": "array", "items": {"type": "string"}},
+        "previous_answer": {"type": "string"}
+      }
+    },
+    "required_output": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "completion_checks": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "forbidden": {"type": "array", "items": {"type": "string"}},
+    "output_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["answer_first", "result_marker_start", "result_marker_end"],
+      "properties": {
+        "answer_first": {"const": true},
+        "result_marker_start": {"type": "string", "minLength": 1},
+        "result_marker_end": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
