@@ -16,6 +16,7 @@ on:
       - "scripts/problem_solving_controller.py"
       - "scripts/problem_solving_controller_session.py"
       - "scripts/problem_solving_controller_session_verified.py"
+      - "scripts/problem_solving_controller_refinement.py"
       - "scripts/problem_solving_controller_ab.py"
       - "scripts/problem_solving_request_contract.py"
       - "scripts/problem_solving_evidence_verifier.py"
@@ -41,6 +42,7 @@ on:
       - "tests/test_problem_solving_goal_guard.py"
       - "tests/test_problem_solving_controller.py"
       - "tests/test_problem_solving_controller_session.py"
+      - "tests/test_problem_solving_controller_refinement.py"
       - "tests/test_problem_solving_request_verification.py"
       - "tests/test_problem_solving_controller_ab.py"
       - "tests/test_problem_solving_manual_controller_web.py"
@@ -88,6 +90,7 @@ jobs:
             scripts/problem_solving_controller.py \
             scripts/problem_solving_controller_session.py \
             scripts/problem_solving_controller_session_verified.py \
+            scripts/problem_solving_controller_refinement.py \
             scripts/problem_solving_controller_ab.py \
             scripts/problem_solving_request_contract.py \
             scripts/problem_solving_evidence_verifier.py \
@@ -121,6 +124,7 @@ jobs:
           python -B -m unittest \
             tests.test_problem_solving_controller \
             tests.test_problem_solving_controller_session \
+            tests.test_problem_solving_controller_refinement \
             tests.test_problem_solving_controller_ab \
             tests.test_problem_solving_manual_controller_web
           python -B scripts/problem_solving_controller_ab.py validate
@@ -164,6 +168,7 @@ jobs:
           node --check web/psos-manual-controller-v1.js
           node --check web/psos-manual-request-switch-v1.js
           node --check web/psos-manual-verification-v1.js
+          node --check web/psos-manual-refinement-v1.js
           node --check web/chatgpt-manual-fallback-v5.js
           node --check web/chatgpt-manual-focus-v1.js
           node --check web/chatgpt-manual-patch-v1.js
