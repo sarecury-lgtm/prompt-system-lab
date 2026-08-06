@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Mapping
 
 
@@ -32,6 +33,10 @@ def _unique(values: list[str]) -> list[str]:
     return output
 
 
+def _normalized_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", _text(value).lower()).strip()
+
+
 def empty_coverage() -> dict[str, Any]:
     return {
         "search_scope": {
@@ -40,6 +45,7 @@ def empty_coverage() -> dict[str, Any]:
             "screened_count": 0,
             "filters": [],
             "finalist_ids": [],
+            "evidence_refs": [],
         },
         "current_state": {
             "checked_at": "",
@@ -111,7 +117,11 @@ def _refs_resolve(refs: Any, known: set[str]) -> bool:
     return bool(values) and all(value in known for value in values)
 
 
-def _check_goal_fidelity(contract: Mapping[str, Any], answer: str, coverage: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
+def _check_goal_fidelity(
+    contract: Mapping[str, Any],
+    answer: str,
+    coverage: Mapping[str, Any],
+) -> tuple[bool, dict[str, Any]]:
     selection = _mapping(coverage.get("selection"))
     deliverable = contract.get("deliverable")
     selected_ids = [
@@ -132,24 +142,62 @@ def _check_goal_fidelity(contract: Mapping[str, Any], answer: str, coverage: Map
     }
 
 
-def _check_assumptions(coverage: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
+def _contract_source_texts(contract: Mapping[str, Any]) -> dict[str, list[str]]:
+    output = {"request": [], "context": []}
+    request = _normalized_text(contract.get("original_request"))
+    if request:
+        output["request"].append(request)
+    for item in _list(contract.get("user_constraints")):
+        if not isinstance(item, Mapping):
+            continue
+        source = _text(item.get("source"))
+        text = _normalized_text(item.get("text"))
+        if source in output and text:
+            output[source].append(text)
+    return output
+
+
+def _check_assumptions(
+    contract: Mapping[str, Any],
+    coverage: Mapping[str, Any],
+) -> tuple[bool, dict[str, Any]]:
     bad: list[dict[str, Any]] = []
     observed: list[dict[str, Any]] = []
+    sources = _contract_source_texts(contract)
     for item in _list(coverage.get("assumptions")):
         if not isinstance(item, Mapping):
             continue
         record = dict(item)
         observed.append(record)
-        material = bool(record.get("material"))
+        if not bool(record.get("material")):
+            continue
         basis = _text(record.get("basis"))
         sensitivity = _text(record.get("sensitivity"))
-        if material and basis not in {"user", "context"}:
-            if basis != "explicit_default" or not sensitivity:
+        excerpt = _normalized_text(record.get("source_excerpt"))
+        if basis in {"user", "context"}:
+            source_key = "request" if basis == "user" else "context"
+            source_match = bool(
+                excerpt
+                and any(excerpt in source_text for source_text in sources[source_key])
+            )
+            if not source_match:
                 bad.append(record)
-    return not bad, {"observed": observed, "unsupported_material": bad}
+        elif basis == "explicit_default":
+            if not sensitivity:
+                bad.append(record)
+        else:
+            bad.append(record)
+    return not bad, {
+        "observed": observed,
+        "unsupported_material": bad,
+        "available_sources": sources,
+    }
 
 
-def _check_current_state(coverage: Mapping[str, Any], known_evidence: set[str]) -> tuple[bool, dict[str, Any]]:
+def _check_current_state(
+    coverage: Mapping[str, Any],
+    known_evidence: set[str],
+) -> tuple[bool, dict[str, Any]]:
     record = _mapping(coverage.get("current_state"))
     items = [item for item in _list(record.get("items")) if isinstance(item, Mapping)]
     item_refs_ok = bool(items) and all(
@@ -163,11 +211,16 @@ def _check_current_state(coverage: Mapping[str, Any], known_evidence: set[str]) 
     }
 
 
-def _check_search_scope(contract: Mapping[str, Any], coverage: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
+def _check_search_scope(
+    contract: Mapping[str, Any],
+    coverage: Mapping[str, Any],
+    known_evidence: set[str],
+) -> tuple[bool, dict[str, Any]]:
     record = _mapping(coverage.get("search_scope"))
     finalists = [_text(item) for item in _list(record.get("finalist_ids")) if _text(item)]
     filters = [_text(item) for item in _list(record.get("filters")) if _text(item)]
     count = record.get("screened_count")
+    refs_ok = _refs_resolve(record.get("evidence_refs"), known_evidence)
     minimum_finalists = max(1, int(contract.get("selection_count") or 1))
     ok = bool(
         _text(record.get("description"))
@@ -175,6 +228,7 @@ def _check_search_scope(contract: Mapping[str, Any], coverage: Mapping[str, Any]
         and isinstance(count, int)
         and count >= len(finalists) >= minimum_finalists
         and filters
+        and refs_ok
     )
     return ok, {
         "description": _text(record.get("description")),
@@ -182,10 +236,15 @@ def _check_search_scope(contract: Mapping[str, Any], coverage: Mapping[str, Any]
         "screened_count": count,
         "finalist_ids": finalists,
         "filters": filters,
+        "evidence_refs": _list(record.get("evidence_refs")),
+        "evidence_refs_resolve": refs_ok,
     }
 
 
-def _check_comparison(contract: Mapping[str, Any], coverage: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
+def _check_comparison(
+    contract: Mapping[str, Any],
+    coverage: Mapping[str, Any],
+) -> tuple[bool, dict[str, Any]]:
     record = _mapping(coverage.get("comparison"))
     candidate_ids = [_text(item) for item in _list(record.get("candidate_ids")) if _text(item)]
     criteria = [_text(item) for item in _list(record.get("criteria")) if _text(item)]
@@ -204,7 +263,10 @@ def _check_comparison(contract: Mapping[str, Any], coverage: Mapping[str, Any]) 
     }
 
 
-def _check_selection(contract: Mapping[str, Any], coverage: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
+def _check_selection(
+    contract: Mapping[str, Any],
+    coverage: Mapping[str, Any],
+) -> tuple[bool, dict[str, Any]]:
     record = _mapping(coverage.get("selection"))
     selected_ids = [_text(item) for item in _list(record.get("selected_ids")) if _text(item)]
     selected_id = _text(record.get("selected_id"))
@@ -224,19 +286,28 @@ def _check_selection(contract: Mapping[str, Any], coverage: Mapping[str, Any]) -
     }
 
 
-def _check_generic_action_fit(coverage: Mapping[str, Any], known_evidence: set[str]) -> tuple[bool, dict[str, Any]]:
+def _check_generic_action_fit(
+    contract: Mapping[str, Any],
+    coverage: Mapping[str, Any],
+    known_evidence: set[str],
+) -> tuple[bool, dict[str, Any]]:
     record = _mapping(coverage.get("action_fit"))
+    requested_action = _text(record.get("requested_action"))
+    contract_action = _text(contract.get("requested_action"))
     required = {
         "selected_id": _text(record.get("selected_id")),
-        "requested_action": _text(record.get("requested_action")),
+        "requested_action": requested_action,
         "time_basis": _text(record.get("time_basis")),
         "upside_reference": _text(record.get("upside_reference")),
         "downside_reference": _text(record.get("downside_reference")),
         "invalidation": _text(record.get("invalidation")),
     }
     refs_ok = _refs_resolve(record.get("evidence_refs"), known_evidence)
-    return bool(all(required.values()) and refs_ok), {
+    action_matches = bool(requested_action and requested_action == contract_action)
+    return bool(all(required.values()) and refs_ok and action_matches), {
         "fields": required,
+        "contract_requested_action": contract_action,
+        "requested_action_matches": action_matches,
         "evidence_refs_resolve": refs_ok,
     }
 
@@ -246,7 +317,7 @@ def _missing_text(obligation_id: str) -> str:
         "goal_fidelity": "요청한 행동과 최종 산출물이 실제 답변에서 확인되지 않습니다.",
         "assumption_traceability": "결론을 바꾸는 물질적 가정이 사용자·문맥·명시적 기본값과 연결되지 않았습니다.",
         "current_state_record": "현재 상태의 확인 시점과 근거 연결 기록이 부족합니다.",
-        "candidate_search_scope": "후보군의 범위, 필터, 선별 수와 최종 후보 기록이 부족합니다.",
+        "candidate_search_scope": "후보군의 범위, 필터, 선별 수, 최종 후보와 근거 참조 기록이 부족합니다.",
         "comparable_evaluation": "공통 기준으로 복수 후보를 비교한 구조화 기록이 부족합니다.",
         "final_selection": "요청한 수의 최종 선택과 구체적 행동·선정 이유가 확인되지 않습니다.",
         "current_action_fit": "선택 대상이 요청한 시점의 행동에 적합하다는 상방·하방·무효화 근거가 부족합니다.",
@@ -270,12 +341,12 @@ def verify_result(
 
     generic_checkers = {
         "goal_fidelity": lambda: _check_goal_fidelity(contract, answer, coverage),
-        "assumption_traceability": lambda: _check_assumptions(coverage),
+        "assumption_traceability": lambda: _check_assumptions(contract, coverage),
         "current_state_record": lambda: _check_current_state(coverage, known_evidence),
-        "candidate_search_scope": lambda: _check_search_scope(contract, coverage),
+        "candidate_search_scope": lambda: _check_search_scope(contract, coverage, known_evidence),
         "comparable_evaluation": lambda: _check_comparison(contract, coverage),
         "final_selection": lambda: _check_selection(contract, coverage),
-        "current_action_fit": lambda: _check_generic_action_fit(coverage, known_evidence),
+        "current_action_fit": lambda: _check_generic_action_fit(contract, coverage, known_evidence),
     }
 
     domain_obligation_ids = {
@@ -332,7 +403,18 @@ def verify_result(
     evidence_gap = bool(categories & {"time", "search", "comparison", "domain_search", "domain_decision"})
     next_objective = _text(domain_verdict.get("next_objective"))
     if not next_objective and missing:
-        next_objective = "Resolve the observable evidence obligations that failed Controller verification: " + "; ".join(missing[:3])
+        next_objective = (
+            "Resolve the observable evidence obligations that failed Controller verification: "
+            + "; ".join(missing[:3])
+        )
+    domain_dimension = _text(domain_verdict.get("changed_dimension"))
+    changed_dimension = (
+        domain_dimension
+        if domain_dimension and domain_dimension != "none"
+        else "information_source"
+        if evidence_gap
+        else "interaction"
+    )
     return {
         "version": 1,
         "satisfied": not missing,
@@ -342,7 +424,7 @@ def verify_result(
         "coverage": coverage,
         "next_objective": next_objective,
         "suggested_route": domain_verdict.get("suggested_route") or ("RESEARCH" if evidence_gap else None),
-        "changed_dimension": domain_verdict.get("changed_dimension") or ("information_source" if evidence_gap else "interaction"),
+        "changed_dimension": changed_dimension,
         "debug_summary": json.dumps(
             {
                 "required_obligations": [item.get("id") for item in obligations if item.get("required")],
