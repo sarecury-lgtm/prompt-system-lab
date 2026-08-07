@@ -25,12 +25,13 @@
     "A failed or incomplete result is not presented as completed or recommended.",
     "A retry changes one material dimension and is bounded unless the user explicitly authorizes more work.",
     "Explicit user feedback may reopen a terminal result without being miscounted as an automatic method change.",
+    "When the user explicitly asks for distinct decision purposes, legitimate tradeoffs are preserved as separate winner profiles instead of being collapsed into one scalar ranking.",
     "Domain tools remain optional and cannot redefine the PSOS parent goal.",
     "Weak continuation language continues only the recorded current task and never silently expands scope."
   ],
   "current_task": {
-    "id": "request-contract-evidence-verifier-and-refinement-v1",
-    "objective": "Keep the structured Request Contract and independent evidence verifier, while allowing a user who has seen a completed result to state why it should change and what direction to take next. Preserve the previous result and evidence, record that feedback as an explicit constraint, and create a new Controller action without treating the user-directed change as an automatic method change.",
+    "id": "request-contract-evidence-refinement-and-multiobjective-v1",
+    "objective": "Keep the structured Request Contract, independent evidence verifier, and user-directed refinement while adding a domain-neutral way to preserve explicit multi-objective decision purposes as separate winner profiles. Shopping is only the current motivating example: the same mechanism must work for unrelated selection problems, and non-selection requests must remain untouched.",
     "allowed_change_classes": [
       "CORE",
       "ADAPTER",
@@ -41,7 +42,9 @@
       "merging pull request 100",
       "promoting the Controller or stock adapter to the canonical default runtime",
       "hard-coding Microsoft or a fixed recent-gain rejection threshold into the core",
-      "turning stock analysis into the PSOS parent goal",
+      "hard-coding shopping-specific profile names such as value or quality into the core interface",
+      "turning multi-profile selection into the default shape for non-selection requests",
+      "turning stock analysis or shopping into the PSOS parent goal",
       "running live Codex evaluation",
       "claiming verified market-wide stock coverage from model declarations alone",
       "allowing more than four manual AI actions or more than one automatic material method change"
@@ -59,6 +62,10 @@
       "A terminal manual result exposes a clear feedback control that separately captures why the result should change and what direction should be taken next.",
       "User-directed refinement preserves the previous answer and evidence, updates explicit context and Request Contract constraints, creates a new action, and does not consume automatic method-change budget.",
       "The unclear legacy continuation control is hidden in Controller mode and relabeled when used outside it.",
+      "Explicit requests such as purpose-A pick 1 and purpose-B pick 1 are represented as generic selection profiles with separate winner slots rather than one aggregate winner.",
+      "Profile verification checks each requested purpose independently while still using the existing candidate search and comparable-evaluation evidence obligations.",
+      "The core never invents shopping-specific profile labels; profile names come from the request or explicit context.",
+      "Cross-domain tests show that a non-shopping selection can use the same profile interface and a DIRECT non-selection request gains no profile burden.",
       "Cross-domain tests show that DIRECT and non-selection requests are not burdened with stock-specific obligations.",
       "CI passes goal guard, focused Python tests, browser JavaScript checks and the full repository suite."
     ]
