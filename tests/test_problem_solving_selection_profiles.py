@@ -83,6 +83,7 @@ class SelectionProfileTests(unittest.TestCase):
                 output_root=Path(temp_dir),
                 session_id="profile-pass-session",
             )
+            execution_prompt = state["current_action"]["execution_prompt"]
             packet = state["current_action"]["packet"]
             profiles = packet["request_contract"]["selection_policy"]["profiles"]
             evidence = [{"id": "screen", "source": "candidate list"}]
@@ -161,7 +162,7 @@ class SelectionProfileTests(unittest.TestCase):
 
             self.assertTrue(public["last_verification"]["satisfied"], public["last_verification"])
             self.assertEqual("completed", state["status"])
-            self.assertIn("profile_winners", packet["execution_prompt"])
+            self.assertIn("profile_winners", execution_prompt)
 
 
 if __name__ == "__main__":
