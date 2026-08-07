@@ -6,6 +6,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+import problem_solving_selection_profiles as PROFILES
+
 
 REQUEST_CONTRACT_VERSION = 1
 OBLIGATION_VERSION = 1
@@ -104,6 +106,10 @@ def build_request_contract(
     action = _infer_requested_action(clean_request)
     decision_time = _infer_decision_time(clean_request)
     selection_count = _infer_selection_count(clean_request, action)
+    selection_policy = PROFILES.build_selection_policy(clean_request, clean_context)
+    profile_slot_count = PROFILES.requested_slot_count(selection_policy)
+    if profile_slot_count is not None:
+        selection_count = profile_slot_count
     open_target_set = _infer_open_target_set(clean_request, action)
     comparison_required = action == "compare" or selection_count is not None or _contains(
         r"추천|비교|순위|가장 좋은|1순위|골라|선택", clean_request
@@ -135,6 +141,7 @@ def build_request_contract(
         },
         "deliverable": deliverable,
         "selection_count": selection_count,
+        "selection_policy": selection_policy,
         "comparison_required": comparison_required,
         "current_conditions_required": current_conditions_required,
         "action_fit_required": action_fit_required,
@@ -212,6 +219,7 @@ def build_evidence_obligations(contract: dict[str, Any]) -> list[dict[str, Any]]
                 "description": "The requested number of winners is named with a concrete action and reason grounded in the comparison.",
             }
         )
+    obligations.extend(PROFILES.build_obligations(contract))
     if contract.get("action_fit_required"):
         obligations.append(
             {
@@ -227,6 +235,11 @@ def build_evidence_obligations(contract: dict[str, Any]) -> list[dict[str, Any]]
 
 
 def initial_objective(contract: dict[str, Any]) -> str:
+    if contract.get("selection_policy", {}).get("mode") == "multi_profile":
+        return (
+            "Compare the relevant candidates under shared evidence, preserve the user's distinct decision purposes as separate winner profiles, "
+            "and fill each requested winner slot without collapsing the tradeoff into one aggregate score."
+        )
     if contract.get("target_scope", {}).get("candidate_search_required"):
         return (
             "Build an observable candidate search record, compare the strongest relevant finalists under shared criteria, "
