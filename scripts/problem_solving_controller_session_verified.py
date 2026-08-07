@@ -12,6 +12,7 @@ import problem_solving_controller_session as BASE
 import problem_solving_domain_adapters as DOMAINS
 import problem_solving_evidence_verifier as VERIFIER
 import problem_solving_request_contract as REQUEST
+import problem_solving_selection_profiles as PROFILES
 
 
 REQUEST_CONTRACT_FILE = "request_contract.json"
@@ -61,6 +62,10 @@ def _save_metadata(
 
 
 def _result_example(packet: Mapping[str, Any]) -> dict[str, Any]:
+    coverage = PROFILES.prepare_coverage_template(
+        packet.get("request_contract", {}),
+        VERIFIER.empty_coverage(),
+    )
     return {
         "version": 1,
         "session_id": packet["session_id"],
@@ -69,7 +74,7 @@ def _result_example(packet: Mapping[str, Any]) -> dict[str, Any]:
         "status": "completed",
         "completion": {"met": True, "missing": []},
         "evidence": [],
-        "coverage": VERIFIER.empty_coverage(),
+        "coverage": coverage,
         "artifacts": [],
         "limitations": [],
         "continuation": {
@@ -83,6 +88,7 @@ def _result_example(packet: Mapping[str, Any]) -> dict[str, Any]:
 
 def build_execution_prompt(packet: Mapping[str, Any]) -> str:
     example = _result_example(packet)
+    profile_guidance = PROFILES.execution_guidance(packet.get("request_contract", {}))
     return f"""당신은 PSOS Controller가 선택한 현재 행동 하나를 실행하는 AI 엔진이다.
 전체 워크플로를 임의로 재설계하지 말고, Action Packet의 objective를 수행하라.
 
@@ -94,10 +100,11 @@ def build_execution_prompt(packet: Mapping[str, Any]) -> str:
 5. material=true인 가정은 basis를 user, context 또는 explicit_default로 기록한다. user/context이면 실제 request_contract에 있는 짧은 원문을 source_excerpt에 그대로 넣고, explicit_default이면 결론이 달라지는 조건을 sensitivity에 적는다.
 6. 현재 상태나 후보 범위를 썼다면 evidence의 id/source/url을 coverage.current_state, coverage.search_scope와 관련 domain record의 evidence_refs에서 실제로 참조한다.
 7. request_contract.domain_requirements.coverage_template가 있으면 그 구조를 coverage.domain 아래에 그대로 채운다.
-8. completion을 스스로 선언할 수는 있지만 Controller가 별도로 재검증한다. 증거가 없으면 partial로 기록한다.
-9. 사용자용 실제 결과를 먼저 작성하고 내부 사고 과정은 출력하지 않는다.
-10. 마지막에는 두 마커 사이에 JSON Action Result 하나만 넣는다.
-11. needs_user_input은 합리적인 명시적 기본값이나 민감도 분석으로 진행할 수 없고, 답이 결론을 크게 바꿀 때만 사용한다.
+8. {profile_guidance}
+9. completion을 스스로 선언할 수는 있지만 Controller가 별도로 재검증한다. 증거가 없으면 partial로 기록한다.
+10. 사용자용 실제 결과를 먼저 작성하고 내부 사고 과정은 출력하지 않는다.
+11. 마지막에는 두 마커 사이에 JSON Action Result 하나만 넣는다.
+12. needs_user_input은 합리적인 명시적 기본값이나 민감도 분석으로 진행할 수 없고, 답이 결론을 크게 바꿀 때만 사용한다.
 
 [Action Result 형식]
 {BASE.START_MARKER}
@@ -242,6 +249,40 @@ def _raw_for_base(answer: str, result: Mapping[str, Any]) -> str:
     )
 
 
+def _merge_profile_verdict(
+    base_verdict: Mapping[str, Any],
+    profile_verdict: Mapping[str, Any],
+) -> dict[str, Any]:
+    verdict = dict(base_verdict)
+    profile_missing = [
+        str(item).strip()
+        for item in profile_verdict.get("missing_conditions", [])
+        if str(item).strip()
+    ]
+    profile_warnings = [
+        str(item).strip()
+        for item in profile_verdict.get("warnings", [])
+        if str(item).strip()
+    ]
+    verdict["missing_conditions"] = list(
+        dict.fromkeys([*verdict.get("missing_conditions", []), *profile_missing])
+    )
+    verdict["warnings"] = list(
+        dict.fromkeys([*verdict.get("warnings", []), *profile_warnings])
+    )
+    verdict["checks"] = [
+        *verdict.get("checks", []),
+        *profile_verdict.get("checks", []),
+    ]
+    verdict["satisfied"] = bool(
+        verdict.get("satisfied") and profile_verdict.get("satisfied", True)
+    )
+    if profile_missing and not str(verdict.get("next_objective") or "").strip():
+        verdict["next_objective"] = str(profile_verdict.get("next_objective") or "").strip()
+        verdict["changed_dimension"] = "interaction"
+    return verdict
+
+
 def submit_action_result(session_dir: Path, raw_answer: str) -> dict[str, Any]:
     state = BASE.load_session(session_dir)
     current = state.get("current_action")
@@ -276,12 +317,21 @@ def submit_action_result(session_dir: Path, raw_answer: str) -> dict[str, Any]:
         return next_state
 
     adapter = DOMAINS.get_adapter(metadata["domain_adapter_id"])
+    generic_obligations = [
+        item
+        for item in metadata["evidence_obligations"]
+        if item.get("verifier") != PROFILES.PROFILE_VERIFIER_ID
+    ]
     verdict = VERIFIER.verify_result(
         metadata["request_contract"],
-        metadata["evidence_obligations"],
+        generic_obligations,
         imported.get("answer", ""),
         result,
         domain_adapter=adapter,
+    )
+    verdict = _merge_profile_verdict(
+        verdict,
+        PROFILES.verify_result(metadata["request_contract"], result),
     )
     history_record = {
         "version": 1,
