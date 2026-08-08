@@ -2,7 +2,7 @@
   "version": 1,
   "branch": "codex/problem-solving-os-next-loop",
   "base": "main",
-  "declared_purpose": "Evaluate bounded convergence, explicit evidence obligations, user-directed refinement, purpose-specific multi-objective selections, and interchangeable automatic or manual execution adapters without allowing a domain adapter or transport-specific fallback to redefine the general PSOS product goal.",
+  "declared_purpose": "Evaluate bounded convergence, explicit evidence obligations, user-directed refinement, purpose-specific multi-objective selections, interchangeable automatic or manual execution adapters, and one-shot state handoff when Codex is unavailable without allowing a domain adapter or transport-specific fallback to redefine the general PSOS product goal.",
   "parent_goal_link": "ACTIVE_GOAL.json",
   "branch_status": "experimental",
   "default_product_promotion_approved": false,
@@ -57,12 +57,13 @@
       "change_class": "ADAPTER",
       "promotion_status": "experimental",
       "runtime_default_enabled": false,
-      "purpose": "Connect the PSOS core to browsers, manual ChatGPT, prompt rendering, file patching, attachments, domain adapter discovery, and other execution surfaces.",
+      "purpose": "Connect the PSOS core to browsers, manual ChatGPT, prompt rendering, file patching, attachments, one-shot Blind handoff, domain adapter discovery, and other execution surfaces.",
       "patterns": [
         "extensions/*",
         "schemas/problem-solving-integrated-prompt-design.schema.json",
         "schemas/problem-solving-manual-*.json",
         "schemas/problem-solving-prompt-build-brief.schema.json",
+        "scripts/problem_solving_blind_handoff_web.py",
         "scripts/problem_solving_compare_web.py",
         "scripts/problem_solving_connected_browser.py",
         "scripts/problem_solving_domain_adapters.py",
@@ -76,6 +77,8 @@
         "web/chatgpt-manual-*.js",
         "web/chatgpt-manual-*.css",
         "web/compare-no-codex.js",
+        "web/psos-blind-handoff-*.js",
+        "web/psos-blind-handoff-*.css",
         "web/psos-manual-*.js",
         "web/psos-manual-*.css"
       ]
@@ -164,6 +167,11 @@
       "subject": "manual ChatGPT and Codex job packet paths",
       "classification": "ADAPTER",
       "reason": "They change how the same Controller-selected action is executed, not the parent problem-solving goal."
+    },
+    {
+      "subject": "PSOS Blind handoff ZIP",
+      "classification": "ADAPTER",
+      "reason": "It transports the same current task and PSOS-managed attachments to a continuing ChatGPT fallback conversation when Codex is unavailable; it does not redefine the task or parent goal."
     },
     {
       "subject": "controller A/B evaluation harness and fixtures",
