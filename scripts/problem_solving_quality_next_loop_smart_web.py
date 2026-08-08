@@ -25,6 +25,7 @@ def build_static_addons() -> dict[str, list[str]]:
     renderer_addons = addons.setdefault("renderer.js", [])
     renderer_addons.append("next-loop-workflow.js")
     renderer_addons.append("psos-manual-protocol.js")
+    renderer_addons.append("psos-manual-thin-v1.js")
     renderer_addons.append("psos-manual-route-policy.js")
     renderer_addons.append("chatgpt-manual-fallback-v5.js")
     renderer_addons.append("chatgpt-manual-focus-v1.js")
