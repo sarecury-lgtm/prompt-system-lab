@@ -32,7 +32,6 @@ def build_static_addons() -> dict[str, list[str]]:
     renderer_addons.append("psos-manual-request-switch-v1.js")
     renderer_addons.append("psos-manual-verification-v1.js")
     renderer_addons.append("psos-manual-refinement-v1.js")
-    renderer_addons.append("psos-result-refinement-v1.js")
     renderer_addons.append("chatgpt-manual-patch-v1.js")
 
     style_addons.append("next-loop-workflow.css")
