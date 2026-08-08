@@ -28,12 +28,13 @@
     "Explicit multi-objective purposes may be preserved as separate winners when they materially represent different user utilities.",
     "A strong general model's native problem-solving ability is preserved unless a repeated failure justifies a narrow guardrail.",
     "Subjective preferences are not silently translated into a specific brand, product class, breed, method, or candidate without comparative support.",
+    "When Codex is unavailable, the fallback minimizes repeated copy/paste and carries the same task state into a continuing ChatGPT conversation.",
     "Domain tools remain optional and cannot redefine the PSOS parent goal.",
     "Weak continuation language continues only the recorded current task and never silently expands scope."
   ],
   "current_task": {
-    "id": "conversation-first-thin-runtime-v1",
-    "objective": "Turn the PSOS workbench's manual ChatGPT path into a conversation-first execution adapter: send the user's ordinary request through a small set of high-value guardrails, preserve natural clarification and reasoning, avoid premature candidate lock-in, require recommendation rationale, and suggest concrete continuation when the current answer is only an intermediate step. Keep the existing strict Controller and evidence-verification machinery available as escalation paths rather than forcing them onto every request.",
+    "id": "blind-handoff-fallback-v1",
+    "objective": "Make Codex exhaustion a one-time handoff instead of a per-turn manual workflow. The PSOS workbench should package the current request, current result, relevant manual continuation state, and PSOS-managed attachments into one safe ZIP that PSOS Blind can read once and then continue naturally in the same ChatGPT conversation. Keep the thin manual adapter and strict Controller as diagnostic or escalation paths, not the primary fallback experience.",
     "allowed_change_classes": [
       "CORE",
       "ADAPTER",
@@ -41,24 +42,22 @@
     ],
     "explicitly_out_of_scope": [
       "merging pull request 100",
-      "deleting the existing Controller or evidence verifier",
+      "deleting the existing Controller, evidence verifier, or thin manual adapter",
       "making shopping, pork, stocks, or any one domain the PSOS parent goal",
-      "replacing all automatic Codex execution with the thin manual adapter before comparative evidence exists",
-      "adding a large new schema or mandatory Job Packet to the conversation-first path",
-      "running live Codex evaluation without explicit approval",
-      "claiming the new path is superior across domains before cross-domain testing"
+      "requiring the user to copy a prompt and paste a result on every fallback turn",
+      "automatic login to ChatGPT or automatic upload into a Custom GPT",
+      "automatic reverse import from PSOS Blind before the outbound handoff is validated",
+      "running live Codex evaluation without explicit approval"
     ],
     "completion_conditions": [
-      "The manual ChatGPT workbench path no longer requires the full Job Packet as its default execution prompt.",
-      "The thin path preserves the ordinary user request and adds only narrow guardrails for goal fidelity, material clarification, subjective preference sufficiency, candidate diversity, recommendation rationale, evidence qualification, insight discovery, continuation, and refinement.",
-      "A subjective preference cannot be silently converted into a specific brand, breed, product family, or candidate without considering plausible alternatives.",
-      "Material clarification can continue across multiple conversational turns rather than being treated as a single preflight question event.",
-      "Recommendation output connects user purpose or preference to candidate properties, evidence, and the reason it beats major alternatives when the evidence supports that comparison.",
-      "If a result is only an intermediate step, the model may propose one or two concrete next actions instead of ending with a generic offer to help.",
-      "The workbench can still import a lightweight status receipt without requiring the answer itself to be shaped around a large schema.",
-      "The strict manual Controller remains available as a separate escalation path for cases that benefit from independent completion verification.",
-      "The legacy manual protocol remains recoverable for regression comparison.",
-      "Cross-domain tests are added before any default-product promotion claim.",
+      "The workbench exposes a clear one-shot PSOS Blind handoff action independent of the per-turn manual ChatGPT path.",
+      "The generated ZIP contains the original request, the currently rendered result when present, the latest manual correction when present, route/run metadata, and PSOS-managed attachments referenced by the current request.",
+      "Attachment files outside the PSOS attachment root cannot be bundled by path injection.",
+      "The ZIP contains explicit continuation instructions telling PSOS Blind to keep the same task, prioritize newer user corrections, and not require the ZIP on every turn.",
+      "After the ZIP is uploaded once, the intended user flow is ordinary continued conversation inside PSOS Blind rather than workbench-to-chat copy/paste on every turn.",
+      "The existing thin manual adapter remains available for diagnostics and direct comparison.",
+      "The strict manual Controller remains available as an escalation path for independently verified completion.",
+      "Focused tests cover ZIP contents, continuation semantics, asset wiring, and attachment path safety.",
       "No merge occurs without explicit user approval."
     ]
   },
