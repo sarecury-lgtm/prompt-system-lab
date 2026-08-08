@@ -22,6 +22,7 @@ on:
       - "scripts/problem_solving_evidence_verifier.py"
       - "scripts/problem_solving_domain_adapters.py"
       - "scripts/problem_solving_stock_decision_adapter.py"
+      - "scripts/problem_solving_blind_handoff_web.py"
       - "scripts/problem_solving_manual_controller_web.py"
       - "scripts/problem_solving_adaptive_*.py"
       - "scripts/problem_solving_candidate_*.py"
@@ -45,6 +46,7 @@ on:
       - "tests/test_problem_solving_controller_refinement.py"
       - "tests/test_problem_solving_request_verification.py"
       - "tests/test_problem_solving_controller_ab.py"
+      - "tests/test_problem_solving_blind_handoff_web.py"
       - "tests/test_problem_solving_manual_controller_web.py"
       - "tests/test_problem_solving_adaptive_*.py"
       - "tests/test_problem_solving_candidate_*.py"
@@ -55,6 +57,8 @@ on:
       - "tests/test_problem_solving_web_attachments.py"
       - "web/next-loop*.js"
       - "web/next-loop*.css"
+      - "web/psos-blind-handoff-*.js"
+      - "web/psos-blind-handoff-*.css"
       - "web/psos-manual-*.js"
       - "web/psos-manual-*.css"
       - "web/chatgpt-manual-fallback*.js"
@@ -96,6 +100,7 @@ jobs:
             scripts/problem_solving_evidence_verifier.py \
             scripts/problem_solving_domain_adapters.py \
             scripts/problem_solving_stock_decision_adapter.py \
+            scripts/problem_solving_blind_handoff_web.py \
             scripts/problem_solving_manual_controller_web.py \
             scripts/problem_solving_adaptive_context.py \
             scripts/problem_solving_adaptive_shopping.py \
@@ -142,6 +147,7 @@ jobs:
       - name: Run next-loop focused tests
         run: |
           python -B -m unittest \
+            tests.test_problem_solving_blind_handoff_web \
             tests.test_problem_solving_candidate_working_set \
             tests.test_problem_solving_candidate_update_runtime \
             tests.test_problem_solving_dynamic_loop_experiment \
@@ -163,7 +169,9 @@ jobs:
           node --check web/next-loop-workflow.js
           node --check web/next-loop-attachments.js
           node --check web/next-loop-job-packet.js
+          node --check web/psos-blind-handoff-v1.js
           node --check web/psos-manual-protocol.js
+          node --check web/psos-manual-thin-v1.js
           node --check web/psos-manual-route-policy.js
           node --check web/psos-manual-controller-v1.js
           node --check web/psos-manual-request-switch-v1.js
