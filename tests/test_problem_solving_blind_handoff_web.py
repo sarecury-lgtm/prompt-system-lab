@@ -69,11 +69,13 @@ class BlindHandoffZipTests(unittest.TestCase):
                     attachment_root=allowed,
                 )
 
-    def test_smart_web_loads_handoff_assets_and_endpoint(self):
+    def test_workbench_loads_handoff_assets_and_endpoint(self):
         smart = (SCRIPTS / "problem_solving_quality_next_loop_smart_web.py").read_text(encoding="utf-8")
+        final = (SCRIPTS / "problem_solving_quality_next_loop_final_web.py").read_text(encoding="utf-8")
         self.assertIn("blind_handoff_support.install(web)", smart)
         self.assertIn('renderer_addons.append("psos-blind-handoff-v1.js")', smart)
         self.assertIn('style_addons.append("psos-blind-handoff-v1.css")', smart)
+        self.assertIn("smart.blind_handoff_support.install(smart.web)", final)
 
 
 if __name__ == "__main__":
