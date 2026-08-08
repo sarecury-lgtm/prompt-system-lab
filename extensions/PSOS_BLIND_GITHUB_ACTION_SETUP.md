@@ -4,7 +4,7 @@
 
 이 연결은 GitHub App이 아니라 **Custom GPT Action → GitHub REST API**를 사용한다. Action schema는 `extensions/psos-blind-github-action.openapi.yaml`, 실행 규칙은 `extensions/PSOS_BLIND_GITHUB_ACTION_RULES.md`에 있다.
 
-## 1. GitHub fine-grained PAT 만들기
+## 1. GitHub fine-grained PAT0만들기
 
 GitHub에서 Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token으로 이동한다.
 
@@ -63,7 +63,7 @@ Preview에서 다음처럼 요청한다.
 
 `현재 PSOS 브랜치를 읽고, 방금 만든 Blind handoff의 UI 문구를 더 이해하기 쉽게 고쳐줘. merge는 하지 마.`
 
-Blind는 관련 파일을 읽고 수정안을 만든 뒤 같은 고정 브랜치에 커밋한다. 완료 답변에는 commit SHA와 바뀐 파일만 짧게 남기는 것을 기본으로 한다.
+Blind는 관련 파일을 읽고 수정안을 만든 뒤 같은 고젔 브랜치에 커밋한다. 완료 답변에는 commit SHA와 바뀐 파일만 짧게 남기는 것을 기본으로 한다.
 
 ## 이 Action이 일부러 못 하는 것
 
@@ -88,3 +88,7 @@ GitHub 연결 뒤에는 코드·문서·프로젝트 상태를 ZIP으로 반복 
 - OpenAI GPT Actions: https://help.openai.com/en/articles/9442513
 - GitHub fine-grained PAT 관리: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
 - GitHub REST contents/Git database permissions: https://docs.github.com/en/rest
+
+## Live write verification
+
+- PSOS Blind GitHub write path verified.
