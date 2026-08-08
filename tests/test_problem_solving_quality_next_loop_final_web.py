@@ -8,7 +8,6 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
-
 MODULE_PATH = SCRIPTS / "problem_solving_quality_next_loop_final_web.py"
 SPEC = importlib.util.spec_from_file_location(
     "problem_solving_quality_next_loop_final_web_test",
@@ -24,7 +23,6 @@ class FinalizingNextLoopWebTests(unittest.TestCase):
     def test_job_packet_script_loads_after_route_policy_before_manual_ui(self):
         addons = FINAL_WEB.build_static_addons()
         renderer = addons["renderer.js"]
-
         self.assertIn("next-loop-job-packet.js", renderer)
         self.assertLess(
             renderer.index("psos-manual-route-policy.js"),
@@ -34,6 +32,45 @@ class FinalizingNextLoopWebTests(unittest.TestCase):
             renderer.index("next-loop-job-packet.js"),
             renderer.index("chatgpt-manual-fallback-v5.js"),
         )
+
+    def test_actual_renderer_bundle_keeps_blind_first_and_manual_paths_diagnostic(self):
+        renderer = FINAL_WEB.build_static_addons()["renderer.js"]
+        self.assertLess(
+            renderer.index("psos-blind-handoff-v1.js"),
+            renderer.index("psos-manual-thin-v1.js"),
+        )
+        self.assertLess(
+            renderer.index("psos-manual-thin-v1.js"),
+            renderer.index("chatgpt-manual-fallback-v5.js"),
+        )
+        self.assertLess(
+            renderer.index("chatgpt-manual-fallback-v5.js"),
+            renderer.index("chatgpt-manual-focus-v1.js"),
+        )
+
+        focus = (ROOT / "web" / "chatgpt-manual-focus-v1.js").read_text(encoding="utf-8")
+        self.assertIn('get("diagnostic") === "1"', focus)
+        self.assertIn('.mode-option input[value="integrated"]', focus)
+        self.assertIn('.mode-option input[value="manual"]', focus)
+        self.assertIn(".manual-v5-toggle", focus)
+        self.assertIn("#chatgpt-manual-panel", focus)
+
+    def test_blind_handoff_is_github_first_and_zip_is_supplemental(self):
+        handoff = (ROOT / "web" / "psos-blind-handoff-v1.js").read_text(encoding="utf-8")
+        self.assertIn("sarecury-lgtm/prompt-system-lab", handoff)
+        self.assertIn("codex/problem-solving-os-next-loop", handoff)
+        self.assertIn("ACTIVE_GOAL.json", handoff)
+        self.assertIn("보조 ZIP 만들기", handoff)
+        self.assertIn("exportButton.hidden = !supplemental.useful", handoff)
+
+    def test_design_prompt_endpoint_remains_unimplemented_in_runtime_handlers(self):
+        runtime_files = list(SCRIPTS.glob("problem_solving*_web.py"))
+        implemented = []
+        for path in runtime_files:
+            text = path.read_text(encoding="utf-8")
+            if '"/api/design-prompt"' in text or "'/api/design-prompt'" in text:
+                implemented.append(path.name)
+        self.assertEqual(implemented, [])
 
     def test_start_script_uses_finalizing_launcher(self):
         script = (ROOT / "start-psos-next-loop.ps1").read_text(encoding="utf-8")

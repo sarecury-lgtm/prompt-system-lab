@@ -34,8 +34,8 @@
     "Weak continuation language continues only the recorded current task and never silently expands scope."
   ],
   "current_task": {
-    "id": "blind-github-action-v1",
-    "objective": "Connect PSOS Blind to the existing prompt-system-lab GitHub repository through a narrowly scoped Custom GPT Action so that, when Codex is unavailable, Blind can read the same project state and commit requested code or documentation changes to codex/problem-solving-os-next-loop without per-turn ZIP transfer. Keep ZIP handoff as a supplement for non-Git conversation state or attachments, and keep destructive repository operations unavailable.",
+    "id": "codex-blind-fallback-v1",
+    "objective": "Unify the Codex-unavailable path around PSOS Blind plus the verified GitHub Action. Keep Codex as the normal local execution path, make PSOS Blind + GitHub the default fallback when Codex cannot be used, hide legacy manual copy/paste and JSON-receipt flows from the default browser UI while retaining them as an explicit diagnostic path, and use ZIP only as a supplement for useful conversation state or attachments that are not already represented in Git.",
     "allowed_change_classes": [
       "CORE",
       "ADAPTER",
@@ -47,20 +47,20 @@
       "creating or deleting branches",
       "deleting repository files",
       "force-pushing any ref",
-      "modifying .github/workflows through the Blind action",
-      "granting the Blind action access to arbitrary repositories",
+      "modifying .github/workflows",
+      "changing Codex local write approval, workspace receipt, or rollback behavior",
+      "removing the legacy manual copy/paste or JSON-receipt implementation instead of retaining it as a diagnostic path",
+      "making ZIP the primary carrier of Git-backed repository state",
       "automatic login to ChatGPT or automatic Custom GPT configuration",
-      "removing the existing Controller, evidence verifier, thin manual adapter, or ZIP handoff",
       "running live Codex evaluation without explicit approval"
     ],
     "completion_conditions": [
-      "A Custom GPT OpenAPI schema is committed as an ADAPTER and is hard-wired to sarecury-lgtm/prompt-system-lab and codex/problem-solving-os-next-loop for branch-changing operations.",
-      "The schema supports reading the fixed branch, repository contents, and code search, plus creating UTF-8 blobs, trees, commits, and a non-forced update of only the fixed branch ref.",
-      "The schema exposes no delete, merge, branch-create, issue, release, workflow-dispatch, or force-push operation.",
-      "The recommended GitHub credential is a fine-grained PAT limited to prompt-system-lab with Contents read/write and without Workflows write.",
-      "PSOS Blind instructions define when to use GitHub, require reading the current branch and ACTIVE_GOAL.json before PSOS repository edits, and forbid claims of completion when an Action write fails.",
-      "Setup documentation gives a concrete read-only connection test before normal repository editing.",
-      "ZIP handoff remains available for useful state that is not represented in Git rather than as the primary carrier of repository code and documentation.",
+      "The actual start-psos-next-loop.ps1 runtime presents PSOS Blind + GitHub as the default Codex-unavailable fallback.",
+      "The Blind handoff tells PSOS Blind to read sarecury-lgtm/prompt-system-lab, codex/problem-solving-os-next-loop, and ACTIVE_GOAL.json instead of transferring Git-backed code and documentation through ZIP.",
+      "The legacy renderer 4-step flow, the manual ChatGPT copy/paste and JSON-receipt UI, and the stale integrated mode are hidden from the default browser UI and remain available only through an explicit diagnostic UI path.",
+      "ZIP export remains available only as a supplemental action when the browser has useful non-Git continuation state or attachments.",
+      "Codex local write approval, workspace receipt, and rollback behavior are unchanged.",
+      "Related runtime and fallback tests cover the installed addon order, diagnostic visibility policy, GitHub-first handoff wording, and supplemental ZIP behavior.",
       "No merge occurs without explicit user approval."
     ]
   },
