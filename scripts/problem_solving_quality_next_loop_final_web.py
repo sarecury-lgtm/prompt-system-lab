@@ -23,6 +23,7 @@ def main() -> int:
     smart.web.next_loop = smart.candidate_runtime
     job_packet_support.install(smart.web)
     smart.attachment_support.install(smart.web)
+    smart.blind_handoff_support.install(smart.web)
     smart.manual_patch_support.install(smart.web)
     smart.manual_controller_support.install(smart.web)
     smart.web.STATIC_ADDONS = build_static_addons()
