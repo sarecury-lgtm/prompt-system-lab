@@ -34,33 +34,31 @@
     "Weak continuation language continues only the recorded current task and never silently expands scope."
   ],
   "current_task": {
-    "id": "codex-blind-fallback-v1",
-    "objective": "Unify the Codex-unavailable path around PSOS Blind plus the verified GitHub Action. Keep Codex as the normal local execution path, make PSOS Blind + GitHub the default fallback when Codex cannot be used, hide legacy manual copy/paste and JSON-receipt flows from the default browser UI while retaining them as an explicit diagnostic path, and use ZIP only as a supplement for useful conversation state or attachments that are not already represented in Git.",
+    "id": "shopping-recommendation-regression-v1",
+    "objective": "Fix the recommendation regression exposed by the pork-belly shopping conversation without turning PSOS into a shopping-only system. Preserve a recommendation hypothesis through concrete candidate verification, verify the exact purchasable option rather than a page-level teaser price, keep broad candidate recall before narrowing by taste or brand hypotheses, and propagate user corrections into the active constraints and ranking.",
     "allowed_change_classes": [
-      "CORE",
       "ADAPTER",
+      "DOMAIN",
       "TEST"
     ],
     "explicitly_out_of_scope": [
+      "promoting shopping-specific behavior into CORE without cross-domain evidence",
+      "reading GitHub on every ordinary shopping request",
       "merging pull request 100",
       "writing directly to main",
       "creating or deleting branches",
       "deleting repository files",
       "force-pushing any ref",
       "modifying .github/workflows",
-      "changing Codex local write approval, workspace receipt, or rollback behavior",
-      "removing the legacy manual copy/paste or JSON-receipt implementation instead of retaining it as a diagnostic path",
-      "making ZIP the primary carrier of Git-backed repository state",
-      "automatic login to ChatGPT or automatic Custom GPT configuration",
-      "running live Codex evaluation without explicit approval"
+      "changing Codex local write approval, workspace receipt, or rollback behavior"
     ],
     "completion_conditions": [
-      "The actual start-psos-next-loop.ps1 runtime presents PSOS Blind + GitHub as the default Codex-unavailable fallback.",
-      "The Blind handoff tells PSOS Blind to read sarecury-lgtm/prompt-system-lab, codex/problem-solving-os-next-loop, and ACTIVE_GOAL.json instead of transferring Git-backed code and documentation through ZIP.",
-      "The legacy renderer 4-step flow, the manual ChatGPT copy/paste and JSON-receipt UI, and the stale integrated mode are hidden from the default browser UI and remain available only through an explicit diagnostic UI path.",
-      "ZIP export remains available only as a supplemental action when the browser has useful non-Git continuation state or attachments.",
-      "Codex local write approval, workspace receipt, and rollback behavior are unchanged.",
-      "Related runtime and fallback tests cover the installed addon order, diagnostic visibility policy, GitHub-first handoff wording, and supplemental ZIP behavior.",
+      "PSOS Blind has a short persistent runtime rule set that connects a stated recommendation hypothesis to at least one concrete candidate or explicitly retracts the hypothesis when no constrained candidate survives.",
+      "Online purchase recommendations verify the exact recommended option or SKU, including option surcharge, quantity or weight, price, and current availability before presenting normalized unit price as verified.",
+      "A preference-derived breed, brand, product class, or method remains a search hypothesis rather than silently closing the candidate pool.",
+      "User corrections to budget, taste, quality floor, or purpose immediately invalidate or rerank earlier candidates that conflict with the new condition.",
+      "A fixed shopping regression fixture covers the pork-belly failure pattern without depending on live product prices.",
+      "The PSOS Blind setup path explicitly includes the runtime rules alongside the GitHub Action rules.",
       "No merge occurs without explicit user approval."
     ]
   },

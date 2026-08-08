@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "id": "pork-belly-shopping-regression-v1",
+  "purpose": "Catch recommendation failures where a plausible taste hypothesis is not carried into real product candidates, page-level teaser prices are mistaken for the selected option price, or later user corrections fail to update ranking.",
+  "scenario": {
+    "initial_request": "온라인에서 살 수 있는 삼겹살이나 오겹살을 추천해 줘. 지방의 고소함이 중심이고 육향은 약간 있으면 좋다.",
+    "initial_constraints": {
+      "hard_cap_krw_per_100g": 3000,
+      "objective_slots": [
+        "very cheap but not notably bad",
+        "very tasty without wasting money"
+      ]
+    },
+    "assistant_hypothesis_example": "A Berkshire-type pork product may fit the stated taste preference.",
+    "later_user_correction": "2500원대도 쓸데없이 비싸다고 생각해서 보통 2000원대 또는 그 이하를 먹는다.",
+    "normalized_constraint_after_correction": {
+      "default_cap_krw_per_100g": 2000,
+      "over_cap_policy": "Only keep above-cap candidates as explicit exceptions with strong evidence and user-visible justification."
+    }
+  },
+  "fixed_product_fixtures": [
+    {
+      "id": "page-with-option-surcharge",
+      "page_title": "삼겹살 / 오겹살 / 듀록 삼겹살 / 듀록 오겹살 2kg",
+      "page_base_price_krw": 26900,
+      "selected_option": "듀록 오겹살 2kg",
+      "option_surcharge_krw": 7000,
+      "selected_total_krw": 33900,
+      "weight_g": 2000,
+      "verified_unit_price_krw_per_100g": 1695,
+      "regression_trap": "Do not report 1345 KRW/100g for the selected Duroc option."
+    },
+    {
+      "id": "ordinary-low-price-candidate",
+      "page_title": "일반 수입 냉동 오겹살 1kg",
+      "selected_option": "오겹살 구이용 1kg",
+      "option_surcharge_krw": 0,
+      "selected_total_krw": 12120,
+      "weight_g": 1000,
+      "verified_unit_price_krw_per_100g": 1212,
+      "regression_trap": "Do not omit ordinary low-price candidates merely because a breed hypothesis sounds more premium."
+    }
+  ],
+  "required_behavior": [
+    "If a breed, brand, product class, or method is presented as a taste-fit hypothesis, inspect at least one concrete candidate from that hypothesis or explicitly state that no candidate survived the constraints.",
+    "Collect a reasonably broad candidate pool before narrowing on the taste hypothesis.",
+    "For each recommended purchasable product, bind price claims to the exact selected option or SKU rather than the page-level base price.",
+    "Include option surcharge, selected weight or quantity, and current availability in the verification chain before presenting normalized unit price as verified.",
+    "Preserve the two objective slots instead of collapsing cheap-value and taste-value into one score.",
+    "After the user lowers the practical price ceiling, rerank or remove earlier candidates that conflict with the new ceiling.",
+    "Use a direct product detail page when a link is presented as the purchase link."
+  ],
+  "fail_conditions": [
+    "States that Berkshire is the best taste fit but never inspects a Berkshire candidate and never explains why it was excluded.",
+    "Uses the page base price for a selected option with a surcharge.",
+    "Recommends before exact option price or availability is verified.",
+    "Keeps 2400-2500 KRW/100g products as ordinary top picks after the user makes 2000 KRW/100g the practical ceiling.",
+    "Searches only the inferred premium breed or brand class and misses materially cheaper ordinary candidates.",
+    "Provides only a search-results or category link while presenting it as the exact product link."
+  ]
+}

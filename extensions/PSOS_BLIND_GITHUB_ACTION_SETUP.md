@@ -35,17 +35,22 @@ Schema:
 - `extensions/psos-blind-github-action.openapi.yaml`의 전체 내용을 붙여 넣는다.
 - 스키마가 저장되면 액션 목록에 `getPsosBranch`, `getPsosContent`, `searchPsosCode`, `createPsosBlob`, `createPsosTree`, `createPsosCommit`, `advancePsosBranch` 등이 보여야 한다.
 
-## 3. Instructions에 GitHub 규칙 추가
+## 3. Instructions에 PSOS Blind 규칙 추가
 
-기존 PSOS Blind Instructions를 지우지 말고 `extensions/PSOS_BLIND_GITHUB_ACTION_RULES.md` 내용을 뒤쪽에 추가한다.
+기존 PSOS Blind Instructions를 지우지 말고 다음 두 파일의 내용을 뒤쪽에 추가한다.
 
-핵심은 다음과 같다.
+- `extensions/PSOS_BLIND_GITHUB_ACTION_RULES.md`: 저장소 읽기/쓰기 범위와 안전 규칙
+- `extensions/PSOS_BLIND_RUNTIME_RULES.md`: 일반 추천에서 추천 가설을 실제 후보에 연결하고, 정확한 옵션 가격과 사용자 교정을 검증하는 짧은 상시 규칙
+
+GitHub Action 규칙의 핵심은 다음과 같다.
 
 - 일반 질문에는 GitHub를 쓰지 않는다.
 - PSOS 저장소 작업을 시작할 때 현재 브랜치와 `ACTIVE_GOAL.json`을 실제로 읽는다.
 - 쓰기는 `codex/problem-solving-os-next-loop` 브랜치에만 한다.
 - main, merge, delete, force push, workflow 수정 기능은 사용하지 않는다.
 - 여러 파일 수정은 blob → tree → commit → non-force ref update 순서로 하나의 커밋에 묶는다.
+
+Runtime 규칙은 일반 추천 품질을 위한 것이므로 GitHub를 읽는 조건과 분리한다. 일반 쇼핑 질문마다 저장소를 읽게 만들지 않는다.
 
 ## 4. 먼저 읽기 테스트
 
