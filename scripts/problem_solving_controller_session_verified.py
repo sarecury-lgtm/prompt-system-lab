@@ -150,15 +150,11 @@ def _enrich_current_action(
     return state
 
 
-def create_session(
+def _build_contract_and_obligations(
     request: str,
-    *,
-    context: str = "",
-    route_hint: str = "",
-    output_root: Path,
-    session_id: str | None = None,
-) -> tuple[Path, dict[str, Any]]:
-    adapter_id = DOMAINS.detect_adapter_id(request)
+    context: str,
+    adapter_id: str | None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     contract = REQUEST.build_request_contract(
         request,
         context=context,
@@ -169,6 +165,19 @@ def create_session(
         *REQUEST.build_evidence_obligations(contract),
         *DOMAINS.additional_obligations(contract, adapter_id),
     ]
+    return contract, obligations
+
+
+def create_session(
+    request: str,
+    *,
+    context: str = "",
+    route_hint: str = "",
+    output_root: Path,
+    session_id: str | None = None,
+) -> tuple[Path, dict[str, Any]]:
+    adapter_id = DOMAINS.detect_adapter_id(request)
+    contract, obligations = _build_contract_and_obligations(request, context, adapter_id)
     session_dir, state = BASE.create_session(
         request,
         context=context,
@@ -183,6 +192,18 @@ def create_session(
         history=[],
         adapter_id=adapter_id,
     )
+
+    preference_question = REQUEST.preference_question_if_needed(contract)
+    if preference_question:
+        state["status"] = "awaiting_user_input"
+        state["current_action"] = None
+        state["awaiting_user_question"] = preference_question
+        state["unresolved"] = BASE._unique_strings(
+            [*state["unresolved"], "최종 선택 전에 사용자의 우선 기준을 확인해야 합니다."]
+        )
+        BASE._write_state(session_dir, state)
+        return session_dir, state
+
     state = _enrich_current_action(
         session_dir,
         state,
@@ -365,8 +386,102 @@ def submit_action_result(session_dir: Path, raw_answer: str) -> dict[str, Any]:
     return next_state
 
 
+def _resolve_pre_execution_question(
+    session_dir: Path,
+    state: dict[str, Any],
+    metadata: Mapping[str, Any],
+    answer: str,
+) -> dict[str, Any] | None:
+    question = REQUEST.preference_question_if_needed(dict(metadata["request_contract"]))
+    if (
+        not question
+        or state.get("status") != "awaiting_user_input"
+        or state.get("budget", {}).get("used_actions") != 0
+    ):
+        return None
+
+    clean_answer = str(answer or "").strip()
+    if not clean_answer:
+        raise BASE.ControllerSessionError("사용자 답변이 비어 있습니다.")
+    actual_question = str(state.get("awaiting_user_question") or question).strip()
+    state["goal"]["fixed_constraints"] = BASE._unique_strings(
+        [
+            *state["goal"]["fixed_constraints"],
+            f"사용자 확인: {actual_question} → {clean_answer}",
+        ]
+    )
+    state["context"] = (
+        state["context"].rstrip()
+        + ("\n\n" if state["context"].strip() else "")
+        + f"[사용자 확인]\n질문: {actual_question}\n답변: {clean_answer}"
+    )
+    state["awaiting_user_question"] = None
+    state["unresolved"] = [
+        item
+        for item in state["unresolved"]
+        if item != "최종 선택 전에 사용자의 우선 기준을 확인해야 합니다."
+    ]
+
+    adapter_id = metadata["domain_adapter_id"] or DOMAINS.detect_adapter_id(state["request"])
+    contract, obligations = _build_contract_and_obligations(
+        state["request"],
+        state["context"],
+        adapter_id,
+    )
+    _save_metadata(
+        session_dir,
+        request_contract=contract,
+        obligations=obligations,
+        history=list(metadata["verification_history"]),
+        adapter_id=adapter_id,
+    )
+
+    if not state.get("actions"):
+        raise BASE.ControllerSessionError("재개할 초기 Controller action이 없습니다.")
+    action = state["actions"][-1]
+    packet = action["packet"]
+    packet["goal"] = state["goal"]
+    packet.setdefault("known_state", {})["context"] = state["context"]
+    packet["objective"] = REQUEST.initial_objective(contract)
+    packet["reason"] = "최종 선택 전에 사용자 우선 기준을 확인했고, 같은 첫 행동을 그 기준으로 실행합니다."
+    action["packet"] = packet
+    state["actions"][-1] = action
+    state["current_action"] = action
+    state["status"] = "awaiting_execution"
+    BASE._write_state(session_dir, state)
+    return _enrich_current_action(
+        session_dir,
+        state,
+        _metadata(session_dir),
+    )
+
+
 def submit_user_input(session_dir: Path, answer: str) -> dict[str, Any]:
+    state = BASE.load_session(session_dir)
+    metadata = _metadata(session_dir)
+    pre_execution = _resolve_pre_execution_question(
+        session_dir,
+        state,
+        metadata,
+        answer,
+    )
+    if pre_execution is not None:
+        return pre_execution
+
     state = BASE.submit_user_input(session_dir, answer)
+    adapter_id = metadata["domain_adapter_id"] or DOMAINS.detect_adapter_id(state["request"])
+    contract, obligations = _build_contract_and_obligations(
+        state["request"],
+        state["context"],
+        adapter_id,
+    )
+    _save_metadata(
+        session_dir,
+        request_contract=contract,
+        obligations=obligations,
+        history=list(metadata["verification_history"]),
+        adapter_id=adapter_id,
+    )
     if state.get("status") == "awaiting_execution":
         state = _enrich_current_action(session_dir, state, _metadata(session_dir))
     return state
