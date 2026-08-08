@@ -106,8 +106,10 @@ ${legacy.END_MARKER}`;
   });
 
   queueMicrotask(() => {
+    const toggleTitle = document.querySelector(".manual-v5-toggle strong");
     const toggleCopy = document.querySelector(".manual-v5-toggle small");
-    if (toggleCopy) toggleCopy.textContent = "복잡한 Job Packet 대신 얇은 가드레일로 자연 대화를 실행합니다.";
+    if (toggleTitle) toggleTitle.textContent = "ChatGPT 수동 실행 · 실험용";
+    if (toggleCopy) toggleCopy.textContent = "매 턴 복사·붙여넣기가 필요한 진단 경로입니다. Codex 소진 시에는 위의 Blind handoff를 우선 사용하세요.";
 
     const panel = document.querySelector("#chatgpt-manual-panel");
     if (!panel) return;
@@ -118,7 +120,7 @@ ${legacy.END_MARKER}`;
     const detailsSummary = panel.querySelector("#manual-v5-packet-details summary");
     const firstStep = panel.querySelector('.manual-v5-progress li[data-step="1"] span');
 
-    if (kicker) kicker.textContent = "Codex 없는 대화 우선 실행";
+    if (kicker) kicker.textContent = "진단용 대화 우선 실행";
     if (title) title.textContent = "모델의 자연스러운 문제 해결은 살리고 반복 실패만 얇게 막습니다.";
     if (description) description.textContent = "질문·검색·추론을 고정된 Controller 단계에 가두지 않고, 필요한 순간에만 최소 가드레일을 적용합니다.";
     if (copyButton) copyButton.textContent = "실행 요청 복사";
