@@ -32,6 +32,13 @@ class ManualThinProtocolTests(unittest.TestCase):
         self.assertLess(protocol, thin)
         self.assertLess(thin, fallback)
 
+    def test_strict_controller_ui_does_not_hijack_default_manual_toggle(self):
+        text = SMART_WEB.read_text(encoding="utf-8")
+        self.assertNotIn('renderer_addons.append("psos-manual-controller-v1.js")', text)
+        self.assertNotIn('renderer_addons.append("psos-manual-verification-v1.js")', text)
+        self.assertNotIn('renderer_addons.append("psos-manual-refinement-v1.js")', text)
+        self.assertIn("manual_controller_support.install(web)", text)
+
 
 if __name__ == "__main__":
     unittest.main()
