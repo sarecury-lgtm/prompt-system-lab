@@ -134,6 +134,12 @@ jobs:
             tests.test_problem_solving_manual_controller_web
           python -B scripts/problem_solving_controller_ab.py validate
 
+      - name: Validate Blind handoff fallback
+        run: |
+          python -B -m unittest tests.test_problem_solving_blind_handoff_web
+          node --check web/psos-blind-handoff-v1.js
+          node --check web/psos-manual-thin-v1.js
+
       - name: Run request and evidence verification tests
         run: |
           python -B -m unittest tests.test_problem_solving_request_verification
