@@ -25,49 +25,41 @@
     "A failed or incomplete result is not presented as completed or recommended.",
     "A retry changes one material dimension and is bounded unless the user explicitly authorizes more work.",
     "Explicit user feedback may reopen a terminal result without being miscounted as an automatic method change.",
-    "When the user explicitly asks for distinct decision purposes, legitimate tradeoffs are preserved as separate winner profiles instead of being collapsed into one scalar ranking.",
+    "Explicit multi-objective purposes may be preserved as separate winners when they materially represent different user utilities.",
+    "A strong general model's native problem-solving ability is preserved unless a repeated failure justifies a narrow guardrail.",
+    "Subjective preferences are not silently translated into a specific brand, product class, breed, method, or candidate without comparative support.",
     "Domain tools remain optional and cannot redefine the PSOS parent goal.",
     "Weak continuation language continues only the recorded current task and never silently expands scope."
   ],
   "current_task": {
-    "id": "request-contract-evidence-refinement-and-multiobjective-v1",
-    "objective": "Keep the structured Request Contract, independent evidence verifier, and user-directed refinement while adding a domain-neutral way to preserve explicit multi-objective decision purposes as separate winner profiles. Shopping is only the current motivating example: the same mechanism must work for unrelated selection problems, and non-selection requests must remain untouched.",
+    "id": "conversation-first-thin-runtime-v1",
+    "objective": "Turn the PSOS workbench's manual ChatGPT path into a conversation-first execution adapter: send the user's ordinary request through a small set of high-value guardrails, preserve natural clarification and reasoning, avoid premature candidate lock-in, require recommendation rationale, and suggest concrete continuation when the current answer is only an intermediate step. Keep the existing strict Controller and evidence-verification machinery available as escalation paths rather than forcing them onto every request.",
     "allowed_change_classes": [
       "CORE",
       "ADAPTER",
-      "DOMAIN",
       "TEST"
     ],
     "explicitly_out_of_scope": [
       "merging pull request 100",
-      "promoting the Controller or stock adapter to the canonical default runtime",
-      "hard-coding Microsoft or a fixed recent-gain rejection threshold into the core",
-      "hard-coding shopping-specific profile names such as value or quality into the core interface",
-      "turning multi-profile selection into the default shape for non-selection requests",
-      "turning stock analysis or shopping into the PSOS parent goal",
-      "running live Codex evaluation",
-      "claiming verified market-wide stock coverage from model declarations alone",
-      "allowing more than four manual AI actions or more than one automatic material method change"
+      "deleting the existing Controller or evidence verifier",
+      "making shopping, pork, stocks, or any one domain the PSOS parent goal",
+      "replacing all automatic Codex execution with the thin manual adapter before comparative evidence exists",
+      "adding a large new schema or mandatory Job Packet to the conversation-first path",
+      "running live Codex evaluation without explicit approval",
+      "claiming the new path is superior across domains before cross-domain testing"
     ],
     "completion_conditions": [
-      "A domain-neutral Request Contract records requested action, time sensitivity, target-set openness, selection count, comparison need, current-condition need and assumption policy.",
-      "Evidence obligations are generated from the Request Contract instead of being handwritten for one stock or one failure example.",
-      "A generic verifier checks goal fidelity, search-scope records, current-state records, comparable evaluation, final selection and material-assumption traceability before accepting completed status.",
-      "The manual Controller session stores the Request Contract, evidence obligations and verification history and includes them in every Action Packet.",
-      "A result marked completed is downgraded to partial when observable obligation evidence is missing, and the next action is derived from those missing obligations.",
-      "A stock-decision adapter remains optional and verifies candidate-universe evidence plus selected-candidate current-action fit without defining the general Controller interface.",
-      "The supplied MSFT recommendation is fixed as a regression fixture and must fail for narrow unexplained search scope, absent current entry-fit evidence and unsupported material assumptions.",
-      "A complete structured stock result can pass without requiring a fixed ticker, fixed return threshold or forced no-buy outcome.",
-      "The manual UI displays Controller verification failures and the newly selected next action.",
-      "A terminal manual result exposes a clear feedback control that separately captures why the result should change and what direction should be taken next.",
-      "User-directed refinement preserves the previous answer and evidence, updates explicit context and Request Contract constraints, creates a new action, and does not consume automatic method-change budget.",
-      "The unclear legacy continuation control is hidden in Controller mode and relabeled when used outside it.",
-      "Explicit requests such as purpose-A pick 1 and purpose-B pick 1 are represented as generic selection profiles with separate winner slots rather than one aggregate winner.",
-      "Profile verification checks each requested purpose independently while still using the existing candidate search and comparable-evaluation evidence obligations.",
-      "The core never invents shopping-specific profile labels; profile names come from the request or explicit context.",
-      "Cross-domain tests show that a non-shopping selection can use the same profile interface and a DIRECT non-selection request gains no profile burden.",
-      "Cross-domain tests show that DIRECT and non-selection requests are not burdened with stock-specific obligations.",
-      "CI passes goal guard, focused Python tests, browser JavaScript checks and the full repository suite."
+      "The manual ChatGPT workbench path no longer requires the full Job Packet as its default execution prompt.",
+      "The thin path preserves the ordinary user request and adds only narrow guardrails for goal fidelity, material clarification, subjective preference sufficiency, candidate diversity, recommendation rationale, evidence qualification, insight discovery, continuation, and refinement.",
+      "A subjective preference cannot be silently converted into a specific brand, breed, product family, or candidate without considering plausible alternatives.",
+      "Material clarification can continue across multiple conversational turns rather than being treated as a single preflight question event.",
+      "Recommendation output connects user purpose or preference to candidate properties, evidence, and the reason it beats major alternatives when the evidence supports that comparison.",
+      "If a result is only an intermediate step, the model may propose one or two concrete next actions instead of ending with a generic offer to help.",
+      "The workbench can still import a lightweight status receipt without requiring the answer itself to be shaped around a large schema.",
+      "The strict manual Controller remains available as a separate escalation path for cases that benefit from independent completion verification.",
+      "The legacy manual protocol remains recoverable for regression comparison.",
+      "Cross-domain tests are added before any default-product promotion claim.",
+      "No merge occurs without explicit user approval."
     ]
   },
   "continuation_policy": {
@@ -84,7 +76,7 @@
       "changing parent_goal",
       "changing current_task objective",
       "promoting DOMAIN or TEST work into CORE",
-      "enabling an experimental path by default",
+      "enabling an experimental path by default outside its existing adapter surface",
       "merging a pull request",
       "expanding to a new domain-specific implementation"
     ]
