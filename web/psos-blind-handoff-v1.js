@@ -27,7 +27,7 @@
 
   function currentResult() {
     if (!elements.completed || elements.completed.hidden) return "";
-    return String(elements.resultContent?.innerText || "").trim().slice(0, 30000);
+    return String(elements.resultContent?.innerText || "").trim().slice(0, 20000);
   }
 
   function attachmentPaths(request) {
@@ -43,27 +43,27 @@
     return result.slice(0, 4);
   }
 
-  function manualState() {
+  function manualState({ hasCurrentResult = false } = {}) {
     try {
       const saved = JSON.parse(window.localStorage.getItem("psos-manual-job-workflow-v1") || "null");
       if (!saved || typeof saved !== "object") return {};
-      const imported = saved.imported && typeof saved.imported === "object"
-        ? {
-            envelope:
-              saved.imported.envelope && typeof saved.imported.envelope === "object"
-                ? saved.imported.envelope
-                : null,
-            warnings: Array.isArray(saved.imported.warnings)
-              ? saved.imported.warnings.slice(0, 12)
-              : [],
-          }
-        : null;
+      const envelope =
+        saved.imported?.envelope && typeof saved.imported.envelope === "object"
+          ? {
+              status: saved.imported.envelope.status || null,
+              route: saved.imported.envelope.route || null,
+              completion: saved.imported.envelope.completion || null,
+              continuation: saved.imported.envelope.continuation || null,
+            }
+          : null;
       return {
-        request: typeof saved.request === "string" ? saved.request.slice(0, 10000) : "",
-        latest_answer: typeof saved.answer === "string" ? saved.answer.slice(0, 20000) : "",
+        latest_answer:
+          !hasCurrentResult && typeof saved.answer === "string"
+            ? saved.answer.slice(0, 12000)
+            : "",
         latest_correction:
-          typeof saved.correction === "string" ? saved.correction.slice(0, 20000) : "",
-        imported,
+          typeof saved.correction === "string" ? saved.correction.slice(0, 8000) : "",
+        imported: envelope ? { envelope, warnings: [] } : null,
       };
     } catch (_error) {
       return {};
@@ -95,6 +95,7 @@
       return;
     }
 
+    const result = currentResult();
     exportButton.disabled = true;
     status.textContent = "현재 작업 상태를 ZIP으로 묶고 있습니다.";
     try {
@@ -103,10 +104,10 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           request,
-          current_result: currentResult(),
+          current_result: result,
           route: String(elements.route?.textContent || "").trim(),
           run_id: String(elements.runId?.textContent || "").trim(),
-          manual_state: manualState(),
+          manual_state: manualState({ hasCurrentResult: Boolean(result) }),
           attachment_paths: attachmentPaths(request),
         }),
       });
