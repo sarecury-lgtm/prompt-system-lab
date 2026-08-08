@@ -1,0 +1,145 @@
+.manual-v3-panel {
+  display: grid;
+  gap: 18px;
+  margin: 16px 0 24px;
+  padding: 20px;
+  border: 1px solid var(--border-color, #d8dde5);
+  border-radius: 18px;
+  background: var(--surface, #fff);
+}
+
+.manual-v3-panel[hidden] {
+  display: none;
+}
+
+.manual-v3-progress {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.manual-v3-progress li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f3f5f8;
+  color: #667085;
+}
+
+.manual-v3-progress li strong {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 999px;
+  background: #e2e7ee;
+}
+
+.manual-v3-progress li.is-active {
+  background: #eef3ff;
+  color: #1f3f7a;
+}
+
+.manual-v3-progress li.is-done {
+  color: #245c3f;
+  background: #edf7f1;
+}
+
+.manual-v3-step {
+  padding: 16px;
+  border: 1px solid #e0e4ea;
+  border-radius: 14px;
+  background: #fbfcfd;
+}
+
+.manual-v3-step-head,
+.manual-v3-finish-actions,
+.manual-v3-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.manual-v3-step-head p,
+.manual-v3-followup p {
+  margin: 4px 0 0;
+  color: #667085;
+}
+
+.manual-v3-step textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.manual-v3-packet-details {
+  margin-top: 12px;
+}
+
+.manual-v3-packet-details textarea {
+  margin-top: 10px;
+}
+
+.manual-v3-packet-details button {
+  margin-top: 8px;
+}
+
+.manual-v3-attachment-note {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff7e6;
+  color: #7a4d00;
+}
+
+.manual-v3-finish-actions {
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+
+.manual-v3-followup[hidden] {
+  display: none;
+}
+
+.manual-v3-followup > button {
+  margin-top: 10px;
+}
+
+.manual-v3-footer {
+  min-height: 38px;
+  color: #526071;
+}
+
+.manual-v3-continue {
+  margin: 14px 0 0;
+}
+
+.manual-v3-continue[hidden] {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .manual-v3-progress {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-v3-step-head,
+  .manual-v3-finish-actions,
+  .manual-v3-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manual-v3-step-head button,
+  .manual-v3-finish-actions button,
+  .manual-v3-footer button {
+    width: 100%;
+  }
+}

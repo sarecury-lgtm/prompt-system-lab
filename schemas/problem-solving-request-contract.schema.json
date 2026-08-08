@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/problem-solving-request-contract.schema.json",
+  "title": "PSOS Request Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "original_request",
+    "requested_action",
+    "decision_time",
+    "target_scope",
+    "deliverable",
+    "selection_count",
+    "selection_policy",
+    "comparison_required",
+    "current_conditions_required",
+    "action_fit_required",
+    "domain_hint",
+    "user_constraints",
+    "assumption_policy"
+  ],
+  "properties": {
+    "version": {"const": 1},
+    "original_request": {"type": "string", "minLength": 1},
+    "requested_action": {
+      "enum": ["act_now", "exit_or_avoid", "select", "compare", "research", "produce", "answer"]
+    },
+    "decision_time": {"enum": ["current", "recent", "future", "unspecified"]},
+    "target_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "candidate_search_required"],
+      "properties": {
+        "kind": {"enum": ["open_set", "specified_or_bounded"]},
+        "candidate_search_required": {"type": "boolean"}
+      }
+    },
+    "deliverable": {"enum": ["action_decision", "selection", "comparison", "usable_result"]},
+    "selection_count": {"type": ["integer", "null"], "minimum": 1},
+    "selection_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "profiles", "allow_profile_overlap", "force_profile_slots", "source"],
+      "properties": {
+        "mode": {"enum": ["single_winner", "multi_profile"]},
+        "profiles": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label", "count", "source"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "label": {"type": "string", "minLength": 1},
+              "count": {"type": "integer", "minimum": 1, "maximum": 5},
+              "source": {"enum": ["request", "context"]}
+            }
+          }
+        },
+        "allow_profile_overlap": {"type": "boolean"},
+        "force_profile_slots": {"type": "boolean"},
+        "source": {"enum": ["none", "request", "context"]}
+      }
+    },
+    "comparison_required": {"type": "boolean"},
+    "current_conditions_required": {"type": "boolean"},
+    "action_fit_required": {"type": "boolean"},
+    "domain_hint": {"type": "string", "minLength": 1},
+    "domain_requirements": {"type": "object"},
+    "user_constraints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "text"],
+        "properties": {
+          "source": {"enum": ["request", "context"]},
+          "text": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "assumption_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["silent_material_defaults_allowed", "material_unknown_resolution"],
+      "properties": {
+        "silent_material_defaults_allowed": {"const": false},
+        "material_unknown_resolution": {"const": "ask_or_label_and_test_sensitivity"}
+      }
+    }
+  }
+}

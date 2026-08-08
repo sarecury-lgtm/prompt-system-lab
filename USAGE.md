@@ -55,6 +55,16 @@ Run the Personal Problem-Solving OS from the repository root:
 python scripts/problem_solving_os.py --request "내 요청"
 ```
 
+이 공개 진입점은 Goal Ledger와 경로 실행 뒤 Result Contract를 별도 AI가 검사하고,
+`completed`뿐 아니라 `partial` 결과도 완료 조건이 빠졌으면 해당 경로를 한 번 보완한 뒤
+다시 검증한다. 명시적인 복수 수집 요청은 목표 수량을 다 채우지 못해도 검증된 일부 결과를
+숨기지 않고 `partial`로 돌려준다. 내부 모듈의 단일 실행 결과를 곧바로 성공으로 간주하지 않는다.
+
+Codex CLI의 `--search`는 실시간 브라우저가 아니다. 현재 판매·재고·주문 가능 여부가 핵심인
+요청은 검색 AI가 후보를 만든 뒤 설치된 Chrome으로 직접 상품 페이지를 렌더링한다. URL별
+`available / sold_out / unknown` 영수증을 병렬 생성하며 `sold_out`이나 `unknown` 후보는 완료
+처리하지 않는다. Chrome이 없으면 해당 조건을 `unverifiable`로 기록한다.
+
 Add UTF-8 context when needed:
 
 ```powershell

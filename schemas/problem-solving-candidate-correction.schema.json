@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["candidate_correction"],
+  "properties": {
+    "candidate_correction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "correction_type",
+        "target_candidate_ids",
+        "constraint_updates",
+        "scope_terms",
+        "verification_fields",
+        "interpretation"
+      ],
+      "properties": {
+        "correction_type": {
+          "type": "string",
+          "enum": [
+            "exclude_candidate",
+            "constraint_change",
+            "scope_expand",
+            "scope_reduce",
+            "preference_update",
+            "request_more",
+            "request_verification",
+            "accept_candidates"
+          ]
+        },
+        "target_candidate_ids": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "constraint_updates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "operator", "value"],
+            "properties": {
+              "key": {"type": "string"},
+              "operator": {
+                "type": "string",
+                "enum": ["eq", "neq", "lte", "lt", "gte", "gt", "in", "contains"]
+              },
+              "value": {"type": "string"}
+            }
+          }
+        },
+        "scope_terms": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "verification_fields": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "interpretation": {"type": "string"}
+      }
+    }
+  }
+}

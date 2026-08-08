@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "status": "template",
+  "source_cases": "evaluation/psos-controller/eval_cases.json",
+  "instructions": [
+    "Run the prepare command to materialize all pre-registered cases without spending Codex usage.",
+    "After a live run, review A and B without opening arm_key.json or metrics.json.",
+    "Score task completion and constraint preservation before choosing a winner.",
+    "Record critical failures only when they match the pre-registered case definition.",
+    "Save the completed form as blind_review_response.json before unblinding."
+  ],
+  "review_response_shape": {
+    "version": 1,
+    "reviews": [
+      {
+        "case_id": "replace-with-case-id",
+        "scores": {
+          "A": {
+            "task_completion": null,
+            "constraint_preservation": null,
+            "evidence_reliability": null,
+            "actionability": null,
+            "unnecessary_process": null
+          },
+          "B": {
+            "task_completion": null,
+            "constraint_preservation": null,
+            "evidence_reliability": null,
+            "actionability": null,
+            "unnecessary_process": null
+          }
+        },
+        "winner": null,
+        "critical_failures": {
+          "A": [],
+          "B": []
+        },
+        "notes": ""
+      }
+    ]
+  }
+}

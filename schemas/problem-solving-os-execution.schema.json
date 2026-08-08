@@ -20,13 +20,14 @@
       ],
       "properties": {
         "status": {
+          "type": "string",
           "enum": ["completed", "partial", "blocked_by_capability", "handoff"]
         },
-        "summary": {"type": "string", "minLength": 1},
-        "result_markdown": {"type": "string", "minLength": 1},
+        "summary": {"type": "string"},
+        "result_markdown": {"type": "string"},
         "capabilities_used": {
           "type": "array",
-          "items": {"type": "string", "minLength": 1}
+          "items": {"type": "string"}
         },
         "needed_capability": {"type": ["string", "null"]},
         "handoff": {"type": ["string", "null"]},
@@ -37,11 +38,12 @@
             "additionalProperties": false,
             "required": ["path", "action", "verification"],
             "properties": {
-              "path": {"type": "string", "minLength": 1},
+              "path": {"type": "string"},
               "action": {
+                "type": "string",
                 "enum": ["inspected", "generated_in_result", "created", "modified", "proposed"]
               },
-              "verification": {"type": "string", "minLength": 1}
+              "verification": {"type": "string"}
             }
           }
         },
@@ -52,15 +54,18 @@
             "additionalProperties": false,
             "required": ["source", "finding", "kind"],
             "properties": {
-              "source": {"type": "string", "minLength": 1},
-              "finding": {"type": "string", "minLength": 1},
-              "kind": {"enum": ["local", "web", "provided_context", "command_output"]}
+              "source": {"type": "string"},
+              "finding": {"type": "string"},
+              "kind": {
+                "type": "string",
+                "enum": ["local", "web", "provided_context", "command_output"]
+              }
             }
           }
         },
         "limitations": {
           "type": "array",
-          "items": {"type": "string", "minLength": 1}
+          "items": {"type": "string"}
         }
       }
     }

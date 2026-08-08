@@ -1,0 +1,192 @@
+name: PSOS next-loop
+
+on:
+  push:
+    branches:
+      - codex/problem-solving-os-next-loop
+  pull_request:
+    paths:
+      - "AGENTS.md"
+      - "ACTIVE_GOAL.json"
+      - "governance/PSOS_*.json"
+      - ".github/workflows/psos-next-loop.yml"
+      - "docs/psos-goal-guard.md"
+      - "evaluation/psos-controller/**"
+      - "scripts/problem_solving_goal_guard.py"
+      - "scripts/problem_solving_controller.py"
+      - "scripts/problem_solving_controller_session.py"
+      - "scripts/problem_solving_controller_session_verified.py"
+      - "scripts/problem_solving_controller_refinement.py"
+      - "scripts/problem_solving_controller_ab.py"
+      - "scripts/problem_solving_request_contract.py"
+      - "scripts/problem_solving_evidence_verifier.py"
+      - "scripts/problem_solving_domain_adapters.py"
+      - "scripts/problem_solving_stock_decision_adapter.py"
+      - "scripts/problem_solving_blind_handoff_web.py"
+      - "scripts/problem_solving_manual_controller_web.py"
+      - "scripts/problem_solving_adaptive_*.py"
+      - "scripts/problem_solving_candidate_*.py"
+      - "scripts/problem_solving_dynamic_loop_experiment.py"
+      - "scripts/problem_solving_next_loop_*.py"
+      - "scripts/problem_solving_quality_next_loop_*.py"
+      - "scripts/problem_solving_source_scout_experiment.py"
+      - "scripts/problem_solving_web_attachments.py"
+      - "schemas/problem-solving-controller-*.json"
+      - "schemas/problem-solving-request-contract.schema.json"
+      - "schemas/problem-solving-evidence-obligation.schema.json"
+      - "schemas/problem-solving-adaptive-*.json"
+      - "schemas/problem-solving-candidate-*.json"
+      - "schemas/problem-solving-dynamic-*.json"
+      - "schemas/problem-solving-manual-*.json"
+      - "schemas/problem-solving-source-scout.schema.json"
+      - "tests/manual_protocol_smoke.js"
+      - "tests/test_problem_solving_goal_guard.py"
+      - "tests/test_problem_solving_controller.py"
+      - "tests/test_problem_solving_controller_session.py"
+      - "tests/test_problem_solving_controller_refinement.py"
+      - "tests/test_problem_solving_request_verification.py"
+      - "tests/test_problem_solving_controller_ab.py"
+      - "tests/test_problem_solving_blind_handoff_web.py"
+      - "tests/test_problem_solving_manual_controller_web.py"
+      - "tests/test_problem_solving_adaptive_*.py"
+      - "tests/test_problem_solving_candidate_*.py"
+      - "tests/test_problem_solving_dynamic_loop_experiment.py"
+      - "tests/test_problem_solving_next_loop_*.py"
+      - "tests/test_problem_solving_quality_next_loop_*.py"
+      - "tests/test_problem_solving_source_scout_experiment.py"
+      - "tests/test_problem_solving_web_attachments.py"
+      - "web/next-loop*.js"
+      - "web/next-loop*.css"
+      - "web/psos-blind-handoff-*.js"
+      - "web/psos-blind-handoff-*.css"
+      - "web/psos-manual-*.js"
+      - "web/psos-manual-*.css"
+      - "web/chatgpt-manual-fallback*.js"
+      - "web/chatgpt-manual-fallback*.css"
+      - "web/chatgpt-manual-focus*.js"
+      - "web/chatgpt-manual-focus*.css"
+      - "start-psos-next-loop.cmd"
+      - "start-psos-next-loop.ps1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile next-loop Python
+        run: |
+          python -m py_compile \
+            scripts/problem_solving_goal_guard.py \
+            scripts/problem_solving_controller.py \
+            scripts/problem_solving_controller_session.py \
+            scripts/problem_solving_controller_session_verified.py \
+            scripts/problem_solving_controller_refinement.py \
+            scripts/problem_solving_controller_ab.py \
+            scripts/problem_solving_request_contract.py \
+            scripts/problem_solving_evidence_verifier.py \
+            scripts/problem_solving_domain_adapters.py \
+            scripts/problem_solving_stock_decision_adapter.py \
+            scripts/problem_solving_blind_handoff_web.py \
+            scripts/problem_solving_manual_controller_web.py \
+            scripts/problem_solving_adaptive_context.py \
+            scripts/problem_solving_adaptive_shopping.py \
+            scripts/problem_solving_candidate_working_set.py \
+            scripts/problem_solving_candidate_update_runtime.py \
+            scripts/problem_solving_dynamic_loop_experiment.py \
+            scripts/problem_solving_next_loop_experiment.py \
+            scripts/problem_solving_next_loop_runtime.py \
+            scripts/problem_solving_next_loop_materialized_runtime.py \
+            scripts/problem_solving_next_loop_replacement_runtime.py \
+            scripts/problem_solving_quality_next_loop_web.py \
+            scripts/problem_solving_quality_next_loop_runtime_web.py \
+            scripts/problem_solving_quality_next_loop_smart_web.py \
+            scripts/problem_solving_quality_next_loop_job_packet.py \
+            scripts/problem_solving_quality_next_loop_final_web.py \
+            scripts/problem_solving_source_scout_experiment.py \
+            scripts/problem_solving_web_attachments.py
+
+      - name: Enforce PSOS parent goal and scope
+        run: |
+          python -B -m unittest tests.test_problem_solving_goal_guard
+          python -B scripts/problem_solving_goal_guard.py --base origin/main
+
+      - name: Run domain-neutral controller tests
+        run: |
+          python -B -m unittest \
+            tests.test_problem_solving_controller \
+            tests.test_problem_solving_controller_session \
+            tests.test_problem_solving_controller_refinement \
+            tests.test_problem_solving_controller_ab \
+            tests.test_problem_solving_manual_controller_web
+          python -B scripts/problem_solving_controller_ab.py validate
+
+      - name: Validate Blind handoff fallback
+        run: |
+          python -B -m unittest tests.test_problem_solving_blind_handoff_web
+          node --check web/psos-blind-handoff-v1.js
+          node --check web/psos-manual-thin-v1.js
+
+      - name: Run request and evidence verification tests
+        run: |
+          python -B -m unittest tests.test_problem_solving_request_verification
+
+      - name: Run adaptive controller tests
+        run: |
+          python -B -m unittest \
+            tests.test_problem_solving_adaptive_context \
+            tests.test_problem_solving_adaptive_shopping
+
+      - name: Run next-loop focused tests
+        run: |
+          python -B -m unittest \
+            tests.test_problem_solving_blind_handoff_web \
+            tests.test_problem_solving_candidate_working_set \
+            tests.test_problem_solving_candidate_update_runtime \
+            tests.test_problem_solving_dynamic_loop_experiment \
+            tests.test_problem_solving_next_loop_experiment \
+            tests.test_problem_solving_next_loop_runtime \
+            tests.test_problem_solving_next_loop_product_scenario \
+            tests.test_problem_solving_next_loop_replacement_runtime \
+            tests.test_problem_solving_quality_next_loop_web \
+            tests.test_problem_solving_quality_next_loop_smart_web \
+            tests.test_problem_solving_quality_next_loop_job_packet \
+            tests.test_problem_solving_quality_next_loop_final_web \
+            tests.test_problem_solving_source_scout_experiment \
+            tests.test_problem_solving_web_attachments
+
+      - name: Check next-loop browser scripts
+        run: |
+          node --check web/next-loop.js
+          node --check web/next-loop-details.js
+          node --check web/next-loop-workflow.js
+          node --check web/next-loop-attachments.js
+          node --check web/next-loop-job-packet.js
+          node --check web/psos-blind-handoff-v1.js
+          node --check web/psos-manual-protocol.js
+          node --check web/psos-manual-thin-v1.js
+          node --check web/psos-manual-route-policy.js
+          node --check web/psos-manual-controller-v1.js
+          node --check web/psos-manual-request-switch-v1.js
+          node --check web/psos-manual-verification-v1.js
+          node --check web/psos-manual-refinement-v1.js
+          node --check web/chatgpt-manual-fallback-v5.js
+          node --check web/chatgpt-manual-focus-v1.js
+          node --check web/chatgpt-manual-patch-v1.js
+          node tests/manual_protocol_smoke.js
+
+      - name: Run full repository test suite
+        run: python -B -m unittest discover -s tests

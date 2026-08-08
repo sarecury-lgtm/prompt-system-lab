@@ -261,6 +261,22 @@ class ContractRuntimeTests(unittest.TestCase):
         self.assertIn("실제 수정된 전체본", prompt)
         self.assertNotIn("복숭아", prompt)
 
+    def test_collection_contract_preserves_verified_partial_results(self):
+        routed = route_result("RESEARCH")
+        routed["goal_ledger"]["fixed_constraints"] = ["서로 다른 상품 최소 5개"]
+        routed["goal_ledger"]["completion_condition"] = (
+            "검증된 상품 최소 5개를 제시한다."
+        )
+        contract = compiled_contract("RESEARCH", failure_policy="no_winner")
+        contract["must_preserve"] = ["서로 다른 상품 최소 5개"]
+        contract["required_outputs"][0]["description"] = (
+            "검증된 상품 최소 5개를 제시한다."
+        )
+
+        validated = RUNTIME.validate_compiled_contract(contract, routed)
+
+        self.assertEqual("partial", validated["failure_policy"])
+
     def test_satisfied_research_is_validated_and_anchored(self):
         engine = FakeEngine(
             [
@@ -298,6 +314,44 @@ class ContractRuntimeTests(unittest.TestCase):
             [call["invocation"].phase for call in engine.calls],
         )
 
+    def test_current_purchase_state_requires_live_browser(self):
+        routed = route_result("RESEARCH")
+        routed["goal_ledger"]["fixed_constraints"] = ["현재 구매 가능해야 함"]
+        routed["goal_ledger"]["completion_condition"] = (
+            "현재 구매 가능한 상품을 제시한다."
+        )
+        contract = compiled_contract("RESEARCH", failure_policy="partial")
+        contract["must_preserve"] = ["현재 구매 가능해야 함"]
+        contract["required_outputs"][0]["description"] = (
+            "현재 구매 가능한 상품을 제시한다."
+        )
+        contract["required_outputs"][2]["description"] = (
+            "현재 판매 상태를 직접 검증한다."
+        )
+        engine = FakeEngine(
+            [
+                routed,
+                contract,
+                execution_result("RESEARCH", url=True),
+                assessment_response({}),
+            ]
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            _run_dir, payload = RUNTIME.run_request(
+                "현재 구매 가능한 상품을 찾아 줘.",
+                output_root=Path(temp_dir),
+                engine=engine,
+                model_policy=self.policy,
+                run_id="live-browser-required",
+            )
+
+        validation = payload["result_contract"]["validation"]
+        self.assertFalse(validation["repair_attempted"])
+        self.assertEqual("downgraded_without_repair", validation["outcome"])
+        self.assertEqual("partial", payload["execution"]["status"])
+        self.assertIn("실시간 브라우저", payload["execution"]["result_markdown"])
+
     def test_missing_url_is_repaired_once_and_revalidated(self):
         engine = FakeEngine(
             [
@@ -334,6 +388,40 @@ class ContractRuntimeTests(unittest.TestCase):
             "https://example.test/listing",
             payload["execution"]["result_markdown"],
         )
+        self.assertEqual(
+            ["router", "contract", "executor", "assessment", "repair", "assessment"],
+            [call["invocation"].phase for call in engine.calls],
+        )
+
+    def test_partial_research_is_assessed_and_repaired(self):
+        engine = FakeEngine(
+            [
+                route_result("RESEARCH"),
+                compiled_contract("RESEARCH"),
+                execution_result(
+                    "RESEARCH",
+                    result="조사가 부족합니다.",
+                    url=False,
+                    status="partial",
+                ),
+                assessment_response({"direct-target-url": "missing"}),
+                execution_result("RESEARCH", result="후보 A를 확인했습니다.", url=True),
+                assessment_response({}),
+            ]
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            _run_dir, payload = RUNTIME.run_request(
+                "현재 구매 가능한 개별 대상을 비교해 줘.",
+                output_root=Path(temp_dir),
+                engine=engine,
+                model_policy=self.policy,
+                run_id="repair-partial-research",
+            )
+
+        validation = payload["result_contract"]["validation"]
+        self.assertTrue(validation["repair_attempted"])
+        self.assertEqual("satisfied_after_repair", validation["outcome"])
+        self.assertEqual("completed", payload["execution"]["status"])
         self.assertEqual(
             ["router", "contract", "executor", "assessment", "repair", "assessment"],
             [call["invocation"].phase for call in engine.calls],

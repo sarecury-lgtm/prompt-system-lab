@@ -5,9 +5,21 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = [
+    ROOT / "schemas" / "problem-solving-os-route.schema.json",
+    ROOT / "schemas" / "problem-solving-os-execution.schema.json",
+    ROOT / "schemas" / "problem-solving-os-result-contract.schema.json",
+    ROOT / "schemas" / "problem-solving-os-result-contract-assessment.schema.json",
     ROOT / "schemas" / "problem-solving-prompt-applied-answer.schema.json",
     ROOT / "schemas" / "problem-solving-prompt-applied-assessment.schema.json",
     ROOT / "schemas" / "problem-solving-goal-aware-assessment.schema.json",
+    ROOT / "schemas" / "problem-solving-dynamic-framing.schema.json",
+    ROOT / "schemas" / "problem-solving-dynamic-open-scan.schema.json",
+    ROOT / "schemas" / "problem-solving-dynamic-question-gate.schema.json",
+    ROOT / "schemas" / "problem-solving-dynamic-action-plan.schema.json",
+    ROOT / "schemas" / "problem-solving-dynamic-assessment.schema.json",
+    ROOT / "schemas" / "problem-solving-source-scout.schema.json",
+    ROOT / "schemas" / "problem-solving-candidate-correction.schema.json",
+    ROOT / "schemas" / "problem-solving-candidate-update.schema.json",
 ]
 UNSUPPORTED_KEYWORDS = {"minLength", "maxLength", "uniqueItems"}
 

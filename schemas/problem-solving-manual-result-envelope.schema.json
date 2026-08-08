@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "problem-solving-manual-result-envelope.schema.json",
+  "title": "PSOS Manual Result Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "job_id",
+    "status",
+    "route",
+    "goal",
+    "decision",
+    "completion",
+    "evidence",
+    "candidates",
+    "artifacts",
+    "continuation"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "job_id": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["completed", "partial", "blocked"] },
+    "route": {
+      "enum": ["DIRECT", "RESEARCH", "DECISION", "CANDIDATE", "PROMPT", "WRITE"]
+    },
+    "goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent", "current", "constraints", "completion_condition"],
+      "properties": {
+        "parent": { "type": "string" },
+        "current": { "type": "string" },
+        "constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "completion_condition": { "type": "string" }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conclusion", "action", "confidence", "change_conditions"],
+      "properties": {
+        "conclusion": { "type": "string" },
+        "action": { "type": "string" },
+        "confidence": { "enum": ["low", "medium", "high"] },
+        "change_conditions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["met", "missing"],
+      "properties": {
+        "met": { "type": "boolean" },
+        "missing": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "finding", "url", "checked_at"],
+        "properties": {
+          "source": { "type": "string" },
+          "finding": { "type": "string" },
+          "url": { "type": "string" },
+          "checked_at": { "type": "string" }
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "status", "reason", "risks"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "enum": ["kept", "excluded", "selected"] },
+          "reason": { "type": "string" },
+          "risks": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "action", "description"],
+        "properties": {
+          "path": { "type": "string" },
+          "action": { "enum": ["create", "modify", "delete", "none"] },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "continuation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preserve", "excluded_candidate_ids", "unresolved"],
+      "properties": {
+        "preserve": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "excluded_candidate_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "unresolved": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

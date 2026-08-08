@@ -7,6 +7,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Protocol, Sequence
@@ -15,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_os.py"
 CONTRACT_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_contract.py"
 ENFORCEMENT_RUNTIME_PATH = ROOT / "scripts" / "problem_solving_contract_enforcement.py"
+LIVE_BROWSER_PATH = ROOT / "scripts" / "problem_solving_live_browser.py"
 CONTRACT_SCHEMA_PATH = ROOT / "schemas" / "problem-solving-os-result-contract.schema.json"
 ASSESSMENT_SCHEMA_PATH = (
     ROOT / "schemas" / "problem-solving-os-result-contract-assessment.schema.json"
@@ -37,6 +39,7 @@ ENFORCEMENT = _load_local_module(
     "psos_result_contract_enforcement_runtime",
     ENFORCEMENT_RUNTIME_PATH,
 )
+LIVE_BROWSER = _load_local_module("psos_live_browser_runtime", LIVE_BROWSER_PATH)
 
 
 class CompatibleEngine(Protocol):
@@ -81,6 +84,8 @@ def build_contract_prompt(
 5. RESEARCH에서는 결론과 출처가 연결돼야 한다. 현재 구매·예약·신청 가능한 구체적
    대상을 고르는 요청이라면 대상 식별, 직접 대상 URL, 확인 시점의 상태, 비용·조건,
    사용자 판단 기준별 근거처럼 거래 가능한 수준의 항목을 요구한다.
+   웹 검색 결과나 캐시된 페이지는 실시간 판매 상태를 증명하지 못한다. 실제 브라우저에서
+   현재 구매·재고·주문 UI를 확인하지 못한 경우에는 완료 조건을 충족한 것으로 간주하지 않는다.
 6. 기존 산출물을 수정하는 요청이라면 피드백 설명이 아니라 실제 수정된 전체본과
    변경 요구의 반영을 요구한다.
 7. 파일·코드 작업은 실제 artifact와 receipt로 확인할 항목을 요구한다.
@@ -137,6 +142,22 @@ def validate_compiled_contract(
         raise CONTRACT.ResultContractError("compiled contract requires too many sources")
     if len(evidence["source_roles"]) > 8:
         raise CONTRACT.ResultContractError("compiled contract has too many source roles")
+    completion_text = " ".join(
+        [
+            str(ledger.get("completion_condition", "")),
+            *expected_constraints,
+        ]
+    )
+    explicit_collection = bool(
+        re.search(r"(?:최소\s*)?\d+\s*개|\d+\s*개\s*이상", completion_text)
+        or re.search(
+            r"\bat\s+least\s+\d+\b|\b\d+\s+(?:items|products|options|results)\b",
+            completion_text,
+            re.IGNORECASE,
+        )
+    )
+    if explicit_collection and validated["failure_policy"] == "no_winner":
+        validated["failure_policy"] = "partial"
     return validated
 
 
@@ -210,7 +231,23 @@ class ContractAwareEngine:
                 + json.dumps(self._contract_payload, ensure_ascii=False, indent=2)
                 + "\n"
             )
-        return self.delegate.execute(prompt, run_dir, invocation)
+        result = self.delegate.execute(prompt, run_dir, invocation)
+        if (
+            invocation.phase in {"executor", "repair"}
+            and self._contract_payload is not None
+            and contract_requires_live_transaction(self._contract_payload)
+            and getattr(self.capabilities(), "live_browser", False)
+        ):
+            result = LIVE_BROWSER.verify_execution(
+                result,
+                run_dir,
+                invocation.name,
+                chrome_path=LIVE_BROWSER.find_chrome(),
+                require_available=contract_requires_available_transaction(
+                    self._contract_payload
+                ),
+            )
+        return result
 
     def trace(self) -> list[dict[str, Any]]:
         return self.delegate.trace()
@@ -330,6 +367,123 @@ def _assessment_name(label: str, index: int) -> str:
     return base if index == 0 else f"{base}-fallback-{index}"
 
 
+LIVE_TRANSACTION_PATTERN = re.compile(
+    r"현재\s*(?:구매|판매|주문|예약)\s*(?:가능|여부|상태)|"
+    r"(?:판매|구매|주문|예약)\s*(?:가능\s*)?(?:여부|상태)|"
+    r"재고|품절|결제\s*(?:가능|버튼)|"
+    r"\b(?:currently available|available to buy|in stock|sold out|purchase status)\b",
+    re.IGNORECASE,
+)
+LIVE_BROWSER_EVIDENCE_PATTERN = re.compile(
+    r"\[LIVE_BROWSER\]\s+url=(\S+)\s+status=(available|sold_out|unknown)\b"
+)
+AVAILABLE_TRANSACTION_PATTERN = re.compile(
+    r"(?:현재\s*)?(?:구매|판매|주문|예약)\s*가능(?:한|해야|함|상품|대상)|"
+    r"\b(?:currently available|available to buy|in-stock)\s+(?:item|product|listing)s?\b",
+    re.IGNORECASE,
+)
+
+
+def contract_requires_live_transaction(contract: dict[str, Any]) -> bool:
+    texts = [
+        *contract.get("must_preserve", []),
+        *[
+            item.get("description", "")
+            for item in contract.get("required_outputs", [])
+            if isinstance(item, dict)
+        ],
+    ]
+    return contract.get("route") == "RESEARCH" and any(
+        isinstance(value, str) and LIVE_TRANSACTION_PATTERN.search(value)
+        for value in texts
+    )
+
+
+def contract_requires_available_transaction(contract: dict[str, Any]) -> bool:
+    texts = [
+        *contract.get("must_preserve", []),
+        *[
+            item.get("description", "")
+            for item in contract.get("required_outputs", [])
+            if isinstance(item, dict)
+        ],
+    ]
+    return any(
+        isinstance(value, str) and AVAILABLE_TRANSACTION_PATTERN.search(value)
+        for value in texts
+    )
+
+
+def enforce_live_transaction_capability(
+    assessment: dict[str, Any],
+    contract: dict[str, Any],
+    capabilities: Any,
+    execution: dict[str, Any],
+) -> dict[str, Any]:
+    """Reject cached-search claims of live transaction availability."""
+
+    if not contract_requires_live_transaction(contract):
+        return assessment
+
+    live_browser = getattr(capabilities, "live_browser", False)
+    statuses: list[tuple[str, str]] = []
+    for evidence in execution.get("evidence", []):
+        finding_text = evidence.get("finding", "") if isinstance(evidence, dict) else ""
+        match = LIVE_BROWSER_EVIDENCE_PATTERN.search(str(finding_text))
+        if match:
+            statuses.append((match.group(1), match.group(2)))
+
+    if not live_browser:
+        finding = (
+            "웹 검색·캐시 페이지는 현재 판매 상태를 증명하지 못합니다. "
+            "실시간 브라우저에서 구매·재고·주문 UI 확인이 필요합니다."
+        )
+    elif not statuses:
+        finding = "현재 판매 상태를 확인한 실시간 브라우저 영수증이 없습니다."
+    else:
+        require_available = contract_requires_available_transaction(contract)
+        invalid = [
+            (url, status)
+            for url, status in statuses
+            if status == "unknown" or (require_available and status == "sold_out")
+        ]
+        if not invalid:
+            return assessment
+        finding = "실시간 브라우저 검증 미통과: " + "; ".join(
+            f"{url}={status}" for url, status in invalid
+        )
+
+    result = copy.deepcopy(assessment)
+    descriptions = {
+        item["id"]: item["description"] for item in contract["required_outputs"]
+    }
+    affected: list[str] = []
+    for item in result["requirements"]:
+        description = descriptions.get(item["id"], "")
+        if item["id"] == "goal-completion" or LIVE_TRANSACTION_PATTERN.search(
+            description
+        ):
+            item["status"] = "unverifiable"
+            item["finding"] = finding
+            item["evidence_refs"] = []
+            affected.append(item["id"])
+    if not affected:
+        return result
+
+    result["overall_status"] = "missing"
+    result["missing_requirement_ids"] = list(
+        dict.fromkeys([*result["missing_requirement_ids"], *affected])
+    )
+    result["missing_conditions"] = list(
+        dict.fromkeys([*result["missing_conditions"], finding])
+    )
+    result["evidence_check"] = {
+        "status": "unverifiable",
+        "finding": finding,
+    }
+    return result
+
+
 def assess_execution(
     engine: CompatibleEngine,
     profiles: Sequence[Any],
@@ -397,6 +551,13 @@ def assess_execution(
             observations,
             last_error or "계약 검증 모델이 유효한 판정을 반환하지 못했습니다.",
         )
+
+    assessment = enforce_live_transaction_capability(
+        assessment,
+        contract,
+        engine.capabilities(),
+        execution,
+    )
 
     suffix = f"-{label}" if label else ""
     path = ENFORCEMENT.write_json_atomic(
@@ -487,7 +648,7 @@ def enforce_result_contract(
         "outcome": "not_assessed",
     }
     execution = payload["execution"]
-    if execution["status"] != "completed":
+    if execution["status"] in {"blocked_by_capability", "handoff"}:
         validation["outcome"] = "skipped_non_completed"
         record["enforcement"] = "validated_phase_b"
         record["validation"] = validation
@@ -504,7 +665,11 @@ def enforce_result_contract(
     validation["initial_assessment"] = initial_record
     if initial["overall_status"] == "satisfied":
         validation["final_assessment"] = initial_record
-        validation["outcome"] = "satisfied_initially"
+        validation["outcome"] = (
+            "satisfied_initially"
+            if execution["status"] == "completed"
+            else "satisfied_but_partial"
+        )
         record["enforcement"] = "validated_phase_b"
         record["validation"] = validation
         return
@@ -513,7 +678,12 @@ def enforce_result_contract(
         run_dir / "result_contract_original_execution.json",
         {"execution": execution},
     )
-    repair_target = _repair_target(payload, policy)
+    repair_target = (
+        None
+        if contract_requires_live_transaction(contract)
+        and not getattr(engine.capabilities(), "live_browser", False)
+        else _repair_target(payload, policy)
+    )
     validation["repair_allowed"] = repair_target is not None
     candidate_execution = execution
     final_assessment = initial
@@ -544,6 +714,17 @@ def enforce_result_contract(
         }
         try:
             repair_payload = engine.execute(repair_prompt, run_dir, repair_invocation)
+            if (
+                contract_requires_live_transaction(contract)
+                and getattr(engine.capabilities(), "live_browser", False)
+            ):
+                repair_payload = LIVE_BROWSER.verify_execution(
+                    repair_payload,
+                    run_dir,
+                    repair_invocation.name,
+                    chrome_path=LIVE_BROWSER.find_chrome(),
+                    require_available=contract_requires_available_transaction(contract),
+                )
             candidate_execution = OS.validate_execution_output(
                 copy.deepcopy(repair_payload),
                 repair_route,

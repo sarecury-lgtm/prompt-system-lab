@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["plan"],
+  "properties": {
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_actions",
+        "selected_action_id",
+        "selection_reason",
+        "difference_from_previous"
+      ],
+      "properties": {
+        "candidate_actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "description",
+              "method",
+              "route",
+              "information_target",
+              "expected_value",
+              "cost"
+            ],
+            "properties": {
+              "id": {"type": "string"},
+              "description": {"type": "string"},
+              "method": {"type": "string"},
+              "route": {
+                "type": "string",
+                "enum": ["DIRECT", "RESEARCH", "REUSE", "PROMPT", "CODE", "PROJECT"]
+              },
+              "information_target": {"type": "string"},
+              "expected_value": {"type": "string"},
+              "cost": {"type": "string"}
+            }
+          }
+        },
+        "selected_action_id": {"type": "string"},
+        "selection_reason": {"type": "string"},
+        "difference_from_previous": {"type": ["string", "null"]}
+      }
+    }
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "branch": "codex/problem-solving-os-next-loop",
+  "base": "main",
+  "declared_purpose": "Evaluate bounded convergence, explicit evidence obligations, user-directed refinement, purpose-specific multi-objective selections, interchangeable automatic or manual execution adapters, and one-shot state handoff when Codex is unavailable without allowing a domain adapter or transport-specific fallback to redefine the general PSOS product goal.",
+  "parent_goal_link": "ACTIVE_GOAL.json",
+  "branch_status": "experimental",
+  "default_product_promotion_approved": false,
+  "components": [
+    {
+      "id": "goal-drift-guard",
+      "change_class": "CORE",
+      "promotion_status": "candidate",
+      "runtime_default_enabled": false,
+      "purpose": "Make the already-defined PSOS goal and scope rules machine-readable and enforceable for repository work.",
+      "patterns": [
+        "AGENTS.md",
+        "ACTIVE_GOAL.json",
+        "governance/PSOS_CHANGE_SCOPE.json",
+        "governance/PSOS_CROSS_DOMAIN_REGRESSION.json",
+        "scripts/problem_solving_goal_guard.py"
+      ]
+    },
+    {
+      "id": "domain-neutral-controller-candidate",
+      "change_class": "CORE",
+      "promotion_status": "candidate",
+      "runtime_default_enabled": false,
+      "purpose": "Provide bounded Controller state, a domain-neutral Request Contract, generated evidence obligations, independent completion verification, purpose-specific winner profiles, and explicit user-directed refinement without domain vocabulary in the core interface.",
+      "patterns": [
+        "schemas/problem-solving-controller-*.json",
+        "schemas/problem-solving-request-contract.schema.json",
+        "schemas/problem-solving-evidence-obligation.schema.json",
+        "scripts/problem_solving_controller.py",
+        "scripts/problem_solving_controller_session.py",
+        "scripts/problem_solving_controller_session_verified.py",
+        "scripts/problem_solving_controller_refinement.py",
+        "scripts/problem_solving_request_contract.py",
+        "scripts/problem_solving_evidence_verifier.py",
+        "scripts/problem_solving_selection_profiles.py"
+      ]
+    },
+    {
+      "id": "core-kernel-candidate-changes",
+      "change_class": "CORE",
+      "promotion_status": "candidate",
+      "runtime_default_enabled": false,
+      "purpose": "Changes touching the domain-neutral PSOS execution contract remain candidate core work until cross-domain evidence and separate approval exist.",
+      "patterns": [
+        "scripts/problem_solving_os.py",
+        "scripts/problem_solving_os_contract_runtime.py",
+        "schemas/problem-solving-os-*.json"
+      ]
+    },
+    {
+      "id": "execution-and-route-adapters",
+      "change_class": "ADAPTER",
+      "promotion_status": "experimental",
+      "runtime_default_enabled": false,
+      "purpose": "Connect the PSOS core to browsers, manual ChatGPT, prompt rendering, file patching, attachments, one-shot Blind handoff, domain adapter discovery, and other execution surfaces.",
+      "patterns": [
+        "extensions/*",
+        "schemas/problem-solving-integrated-prompt-design.schema.json",
+        "schemas/problem-solving-manual-*.json",
+        "schemas/problem-solving-prompt-build-brief.schema.json",
+        "scripts/problem_solving_blind_handoff_web.py",
+        "scripts/problem_solving_compare_web.py",
+        "scripts/problem_solving_connected_browser.py",
+        "scripts/problem_solving_domain_adapters.py",
+        "scripts/problem_solving_live_browser.py",
+        "scripts/problem_solving_manual_controller_web.py",
+        "scripts/problem_solving_manual_patch_web.py",
+        "scripts/problem_solving_prompt_build_brief.py",
+        "scripts/problem_solving_prompt_renderer.py",
+        "scripts/problem_solving_quality_web.py",
+        "scripts/problem_solving_web_attachments.py",
+        "web/chatgpt-manual-*.js",
+        "web/chatgpt-manual-*.css",
+        "web/compare-no-codex.js",
+        "web/psos-blind-handoff-*.js",
+        "web/psos-blind-handoff-*.css",
+        "web/psos-manual-*.js",
+        "web/psos-manual-*.css"
+      ]
+    },
+    {
+      "id": "stock-decision-domain-adapter",
+      "change_class": "DOMAIN",
+      "promotion_status": "test-only",
+      "runtime_default_enabled": false,
+      "purpose": "Verify candidate-universe and current-entry evidence for stock decision requests as one optional domain adapter, without selecting a fixed ticker or defining the general Controller.",
+      "patterns": [
+        "scripts/problem_solving_stock_decision_adapter.py"
+      ]
+    },
+    {
+      "id": "shopping-domain-prototype",
+      "change_class": "DOMAIN",
+      "promotion_status": "test-only",
+      "runtime_default_enabled": false,
+      "purpose": "Use shopping as one demanding test of context preservation, structured collection, deterministic filtering, and honest partial results.",
+      "patterns": [
+        "docs/adaptive-shopping-experiment.md",
+        "schemas/problem-solving-adaptive-*.json",
+        "scripts/problem_solving_adaptive_context.py",
+        "scripts/problem_solving_adaptive_shopping.py"
+      ]
+    },
+    {
+      "id": "bounded-loop-experiments",
+      "change_class": "TEST",
+      "promotion_status": "test-only",
+      "runtime_default_enabled": false,
+      "purpose": "Evaluate source scouting, candidate correction, bounded replanning, and experimental next-loop interfaces without treating them as the PSOS core.",
+      "patterns": [
+        "docs/dynamic-loop-experiment.md",
+        "docs/next-loop-experiment.md",
+        "docs/next-loop-web.md",
+        "docs/source-scout-experiment.md",
+        "schemas/problem-solving-candidate-*.json",
+        "schemas/problem-solving-dynamic-*.json",
+        "schemas/problem-solving-source-scout.schema.json",
+        "scripts/problem_solving_candidate_*.py",
+        "scripts/problem_solving_dynamic_loop_experiment.py",
+        "scripts/problem_solving_next_loop_*.py",
+        "scripts/problem_solving_quality_next_loop_*.py",
+        "scripts/problem_solving_source_scout_experiment.py",
+        "start-psos-next-loop.cmd",
+        "start-psos-next-loop.ps1",
+        "web/next-loop*.js",
+        "web/next-loop*.css"
+      ]
+    },
+    {
+      "id": "tests-ci-and-usage",
+      "change_class": "TEST",
+      "promotion_status": "test-only",
+      "runtime_default_enabled": false,
+      "purpose": "Regression tests, evaluation fixtures, CI, smoke checks, and explanatory material are evidence rather than product-core claims.",
+      "patterns": [
+        "github/workflows/*",
+        "USAGE.md",
+        "docs/psos-goal-guard.md",
+        "evaluation/psos-controller/*",
+        "scripts/problem_solving_controller_ab.py",
+        "tests/*"
+      ]
+    }
+  ],
+  "explicit_reclassification": [
+    {
+      "subject": "adaptive shopping collector",
+      "classification": "DOMAIN",
+      "reason": "It is a task-specific acquisition tool and a regression case, not the general controller."
+    },
+    {
+      "subject": "stock decision evidence adapter",
+      "classification": "DOMAIN",
+      "reason": "It supplies stock-specific evidence checks to a domain-neutral obligation interface and cannot redefine the PSOS core."
+    },
+    {
+      "subject": "candidate working set and correction loop",
+      "classification": "TEST",
+      "reason": "It tests one possible bounded interaction pattern and cannot become the default response path from one scenario."
+    },
+    {
+      "subject": "manual ChatGPT and Codex job packet paths",
+      "classification": "ADAPTER",
+      "reason": "They change how the same Controller-selected action is executed, not the parent problem-solving goal."
+    },
+    {
+      "subject": "PSOS Blind handoff ZIP",
+      "classification": "ADAPTER",
+      "reason": "It transports the same current task and PSOS-managed attachments to a continuing ChatGPT fallback conversation when Codex is unavailable; it does not redefine the task or parent goal."
+    },
+    {
+      "subject": "controller A/B evaluation harness and fixtures",
+      "classification": "TEST",
+      "reason": "They measure the candidate Controller without changing the domain-neutral runtime or promoting it."
+    }
+  ]
+}

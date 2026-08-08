@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "problem-solving-adaptive-product-collection.schema.json",
+  "title": "PSOS Adaptive Product Collection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["collection"],
+  "properties": {
+    "collection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "checked_at", "products", "gaps"],
+      "properties": {
+        "strategy": {"type": "string", "minLength": 1},
+        "checked_at": {"type": "string", "minLength": 1},
+        "products": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "product_id",
+              "name",
+              "seller",
+              "url",
+              "option",
+              "total_grams",
+              "item_price_krw",
+              "shipping_krw",
+              "availability",
+              "storage",
+              "origin",
+              "cut",
+              "thickness",
+              "duplicate_key",
+              "evidence"
+            ],
+            "properties": {
+              "product_id": {"type": "string", "minLength": 1},
+              "name": {"type": "string", "minLength": 1},
+              "seller": {"type": "string", "minLength": 1},
+              "url": {"type": "string", "pattern": "^https?://"},
+              "option": {"type": "string", "minLength": 1},
+              "total_grams": {"type": "integer", "minimum": 1},
+              "item_price_krw": {"type": "integer", "minimum": 1},
+              "shipping_krw": {"type": "integer", "minimum": 0},
+              "availability": {
+                "type": "string",
+                "enum": ["available", "out_of_stock", "unknown"]
+              },
+              "storage": {
+                "type": "string",
+                "enum": ["chilled", "frozen", "unknown"]
+              },
+              "origin": {"type": ["string", "null"]},
+              "cut": {"type": ["string", "null"]},
+              "thickness": {"type": ["string", "null"]},
+              "duplicate_key": {"type": "string", "minLength": 1},
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 12,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["field", "finding", "source_url"],
+                  "properties": {
+                    "field": {"type": "string", "minLength": 1},
+                    "finding": {"type": "string", "minLength": 1},
+                    "source_url": {"type": "string", "pattern": "^https?://"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "gaps": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

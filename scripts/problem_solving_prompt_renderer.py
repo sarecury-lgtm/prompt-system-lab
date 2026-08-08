@@ -19,17 +19,9 @@ import problem_solving_prompt_build_brief as BRIEF  # noqa: E402
 
 
 DEFAULT_POLICY_PATH = ROOT / "configs" / "psos-goal-aware-assistant-policy.md"
-CORE_PROCEDURE_LIMIT = 12
-OUTPUT_CONTRACT_LIMIT = 12
-DEFAULTS_AND_EXCEPTIONS_LIMIT = 12
-
-# Detailed domain procedures, output contracts, and meaningful missing-input
-# handling can legitimately require more than the shared validator's compact
-# defaults. Keep the shared validator strict, but raise only these semantic
-# fields' caps before renderer and comparison flows validate a brief.
-BRIEF.LIST_LIMITS["core_procedure"] = (0, CORE_PROCEDURE_LIMIT)
-BRIEF.LIST_LIMITS["output_contract"] = (1, OUTPUT_CONTRACT_LIMIT)
-BRIEF.LIST_LIMITS["defaults_and_exceptions"] = (0, DEFAULTS_AND_EXCEPTIONS_LIMIT)
+CORE_PROCEDURE_LIMIT = BRIEF.CORE_PROCEDURE_LIMIT
+OUTPUT_CONTRACT_LIMIT = BRIEF.OUTPUT_CONTRACT_LIMIT
+DEFAULTS_AND_EXCEPTIONS_LIMIT = BRIEF.DEFAULTS_AND_EXCEPTIONS_LIMIT
 
 
 class PromptRendererError(ValueError):

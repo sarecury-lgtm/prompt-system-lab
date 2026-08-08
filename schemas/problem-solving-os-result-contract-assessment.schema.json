@@ -14,12 +14,13 @@
     "missing_conditions"
   ],
   "properties": {
-    "version": {"const": 1},
+    "version": {"type": "integer", "const": 1},
     "contract_sha256": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
     },
     "overall_status": {
+      "type": "string",
       "enum": ["satisfied", "missing"]
     },
     "requirements": {
@@ -33,17 +34,16 @@
         "properties": {
           "id": {
             "type": "string",
-            "minLength": 1,
             "pattern": "^[a-z0-9][a-z0-9._-]*$"
           },
           "status": {
+            "type": "string",
             "enum": ["satisfied", "missing", "unverifiable"]
           },
-          "finding": {"type": "string", "minLength": 1},
+          "finding": {"type": "string"},
           "evidence_refs": {
             "type": "array",
-            "uniqueItems": true,
-            "items": {"type": "string", "minLength": 1}
+            "items": {"type": "string"}
           }
         }
       }
@@ -54,24 +54,22 @@
       "required": ["status", "finding"],
       "properties": {
         "status": {
+          "type": "string",
           "enum": ["satisfied", "missing", "unverifiable"]
         },
-        "finding": {"type": "string", "minLength": 1}
+        "finding": {"type": "string"}
       }
     },
     "missing_requirement_ids": {
       "type": "array",
-      "uniqueItems": true,
       "items": {
         "type": "string",
-        "minLength": 1,
         "pattern": "^[a-z0-9][a-z0-9._-]*$"
       }
     },
     "missing_conditions": {
       "type": "array",
-      "uniqueItems": true,
-      "items": {"type": "string", "minLength": 1}
+      "items": {"type": "string"}
     }
   }
 }

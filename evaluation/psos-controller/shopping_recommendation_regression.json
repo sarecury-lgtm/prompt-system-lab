@@ -1,0 +1,89 @@
+{
+  "version": 2,
+  "id": "pork-belly-shopping-regression-v1",
+  "purpose": "Catch recommendation failures where a plausible taste hypothesis is not carried into real product candidates, page-level teaser prices are mistaken for the selected option price, or later user corrections fail to update ranking. Also catch fresh-produce recommendation failures where one preference axis is treated as sufficient, the user's own desired candidates are implicitly excluded, search stays inside a narrow marketplace surface, or products with little direct evidence are promoted as top taste picks.",
+  "scenario": {
+    "initial_request": "온라인에서 살 수 있는 삼겹살이나 오겹살을 추천해 줘. 지방의 고소함이 중심이고 육향은 약간 있으면 좋다.",
+    "initial_constraints": {
+      "hard_cap_krw_per_100g": 3000,
+      "objective_slots": [
+        "very cheap but not notably bad",
+        "very tasty without wasting money"
+      ]
+    },
+    "assistant_hypothesis_example": "A Berkshire-type pork product may fit the stated taste preference.",
+    "later_user_correction": "2500원대도 쓸데없이 비싸다고 생각해서 보통 2000원대 또는 그 이하를 먹는다.",
+    "normalized_constraint_after_correction": {
+      "default_cap_krw_per_100g": 2000,
+      "over_cap_policy": "Only keep above-cap candidates as explicit exceptions with strong evidence and user-visible justification."
+    }
+  },
+  "fixed_product_fixtures": [
+    {
+      "id": "page-with-option-surcharge",
+      "page_title": "삼겹살 / 오겹살 / 듀록 삼겹살 / 듀록 오겹살 2kg",
+      "page_base_price_krw": 26900,
+      "selected_option": "듀록 오겹살 2kg",
+      "option_surcharge_krw": 7000,
+      "selected_total_krw": 33900,
+      "weight_g": 2000,
+      "verified_unit_price_krw_per_100g": 1695,
+      "regression_trap": "Do not report 1345 KRW/100g for the selected Duroc option."
+    },
+    {
+      "id": "ordinary-low-price-candidate",
+      "page_title": "일반 수입 냉동 오겹살 1kg",
+      "selected_option": "오겹살 구이용 1kg",
+      "option_surcharge_krw": 0,
+      "selected_total_krw": 12120,
+      "weight_g": 1000,
+      "verified_unit_price_krw_per_100g": 1212,
+      "regression_trap": "Do not omit ordinary low-price candidates merely because a breed hypothesis sounds more premium."
+    }
+  ],
+  "fresh_produce_scenario": {
+    "initial_request": "맛있는 복숭아 추천해줘.",
+    "user_preference_turn": "물복을 좋아해.",
+    "assistant_failure_pattern": [
+      "Treats 물복 as if it fully determines sweetness, acidity, aroma, variety preference, and desired product.",
+      "Moves directly to purchasable products without checking whether another taste axis could materially change the winner.",
+      "Never leaves room for a specific variety, farm, region, or product the user already wants to try.",
+      "Searches only easy-to-find large-marketplace listings and misses materially different specialist or producer-direct channels.",
+      "Ranks a zero-review or otherwise weak-direct-evidence listing as the best-tasting or personal top pick while stronger-evidence alternatives exist."
+    ],
+    "expected_behavior": [
+      "Do not infer unrelated taste preferences from texture preference alone.",
+      "If another unanswered preference axis could materially flip the recommendation, ask only the highest-value 1-2 follow-up questions rather than stopping after texture.",
+      "Before closing the candidate pool, leave room for a concrete variety, farm, region, seller, or product the user may already want to try; proceed with a stated default if the user asks not to be questioned.",
+      "For fresh produce where seller, lot, harvest timing, selection, and shipping can materially affect quality, inspect more than one seller/channel type when feasible, including specialist or producer-direct sources rather than only large marketplaces.",
+      "Do not use review count as a quality score, but do not promote a product with almost no direct product-level evidence to a strong top-taste recommendation over better-supported alternatives.",
+      "If all surviving products have weak direct evidence, lower confidence or say evidence is insufficient instead of fabricating a precise taste ranking."
+    ]
+  },
+  "required_behavior": [
+    "If a breed, brand, product class, or method is presented as a taste-fit hypothesis, inspect at least one concrete candidate from that hypothesis or explicitly state that no candidate survived the constraints.",
+    "Collect a reasonably broad candidate pool before narrowing on the taste hypothesis.",
+    "For each recommended purchasable product, bind price claims to the exact selected option or SKU rather than the page-level base price.",
+    "Include option surcharge, selected weight or quantity, and current availability in the verification chain before presenting normalized unit price as verified.",
+    "Preserve the two objective slots instead of collapsing cheap-value and taste-value into one score.",
+    "After the user lowers the practical price ceiling, rerank or remove earlier candidates that conflict with the new ceiling.",
+    "Use a direct product detail page when a link is presented as the purchase link.",
+    "In subjective recommendations, do not treat one answered preference axis as sufficient when another still-unknown axis could materially flip the top candidates.",
+    "Do not silently translate a texture preference such as soft peach into sweetness, acidity, aroma, variety, farm, or brand preference.",
+    "Before closing a subjective shopping candidate pool, preserve the possibility that the user already has a concrete variety, seller, region, brand, or product they want considered; if the user requests no questions, proceed with explicit reasonable defaults.",
+    "When seller or distribution channel can materially affect quality, broad search means inspecting materially different seller/channel types when feasible, not merely collecting several listings from one marketplace surface.",
+    "For sensory quality claims that specifications cannot establish, seek direct product-level evidence close to the current product or selling lot. Review count alone is not quality, but a candidate with almost no direct evidence should not receive a strong top-taste ranking over better-supported alternatives without another strong direct basis."
+  ],
+  "fail_conditions": [
+    "States that Berkshire is the best taste fit but never inspects a Berkshire candidate and never explains why it was excluded.",
+    "Uses the page base price for a selected option with a surcharge.",
+    "Recommends before exact option price or availability is verified.",
+    "Keeps 2400-2500 KRW/100g products as ordinary top picks after the user makes 2000 KRW/100g the practical ceiling.",
+    "Searches only the inferred premium breed or brand class and misses materially cheaper ordinary candidates.",
+    "Provides only a search-results or category link while presenting it as the exact product link.",
+    "After learning only that the user likes soft peaches, assumes strong sweetness, low acidity, or a particular variety without asking or marking the assumption.",
+    "Closes the recommendation pool without leaving room for a specific variety, farm, region, seller, or product the user may already want considered.",
+    "For fresh produce, searches only one easy large-marketplace surface despite materially relevant specialist or producer-direct channels being feasible to inspect.",
+    "Ranks a zero-review or otherwise direct-evidence-poor product as the strongest taste recommendation while better-supported alternatives exist, solely because the listing title matches the inferred preference."
+  ]
+}
