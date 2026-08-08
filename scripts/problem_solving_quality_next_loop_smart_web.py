@@ -29,19 +29,14 @@ def build_static_addons() -> dict[str, list[str]]:
     renderer_addons.append("psos-manual-route-policy.js")
     renderer_addons.append("chatgpt-manual-fallback-v5.js")
     renderer_addons.append("chatgpt-manual-focus-v1.js")
-    renderer_addons.append("psos-manual-controller-v1.js")
-    renderer_addons.append("psos-manual-request-switch-v1.js")
-    renderer_addons.append("psos-manual-verification-v1.js")
-    renderer_addons.append("psos-manual-refinement-v1.js")
+    # Conversation-first manual execution is the default UI path.  The strict
+    # Controller backend remains installed below for regression/escalation work,
+    # but its UI must not hijack the same ChatGPT-manual toggle.
     renderer_addons.append("chatgpt-manual-patch-v1.js")
 
     style_addons.append("next-loop-workflow.css")
     style_addons.append("chatgpt-manual-fallback-v5.css")
     style_addons.append("chatgpt-manual-focus-v1.css")
-    style_addons.append("psos-manual-controller-v1.css")
-    style_addons.append("psos-manual-request-switch-v1.css")
-    style_addons.append("psos-manual-verification-v1.css")
-    style_addons.append("psos-manual-refinement-v1.css")
     style_addons.append("chatgpt-manual-patch-v1.css")
     return addons
 
@@ -50,6 +45,8 @@ def main() -> int:
     web.next_loop = candidate_runtime
     attachment_support.install(web)
     manual_patch_support.install(web)
+    # Keep the verified Controller API available without making its heavy UI
+    # the default manual ChatGPT experience.
     manual_controller_support.install(web)
     web.STATIC_ADDONS = build_static_addons()
     return web.main()
