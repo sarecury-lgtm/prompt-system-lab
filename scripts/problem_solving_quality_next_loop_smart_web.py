@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import problem_solving_blind_handoff_web as blind_handoff_support
 import problem_solving_manual_controller_web as manual_controller_support
 import problem_solving_manual_patch_web as manual_patch_support
 import problem_solving_next_loop_replacement_runtime as candidate_runtime
@@ -21,17 +22,18 @@ def build_static_addons() -> dict[str, list[str]]:
     style_addons = addons.setdefault("styles.css", [])
     style_addons.append("next-loop-details.css")
     style_addons.append("next-loop-attachments.css")
+    style_addons.append("psos-blind-handoff-v1.css")
 
     renderer_addons = addons.setdefault("renderer.js", [])
     renderer_addons.append("next-loop-workflow.js")
+    renderer_addons.append("psos-blind-handoff-v1.js")
     renderer_addons.append("psos-manual-protocol.js")
     renderer_addons.append("psos-manual-thin-v1.js")
     renderer_addons.append("psos-manual-route-policy.js")
     renderer_addons.append("chatgpt-manual-fallback-v5.js")
     renderer_addons.append("chatgpt-manual-focus-v1.js")
-    # Conversation-first manual execution is the default UI path.  The strict
-    # Controller backend remains installed below for regression/escalation work,
-    # but its UI must not hijack the same ChatGPT-manual toggle.
+    # Conversation-first manual execution is retained as a diagnostic/manual
+    # path.  The normal Codex-exhaustion fallback is the one-shot Blind handoff.
     renderer_addons.append("chatgpt-manual-patch-v1.js")
 
     style_addons.append("next-loop-workflow.css")
@@ -44,6 +46,7 @@ def build_static_addons() -> dict[str, list[str]]:
 def main() -> int:
     web.next_loop = candidate_runtime
     attachment_support.install(web)
+    blind_handoff_support.install(web)
     manual_patch_support.install(web)
     # Keep the verified Controller API available without making its heavy UI
     # the default manual ChatGPT experience.
