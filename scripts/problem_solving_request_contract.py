@@ -79,9 +79,13 @@ def _infer_open_target_set(text: str, action: str) -> bool:
         r"[가-힣A-Za-z0-9._-]+\s*(?:사도|살까|어때|분석)",
         text,
     )
-    if _contains(r"추천|찾아|골라|가장 좋은|1순위|후보", text) and broad_scope:
+    bounded_list = _contains(r"둘 중|두 개 중|셋 중|세 개 중|아래 후보|다음 후보|이 후보들|이 중", text)
+    discovery_word = _contains(r"추천|찾아|골라|가장 좋은|1순위|후보", text)
+    if action in {"select", "act_now"} and discovery_word and not explicit_single and not bounded_list:
         return True
-    return broad_scope and not explicit_single
+    if discovery_word and broad_scope:
+        return not explicit_single and not bounded_list
+    return broad_scope and not explicit_single and not bounded_list
 
 
 def _infer_user_constraints(text: str, context: str) -> list[dict[str, str]]:
@@ -91,6 +95,67 @@ def _infer_user_constraints(text: str, context: str) -> list[dict[str, str]]:
     if context.strip():
         constraints.append({"source": "context", "text": context.strip()})
     return constraints
+
+
+def _preference_context(contract: dict[str, Any]) -> str:
+    chunks: list[str] = []
+    for item in contract.get("user_constraints", []):
+        if not isinstance(item, dict) or item.get("source") != "context":
+            continue
+        value = str(item.get("text") or "").strip()
+        if not value:
+            continue
+        if "[사용자 결과 피드백]" in value:
+            value = value.split("[사용자 결과 피드백]", 1)[1]
+        chunks.append(value)
+    return "\n".join(chunks)
+
+
+def _has_explicit_preference_direction(text: str) -> bool:
+    clean = str(text or "").strip()
+    if not clean:
+        return False
+    if _contains(r"\[사용자 확인\]|\[사용자 결과 피드백\]", clean):
+        return True
+    if _contains(
+        r"가성비|예산|가격대|최저가|최고급|균형|밸런스|아무거나|상관없|맡길게|"
+        r"비싸도|싸도|저렴.*(?:우선|중요)|가격.*(?:우선|중요|상관없)|"
+        r"(?:품질|성능|맛|안전|안정성|속도|위험|리스크).*(?:우선|중요|최우선)",
+        clean,
+    ):
+        return True
+    if _contains(
+        r"\d+(?:[.,]\d+)?\s*(?:원|만원|천원|달러|불|%|kg|g|cm|mm|시간|분|일|주|개월|년)\b|"
+        r"\b(?:under|within|budget|cheapest|fastest|highest|lowest)\b|"
+        r"(?:이하|이상|미만|초과|이내|내외)",
+        clean,
+    ):
+        return True
+    if _contains(r"가장\s+(?!좋은\b|괜찮은\b)[가-힣A-Za-z]+", clean):
+        return True
+    return False
+
+
+def preference_question_if_needed(contract: dict[str, Any]) -> str:
+    """Return one material preference question for an open-ended selection, or empty string."""
+
+    if contract.get("requested_action") not in {"select", "act_now"}:
+        return ""
+    if contract.get("selection_count") is None:
+        return ""
+    if contract.get("target_scope", {}).get("kind") != "open_set":
+        return ""
+    if contract.get("selection_policy", {}).get("mode") == "multi_profile":
+        return ""
+    request = str(contract.get("original_request") or "")
+    context = _preference_context(contract)
+    if _has_explicit_preference_direction(request) or _has_explicit_preference_direction(context):
+        return ""
+    return (
+        "추천 기준이 아직 열려 있어 결과가 크게 달라질 수 있습니다. 무엇을 가장 우선할까요? "
+        "예: 비용·가성비 / 품질·성능 / 위험 최소화 / 둘 사이 균형. "
+        "예산·기간처럼 반드시 지켜야 할 조건이 있으면 같이 적어 주세요."
+    )
 
 
 def build_request_contract(
@@ -175,6 +240,18 @@ def build_evidence_obligations(contract: dict[str, Any]) -> list[dict[str, Any]]
             "description": "Every material assumption is tied to the user, supplied context, or an explicit default with sensitivity stated.",
         },
     ]
+    preference_question = preference_question_if_needed(contract)
+    if preference_question:
+        obligations.append(
+            {
+                "version": OBLIGATION_VERSION,
+                "id": "preference_resolution",
+                "category": "interaction",
+                "required": True,
+                "verifier": "generic",
+                "description": "A materially preference-sensitive open selection must resolve the user's direction before naming a winner instead of silently maximizing one convenient axis.",
+            }
+        )
     if contract.get("current_conditions_required"):
         obligations.append(
             {
@@ -235,6 +312,12 @@ def build_evidence_obligations(contract: dict[str, Any]) -> list[dict[str, Any]]
 
 
 def initial_objective(contract: dict[str, Any]) -> str:
+    preference_question = preference_question_if_needed(contract)
+    if preference_question:
+        return (
+            "Do not select a winner yet. Resolve the material preference direction with one concise user question before search or ranking, "
+            "because silently maximizing a single axis could change the recommendation."
+        )
     if contract.get("selection_policy", {}).get("mode") == "multi_profile":
         return (
             "Compare the relevant candidates under shared evidence, preserve the user's distinct decision purposes as separate winner profiles, "
