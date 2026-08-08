@@ -1,13 +1,15 @@
 openapi: 3.1.0
+
 info:
   title: PSOS Blind GitHub Bridge
-  version: 1.0.0
+  version: 1.0.1
   description: >-
     Narrow GitHub access for PSOS Blind. This action is intentionally hard-wired
     to sarecury-lgtm/prompt-system-lab and the experimental
     codex/problem-solving-os-next-loop branch. It can read repository contents
     and create non-forced commits on that branch. It exposes no delete, merge,
     branch-create, release, issue, or workflow-dispatch operation.
+
 servers:
   - url: https://api.github.com
 
@@ -16,35 +18,32 @@ components:
     githubBearer:
       type: http
       scheme: bearer
-  parameters:
-    apiVersion:
-      name: X-GitHub-Api-Version
-      in: header
-      required: false
-      schema:
-        type: string
-        enum: ["2026-03-10"]
-        default: "2026-03-10"
+
   schemas:
-    GenericObject:
-      type: object
-      additionalProperties: true
     BlobInput:
       type: object
       additionalProperties: false
-      required: [content, encoding]
+      required:
+        - content
+        - encoding
       properties:
         content:
           type: string
           description: Complete UTF-8 contents of one file.
         encoding:
           type: string
-          enum: [utf-8]
+          enum:
+            - utf-8
           default: utf-8
+
     TreeEntry:
       type: object
       additionalProperties: false
-      required: [path, mode, type, sha]
+      required:
+        - path
+        - mode
+        - type
+        - sha
       properties:
         path:
           type: string
@@ -52,19 +51,27 @@ components:
           description: Repository-relative path. Never use .github/workflows/.
         mode:
           type: string
-          enum: ["100644", "100755"]
+          enum:
+            - "100644"
+            - "100755"
         type:
           type: string
-          enum: [blob]
+          enum:
+            - blob
         sha:
           type: string
           minLength: 40
           maxLength: 64
-          description: Blob SHA returned by createPsosBlob. Null is intentionally disallowed so this action cannot delete files.
+          description: >-
+            Blob SHA returned by createPsosBlob. Null is intentionally
+            disallowed so this action cannot delete files.
+
     TreeInput:
       type: object
       additionalProperties: false
-      required: [base_tree, tree]
+      required:
+        - base_tree
+        - tree
       properties:
         base_tree:
           type: string
@@ -77,10 +84,14 @@ components:
           maxItems: 20
           items:
             $ref: "#/components/schemas/TreeEntry"
+
     CommitInput:
       type: object
       additionalProperties: false
-      required: [message, tree, parents]
+      required:
+        - message
+        - tree
+        - parents
       properties:
         message:
           type: string
@@ -98,11 +109,16 @@ components:
             type: string
             minLength: 40
             maxLength: 64
-          description: Must contain exactly the current head commit SHA read immediately before the write.
+          description: >-
+            Must contain exactly the current head commit SHA read immediately
+            before the write.
+
     RefUpdateInput:
       type: object
       additionalProperties: false
-      required: [sha, force]
+      required:
+        - sha
+        - force
       properties:
         sha:
           type: string
@@ -111,90 +127,115 @@ components:
           description: New commit SHA created by createPsosCommit.
         force:
           type: boolean
-          enum: [false]
+          enum:
+            - false
           default: false
 
 security:
   - githubBearer: []
 
 paths:
-  /repos/sarecury-lgtm/prompt-system-lab/branches/codex/problem-solving-os-next-loop:
+
+  /repos/sarecury-lgtm/prompt-system-lab/branches/{branch}:
     get:
       operationId: getPsosBranch
       summary: Read the fixed PSOS development branch head
       description: Use this before any write to obtain the current head commit SHA.
       parameters:
-        - $ref: "#/components/parameters/apiVersion"
+        - name: branch
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - codex/problem-solving-os-next-loop
+            default: codex/problem-solving-os-next-loop
+
+        - name: X-GitHub-Api-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - "2026-03-10"
+            default: "2026-03-10"
+
       responses:
         "200":
           description: Branch metadata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericObject"
 
   /repos/sarecury-lgtm/prompt-system-lab/contents:
     get:
       operationId: listPsosRoot
       summary: List the repository root on the fixed PSOS branch
       parameters:
-        - $ref: "#/components/parameters/apiVersion"
         - name: ref
           in: query
           required: true
           schema:
             type: string
-            enum: [codex/problem-solving-os-next-loop]
+            enum:
+              - codex/problem-solving-os-next-loop
             default: codex/problem-solving-os-next-loop
+
+        - name: X-GitHub-Api-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - "2026-03-10"
+            default: "2026-03-10"
+
       responses:
         "200":
           description: Root entries
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/GenericObject"
 
   /repos/sarecury-lgtm/prompt-system-lab/contents/{path}:
     get:
       operationId: getPsosContent
       summary: Read a file or list a directory on the fixed PSOS branch
-      description: Use for ACTIVE_GOAL.json, source files, tests, docs, or directory listings before modifying anything.
+      description: >-
+        Use for ACTIVE_GOAL.json, source files, tests, docs, or directory
+        listings before modifying anything.
       parameters:
-        - $ref: "#/components/parameters/apiVersion"
         - name: path
           in: path
           required: true
           schema:
             type: string
             minLength: 1
+
         - name: ref
           in: query
           required: true
           schema:
             type: string
-            enum: [codex/problem-solving-os-next-loop]
+            enum:
+              - codex/problem-solving-os-next-loop
             default: codex/problem-solving-os-next-loop
+
+        - name: X-GitHub-Api-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - "2026-03-10"
+            default: "2026-03-10"
+
       responses:
         "200":
-          description: GitHub contents response. File content may be Base64 encoded by GitHub.
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: "#/components/schemas/GenericObject"
-                  - type: array
-                    items:
-                      $ref: "#/components/schemas/GenericObject"
+          description: GitHub contents response
 
   /search/code:
     get:
       operationId: searchPsosCode
       summary: Search code only inside prompt-system-lab
-      description: The query must include repo:sarecury-lgtm/prompt-system-lab. Prefer exact symbols or filenames.
+      description: >-
+        The query must include repo:sarecury-lgtm/prompt-system-lab.
+        Prefer exact symbols or filenames.
       parameters:
-        - $ref: "#/components/parameters/apiVersion"
         - name: q
           in: query
           required: true
@@ -203,6 +244,7 @@ paths:
             minLength: 5
             pattern: ".*repo:sarecury-lgtm/prompt-system-lab.*"
           example: "PSOSManualProtocol repo:sarecury-lgtm/prompt-system-lab"
+
         - name: per_page
           in: query
           required: false
@@ -211,20 +253,25 @@ paths:
             minimum: 1
             maximum: 30
             default: 10
+
+        - name: X-GitHub-Api-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - "2026-03-10"
+            default: "2026-03-10"
+
       responses:
         "200":
           description: Code search results
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericObject"
 
   /repos/sarecury-lgtm/prompt-system-lab/git/commits/{commit_sha}:
     get:
       operationId: getPsosGitCommit
       summary: Read a Git commit to obtain its tree SHA
       parameters:
-        - $ref: "#/components/parameters/apiVersion"
         - name: commit_sha
           in: path
           required: true
@@ -232,95 +279,129 @@ paths:
             type: string
             minLength: 40
             maxLength: 64
+
+        - name: X-GitHub-Api-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - "2026-03-10"
+            default: "2026-03-10"
+
       responses:
         "200":
           description: Git commit object
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericObject"
 
   /repos/sarecury-lgtm/prompt-system-lab/git/blobs:
     post:
       operationId: createPsosBlob
       summary: Create a UTF-8 blob for a file change
-      description: Creates content only; it does not change the branch until the later tree, commit, and non-forced ref update steps succeed.
+      description: >-
+        Creates content only; it does not change the branch until the later
+        tree, commit, and non-forced ref update steps succeed.
       parameters:
-        - $ref: "#/components/parameters/apiVersion"
+        - name: X-GitHub-Api-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - "2026-03-10"
+            default: "2026-03-10"
+
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/BlobInput"
+
       responses:
         "201":
-          description: Created blob SHA
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericObject"
+          description: Created blob
 
   /repos/sarecury-lgtm/prompt-system-lab/git/trees:
     post:
       operationId: createPsosTree
       summary: Build a new tree from the current branch tree and created blobs
-      description: All entries require a non-null blob SHA, so this action cannot express deletion.
+      description: >-
+        All entries require a non-null blob SHA, so this action cannot express
+        deletion.
       parameters:
-        - $ref: "#/components/parameters/apiVersion"
+        - name: X-GitHub-Api-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - "2026-03-10"
+            default: "2026-03-10"
+
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/TreeInput"
+
       responses:
         "201":
-          description: Created tree SHA
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericObject"
+          description: Created tree
 
   /repos/sarecury-lgtm/prompt-system-lab/git/commits:
     post:
       operationId: createPsosCommit
       summary: Create a commit whose sole parent is the current fixed-branch head
       parameters:
-        - $ref: "#/components/parameters/apiVersion"
+        - name: X-GitHub-Api-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - "2026-03-10"
+            default: "2026-03-10"
+
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/CommitInput"
+
       responses:
         "201":
-          description: Created commit SHA
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericObject"
+          description: Created commit
 
   /repos/sarecury-lgtm/prompt-system-lab/git/refs/heads/codex/problem-solving-os-next-loop:
     patch:
       operationId: advancePsosBranch
       summary: Advance only the fixed PSOS development branch without force
-      description: This is the only ref-changing operation in the action. force is fixed to false.
+      description: >-
+        This is the only ref-changing operation in the action. force is fixed
+        to false.
       parameters:
-        - $ref: "#/components/parameters/apiVersion"
+        - name: X-GitHub-Api-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - "2026-03-10"
+            default: "2026-03-10"
+
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/RefUpdateInput"
+
       responses:
         "200":
           description: Updated branch ref
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericObject"
         "409":
-          description: Branch moved or update conflicted. Refetch the branch and do not force.
+          description: >-
+            Branch moved or update conflicted. Refetch the branch and do not
+            force.
