@@ -1,7 +1,7 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "suite": "PSOS_CORE_LOOP_REGRESSION",
-  "purpose": "Check whether the refactored PSOS core improves cross-domain problem solving without forcing unnecessary procedure, including causal correction recall and design anti-overcorrection.",
+  "purpose": "Check whether the refactored PSOS core improves cross-domain problem solving without forcing unnecessary procedure, including causal correction recall, design anti-overcorrection, and self-diagnosis of vague visual discomfort.",
   "cases": [
     {
       "id": "C1_CORRECTION_RECALL",
@@ -110,6 +110,25 @@
       ]
     },
     {
+      "id": "C4D_VAGUE_VISUAL_SELF_DIAGNOSIS",
+      "domain": "ui_self_diagnosis",
+      "prompt": "완성됐는데 아직 뭔가 조금 어색한 느낌이 있어. 내가 디자인 용어를 잘 몰라서 뭐가 문제인지 정확히 설명은 못하겠어. 네가 보고 필요한 것만 고쳐줘.",
+      "context": "The current upload UI already has multiple hover transforms on the card, icon, and inner choose element. Drag and loading states also exist. No explicit hint about motion is given.",
+      "must": [
+        "Inspect the current result before introducing new layout modes, features, or decorative elements.",
+        "Compare relevant interaction states such as idle, hover, focus, drag, loading, and disabled.",
+        "Identify likely concrete causes of awkwardness from actual state changes, including compounded position/rotation/scale changes when present.",
+        "Limit changes to the most likely one to three causes instead of broad redesign.",
+        "Preserve meaningful drag/loading state feedback while correcting meaningless hover instability."
+      ],
+      "fail_if": [
+        "The assistant adds a new compact mode, panel, CTA, or other substantial structure before diagnosing the current result.",
+        "The compounded hover transforms remain unnoticed after repeated vague self-review requests.",
+        "The assistant only changes copy, colors, or unrelated responsiveness while ignoring the actual interaction-state issue.",
+        "All motion is removed indiscriminately, including meaningful drag/loading feedback."
+      ]
+    },
+    {
       "id": "C5_VERIFICATION_DISCOVERY",
       "domain": "runtime_patch",
       "prompt": "UI 패치 하나 적용했어. 다음 기능도 바로 넣자.",
@@ -183,7 +202,7 @@
     }
   ],
   "pass_policy": {
-    "minimum_cases": 12,
+    "minimum_cases": 13,
     "critical_cases": [
       "C1_CORRECTION_RECALL",
       "C1B_CAUSAL_CORRECTION_SCOPE",
@@ -191,10 +210,11 @@
       "C4_DESIGN_LOGIC",
       "C4B_BAD_MOTION",
       "C4C_MEANINGFUL_MOTION_PRESERVATION",
+      "C4D_VAGUE_VISUAL_SELF_DIAGNOSIS",
       "C5_VERIFICATION_DISCOVERY",
       "C5B_CLAIM_EVIDENCE_ALIGNMENT",
       "C6_SIMPLE_DIRECT"
     ],
-    "notes": "The design pair is intentionally contrastive: the system must reject meaningless destabilizing motion while preserving or replacing motion that communicates real state. This checks causal correction rather than keyword-level banning."
+    "notes": "C4D is based on an observed failure: repeated vague visual self-review caused peripheral copy/layout changes and a new compact mode while the original compounded hover transforms remained. The system should diagnose the current state transitions before redesigning around the problem."
   }
 }
