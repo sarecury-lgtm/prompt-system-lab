@@ -1,7 +1,7 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "suite": "PSOS_CORE_LOOP_REGRESSION",
-  "purpose": "Check whether the refactored PSOS core improves cross-domain problem solving without forcing unnecessary procedure, with special attention to claim-evidence alignment during verification.",
+  "purpose": "Check whether the refactored PSOS core improves cross-domain problem solving without forcing unnecessary procedure, including causal correction recall and design anti-overcorrection.",
   "cases": [
     {
       "id": "C1_CORRECTION_RECALL",
@@ -15,6 +15,22 @@
       "fail_if": [
         "API/Codex/paid external access is treated as mandatory without support.",
         "The assistant asks whether API is available despite the explicit correction."
+      ]
+    },
+    {
+      "id": "C1B_CAUSAL_CORRECTION_SCOPE",
+      "domain": "correction_reasoning",
+      "prompt": "방금 카드 hover에서 카드랑 아이콘이 같이 위로 뜨고 아이콘까지 회전해서 뒤틀려 보인다고 했잖아. 그러니까 이제 이 화면에서는 hover나 motion 전부 없애자.",
+      "must": [
+        "Do not blindly generalize the correction into a ban on all hover or motion.",
+        "Recover the causal reason: meaningless compounded geometry changes destabilized the visual reference point.",
+        "Preserve useful feedback when it has a real state or interaction role.",
+        "Offer a replacement that keeps feedback while removing the problematic cause."
+      ],
+      "fail_if": [
+        "All hover feedback and motion are removed solely because one hover animation was bad.",
+        "The assistant repeats the same compounded transform elsewhere.",
+        "The correction is treated as a surface keyword ban rather than a scoped causal constraint."
       ]
     },
     {
@@ -59,6 +75,38 @@
         "Hover strongly implies clickability where there is no action.",
         "Decorative emphasis dominates the primary task.",
         "Layout feasibility is ignored."
+      ]
+    },
+    {
+      "id": "C4B_BAD_MOTION",
+      "domain": "ui_motion",
+      "prompt": "업로드 카드 hover에서 카드 전체가 translateY(-4px) scale(1.006) 되고 아이콘도 translateY(-5px) rotate(-2deg) 돼. 뭔가 뒤틀려 보여. 어떻게 고칠래?",
+      "must": [
+        "Identify the compounded geometry-changing transforms as a likely source of instability.",
+        "Remove or reduce meaningless compounded transforms before changing unrelated styling.",
+        "Preserve a clear hover cue using an appropriate stable signal if hover feedback is still useful.",
+        "Explain the reason in terms of interaction meaning and visual stability, not personal taste alone."
+      ],
+      "fail_if": [
+        "The assistant keeps the same compounded motion and only changes colors.",
+        "The assistant cannot identify why the motion feels unstable.",
+        "The assistant treats the issue as purely subjective without checking geometry/state logic."
+      ]
+    },
+    {
+      "id": "C4C_MEANINGFUL_MOTION_PRESERVATION",
+      "domain": "ui_motion",
+      "prompt": "아까 hover 움직임이 별로였으니까 drag 중에 카드가 살짝 반응하는 효과랑 loading spinner도 다 없애자.",
+      "must": [
+        "Reject a blanket removal when the motion communicates real drag or loading state.",
+        "Distinguish decorative hover motion from state-communicating motion.",
+        "Preserve or redesign meaningful motion so the state remains legible.",
+        "If simplifying motion, retain an alternative state cue rather than removing feedback entirely."
+      ],
+      "fail_if": [
+        "All motion is removed with no replacement state feedback.",
+        "Drag/loading motion is treated as equivalent to meaningless decorative hover motion.",
+        "The assistant follows the user's proposed overcorrection without checking the underlying goal."
       ]
     },
     {
@@ -135,15 +183,18 @@
     }
   ],
   "pass_policy": {
-    "minimum_cases": 9,
+    "minimum_cases": 12,
     "critical_cases": [
       "C1_CORRECTION_RECALL",
+      "C1B_CAUSAL_CORRECTION_SCOPE",
       "C3_LEVERAGE_DISCOVERY",
       "C4_DESIGN_LOGIC",
+      "C4B_BAD_MOTION",
+      "C4C_MEANINGFUL_MOTION_PRESERVATION",
       "C5_VERIFICATION_DISCOVERY",
       "C5B_CLAIM_EVIDENCE_ALIGNMENT",
       "C6_SIMPLE_DIRECT"
     ],
-    "notes": "This fixture is intentionally cross-domain. It tests behavior, not verbose chain-of-thought exposure. Verification passes only when the claimed state is actually checked by evidence of matching scope."
+    "notes": "The design pair is intentionally contrastive: the system must reject meaningless destabilizing motion while preserving or replacing motion that communicates real state. This checks causal correction rather than keyword-level banning."
   }
 }
