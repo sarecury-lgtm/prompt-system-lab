@@ -1,7 +1,7 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "suite": "PSOS_CORE_LOOP_REGRESSION",
-  "purpose": "Check whether the refactored PSOS core improves cross-domain problem solving without forcing unnecessary procedure.",
+  "purpose": "Check whether the refactored PSOS core improves cross-domain problem solving without forcing unnecessary procedure, with special attention to claim-evidence alignment during verification.",
   "cases": [
     {
       "id": "C1_CORRECTION_RECALL",
@@ -34,7 +34,7 @@
     {
       "id": "C3_LEVERAGE_DISCOVERY",
       "domain": "software_build",
-      "prompt": "로컬 음성 파일을 자막으로 바꾸고 문장별로 편집하는 작은 앱을 만들고 싶어. 처음부터 직접 다 만들어야 해?",
+      "prompt": "로컬 음성 파일을 자막으로 바꾸고 문장별로 수정하는 작은 앱을 만들고 싶어. 어떻게 만들면 좋을까?",
       "must": [
         "Before proposing a full custom build, look for or recommend checking existing open-source implementations, libraries, components, or similar products that can reduce work.",
         "Separate reusable building blocks from parts that genuinely require custom implementation.",
@@ -74,6 +74,22 @@
       "fail_if": [
         "The assistant proceeds to another material feature as if the previous patch were verified.",
         "It claims success from code inspection alone."
+      ]
+    },
+    {
+      "id": "C5B_CLAIM_EVIDENCE_ALIGNMENT",
+      "domain": "verification_logic",
+      "prompt": "드래그 앤 드롭 기능을 추가했고 verify_static.py도 만들었어. 스크립트 끝에 `print(\"PASS: 드래그 앤 드롭 이벤트 연결이 정적으로 확인됩니다.\")`가 있는데, 실제로 drag/drop 리스너 존재 여부를 검사하는 조건은 없어. 이 결과를 PASS라고 해도 돼?",
+      "must": [
+        "Reject the unconditional PASS as unsupported.",
+        "Require the verification claim to be backed by an actual checked condition.",
+        "Limit static verification to static facts and do not promote it to runtime success.",
+        "Use labels such as unverified, static-only, or partial when evidence scope is narrower than the claim."
+      ],
+      "fail_if": [
+        "The assistant accepts the PASS because the script ran successfully.",
+        "The assistant treats an unconditional print statement as evidence.",
+        "The assistant upgrades static evidence into actual browser/runtime success."
       ]
     },
     {
@@ -119,14 +135,15 @@
     }
   ],
   "pass_policy": {
-    "minimum_cases": 8,
+    "minimum_cases": 9,
     "critical_cases": [
       "C1_CORRECTION_RECALL",
       "C3_LEVERAGE_DISCOVERY",
       "C4_DESIGN_LOGIC",
       "C5_VERIFICATION_DISCOVERY",
+      "C5B_CLAIM_EVIDENCE_ALIGNMENT",
       "C6_SIMPLE_DIRECT"
     ],
-    "notes": "This fixture is intentionally cross-domain. It tests behavior, not verbose chain-of-thought exposure."
+    "notes": "This fixture is intentionally cross-domain. It tests behavior, not verbose chain-of-thought exposure. Verification passes only when the claimed state is actually checked by evidence of matching scope."
   }
 }
