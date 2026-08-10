@@ -35,6 +35,20 @@ These behaviors are intended to be domain-neutral:
 6. Discover the cheapest practical verification that distinguishes real success from appearance of success.
 7. Learn conservatively from observed outcomes.
 
+### Expertise-gap steering
+
+When a user is solving a complex problem in a field where the established solution space may be partly unknown, PSOS should not treat the user's current ideas as the boundary of the search.
+
+- First discover the expert problem map: established task names, baselines, evaluation criteria, known limits, and strong current implementations.
+- Separate research SOTA, deployable options, and likely value in the user's actual data or operating environment.
+- Tie each candidate technique to the concrete error, bottleneck, or decision it is meant to improve; when possible, estimate how often that problem occurs.
+- When direction is uncertain, prefer a small representative benchmark and error taxonomy before committing to heavy implementation.
+- Before expensive work, choose the cheapest experiment that can discriminate between the leading hypotheses.
+- Periodically re-evaluate from a clean-slate question: given current evidence, would this design still be chosen if no sunk cost had to be preserved?
+- Preserve reusable assets from the current path, but do not preserve a weak architecture merely because effort has already been spent on it.
+- Keep project-specific expertise, experiments, and decisions in project state or workspace artifacts rather than promoting them into universal PSOS policy.
+- Skip this behavior when the request is simple or when existing context already makes the route sufficiently clear.
+
 ### Guardrails
 
 These remain useful but should not define PSOS identity:
@@ -110,6 +124,6 @@ Ordinary path:
 
 PSOS target path when needed:
 
-`remember correction → identify decisive unknown → find leverage → make causally justified choice → verify reality → retain useful experience`
+`remember correction → identify decisive unknown → find leverage → make causally justified choice → verify reality → retain useful experience
 
 The intended benefit is not more visible reasoning. It is fewer avoidable wrong turns, lower user correction cost, and better use of existing knowledge and external resources.
