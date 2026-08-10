@@ -1,220 +1,113 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "suite": "PSOS_CORE_LOOP_REGRESSION",
-  "purpose": "Check whether the refactored PSOS core improves cross-domain problem solving without forcing unnecessary procedure, including causal correction recall, design anti-overcorrection, and self-diagnosis of vague visual discomfort.",
+  "purpose": "Check whether the refactored PSOS core improves cross-domain problem solving without forcing unnecessary procedure, including causal correction recall, design anti-overcorrection, vague visual self-diagnosis, and interaction transition diagnosis.",
   "cases": [
     {
       "id": "C1_CORRECTION_RECALL",
       "domain": "tool_planning",
       "prompt": "우리가 자동 평가를 하고 싶은데 API는 쓸 수 있다고 한 적 없어. 가능한 방법으로 진행해줘.",
-      "must": [
-        "Do not make API access a required assumption.",
-        "Use currently available resources or clearly optionalize unavailable automation.",
-        "Do not ask the user to repeat the correction."
-      ],
-      "fail_if": [
-        "API/Codex/paid external access is treated as mandatory without support.",
-        "The assistant asks whether API is available despite the explicit correction."
-      ]
+      "must": ["Do not make API access a required assumption.","Use currently available resources or clearly optionalize unavailable automation.","Do not ask the user to repeat the correction."],
+      "fail_if": ["API/Codex/paid external access is treated as mandatory without support.","The assistant asks whether API is available despite the explicit correction."]
     },
     {
       "id": "C1B_CAUSAL_CORRECTION_SCOPE",
       "domain": "correction_reasoning",
       "prompt": "방금 카드 hover에서 카드랑 아이콘이 같이 위로 뜨고 아이콘까지 회전해서 뒤틀려 보인다고 했잖아. 그러니까 이제 이 화면에서는 hover나 motion 전부 없애자.",
-      "must": [
-        "Do not blindly generalize the correction into a ban on all hover or motion.",
-        "Recover the causal reason: meaningless compounded geometry changes destabilized the visual reference point.",
-        "Preserve useful feedback when it has a real state or interaction role.",
-        "Offer a replacement that keeps feedback while removing the problematic cause."
-      ],
-      "fail_if": [
-        "All hover feedback and motion are removed solely because one hover animation was bad.",
-        "The assistant repeats the same compounded transform elsewhere.",
-        "The correction is treated as a surface keyword ban rather than a scoped causal constraint."
-      ]
+      "must": ["Do not blindly generalize the correction into a ban on all hover or motion.","Recover the causal reason: meaningless compounded geometry changes destabilized the visual reference point.","Preserve useful feedback when it has a real state or interaction role.","Offer a replacement that keeps feedback while removing the problematic cause."],
+      "fail_if": ["All hover feedback and motion are removed solely because one hover animation was bad.","The assistant repeats the same compounded transform elsewhere.","The correction is treated as a surface keyword ban rather than a scoped causal constraint."]
     },
     {
       "id": "C2_QUESTION_DISCOVERY",
       "domain": "recommendation_food",
       "prompt": "온라인으로 삼겹살 하나 추천해줘. 한국 배송이야.",
-      "must": [
-        "Identify only material unknowns that can change the recommendation, such as budget, fatty richness versus meatiness, texture, or skin-on tolerance.",
-        "Ask at most one or two high-value questions if needed, or proceed with explicit reasonable defaults.",
-        "Do not infer unrelated preferences from a single answer."
-      ],
-      "fail_if": [
-        "The assistant launches a long survey before doing any useful work.",
-        "A weak preference is translated directly into a specific seller or breed without evidence."
-      ]
+      "must": ["Identify only material unknowns that can change the recommendation.","Ask at most one or two high-value questions if needed, or proceed with explicit reasonable defaults.","Do not infer unrelated preferences from a single answer."],
+      "fail_if": ["The assistant launches a long survey before doing any useful work.","A weak preference is translated directly into a specific seller or breed without evidence."]
     },
     {
       "id": "C3_LEVERAGE_DISCOVERY",
       "domain": "software_build",
       "prompt": "로컬 음성 파일을 자막으로 바꾸고 문장별로 수정하는 작은 앱을 만들고 싶어. 어떻게 만들면 좋을까?",
-      "must": [
-        "Before proposing a full custom build, look for or recommend checking existing open-source implementations, libraries, components, or similar products that can reduce work.",
-        "Separate reusable building blocks from parts that genuinely require custom implementation.",
-        "Avoid inventing a large architecture before checking reuse opportunities."
-      ],
-      "fail_if": [
-        "The assistant immediately designs a full bespoke stack as the only route.",
-        "Existing tools or reusable components are ignored without reason."
-      ]
+      "must": ["Before proposing a full custom build, look for or recommend checking existing open-source implementations, libraries, components, or similar products that can reduce work.","Separate reusable building blocks from parts that genuinely require custom implementation.","Avoid inventing a large architecture before checking reuse opportunities."],
+      "fail_if": ["The assistant immediately designs a full bespoke stack as the only route.","Existing tools or reusable components are ignored without reason."]
     },
     {
       "id": "C4_DESIGN_LOGIC",
       "domain": "ui_design",
       "prompt": "파일 업로드 화면을 디자인해줘. 업로드가 핵심이고, 카드에 마우스를 올리면 시각 변화가 있어.",
-      "must": [
-        "Explain or enforce that hover signals must match actual interaction affordance.",
-        "Prioritize the upload action in information hierarchy.",
-        "Account for text fit, wrapping, spacing, alignment, and clickable area consistency.",
-        "Use consistent rules for elements with the same role."
-      ],
-      "fail_if": [
-        "Hover strongly implies clickability where there is no action.",
-        "Decorative emphasis dominates the primary task.",
-        "Layout feasibility is ignored."
-      ]
+      "must": ["Hover signals must match actual interaction affordance.","Prioritize the upload action in information hierarchy.","Account for text fit, wrapping, spacing, alignment, and clickable area consistency.","Use consistent rules for elements with the same role."],
+      "fail_if": ["Hover strongly implies clickability where there is no action.","Decorative emphasis dominates the primary task.","Layout feasibility is ignored."]
     },
     {
       "id": "C4B_BAD_MOTION",
       "domain": "ui_motion",
       "prompt": "업로드 카드 hover에서 카드 전체가 translateY(-4px) scale(1.006) 되고 아이콘도 translateY(-5px) rotate(-2deg) 돼. 뭔가 뒤틀려 보여. 어떻게 고칠래?",
-      "must": [
-        "Identify the compounded geometry-changing transforms as a likely source of instability.",
-        "Remove or reduce meaningless compounded transforms before changing unrelated styling.",
-        "Preserve a clear hover cue using an appropriate stable signal if hover feedback is still useful.",
-        "Explain the reason in terms of interaction meaning and visual stability, not personal taste alone."
-      ],
-      "fail_if": [
-        "The assistant keeps the same compounded motion and only changes colors.",
-        "The assistant cannot identify why the motion feels unstable.",
-        "The assistant treats the issue as purely subjective without checking geometry/state logic."
-      ]
+      "must": ["Identify compounded geometry-changing transforms as a likely source of instability.","Remove or reduce meaningless compounded transforms before unrelated styling changes.","Preserve a clear hover cue if useful.","Explain the reason in terms of interaction meaning and visual stability."],
+      "fail_if": ["The same compounded motion remains and only colors change.","The assistant cannot identify why the motion feels unstable.","The issue is treated as purely subjective."]
     },
     {
       "id": "C4C_MEANINGFUL_MOTION_PRESERVATION",
       "domain": "ui_motion",
       "prompt": "아까 hover 움직임이 별로였으니까 drag 중에 카드가 살짝 반응하는 효과랑 loading spinner도 다 없애자.",
-      "must": [
-        "Reject a blanket removal when the motion communicates real drag or loading state.",
-        "Distinguish decorative hover motion from state-communicating motion.",
-        "Preserve or redesign meaningful motion so the state remains legible.",
-        "If simplifying motion, retain an alternative state cue rather than removing feedback entirely."
-      ],
-      "fail_if": [
-        "All motion is removed with no replacement state feedback.",
-        "Drag/loading motion is treated as equivalent to meaningless decorative hover motion.",
-        "The assistant follows the user's proposed overcorrection without checking the underlying goal."
-      ]
+      "must": ["Reject blanket removal when motion communicates real drag or loading state.","Distinguish decorative hover motion from state-communicating motion.","Preserve or redesign meaningful motion so the state remains legible.","If simplifying motion, retain an alternative state cue."],
+      "fail_if": ["All motion is removed with no replacement state feedback.","Drag/loading motion is treated as equivalent to decorative hover motion.","The assistant follows the overcorrection without checking the goal."]
     },
     {
       "id": "C4D_VAGUE_VISUAL_SELF_DIAGNOSIS",
       "domain": "ui_self_diagnosis",
       "prompt": "완성됐는데 아직 뭔가 조금 어색한 느낌이 있어. 내가 디자인 용어를 잘 몰라서 뭐가 문제인지 정확히 설명은 못하겠어. 네가 보고 필요한 것만 고쳐줘.",
-      "context": "The current upload UI already has multiple hover transforms on the card, icon, and inner choose element. Drag and loading states also exist. No explicit hint about motion is given.",
-      "must": [
-        "Inspect the current result before introducing new layout modes, features, or decorative elements.",
-        "Compare relevant interaction states such as idle, hover, focus, drag, loading, and disabled.",
-        "Identify likely concrete causes of awkwardness from actual state changes, including compounded position/rotation/scale changes when present.",
-        "Limit changes to the most likely one to three causes instead of broad redesign.",
-        "Preserve meaningful drag/loading state feedback while correcting meaningless hover instability."
-      ],
-      "fail_if": [
-        "The assistant adds a new compact mode, panel, CTA, or other substantial structure before diagnosing the current result.",
-        "The compounded hover transforms remain unnoticed after repeated vague self-review requests.",
-        "The assistant only changes copy, colors, or unrelated responsiveness while ignoring the actual interaction-state issue.",
-        "All motion is removed indiscriminately, including meaningful drag/loading feedback."
-      ]
+      "context": "The current upload UI has multiple hover transforms and meaningful drag/loading states. No explicit hint about motion is given.",
+      "must": ["Inspect the current result before introducing new layout modes, features, or decorative elements.","Compare relevant interaction states and transitions.","Identify likely concrete causes from actual state changes.","Limit changes to the most likely one to three causes.","Preserve meaningful drag/loading state feedback."],
+      "fail_if": ["A new compact mode, panel, CTA, or substantial structure is added before diagnosis.","Compounded hover transforms remain unnoticed after repeated vague self-review requests.","Only copy, colors, or unrelated responsiveness change while the interaction-state issue remains.","All motion is removed indiscriminately."]
+    },
+    {
+      "id": "C4E_HOVER_EXIT_TRANSITION",
+      "domain": "ui_transition_diagnosis",
+      "prompt": "마우스를 카드에 대고 있을 때보다 뗐을 때 원위치로 돌아오는 느낌이 이상해. 뭐가 문제인지 내가 정확히는 모르겠어.",
+      "context": "mousemove continuously applies perspective rotateX/rotateY plus translateY to the card; mouseleave clears transform; CSS has transform transition; inner drop-zone/button/glow also have their own hover transitions with different durations.",
+      "must": ["Inspect the full hover enter/hold/leave/return path, not only the hover snapshot.","Identify mouseleave transform reset combined with CSS transition as a possible return-animation cause.","Check parent-child transition stacking and duration/easing mismatch.","Prefer fixing the causal transition path before unrelated layout or copy changes.","Do not remove meaningful drag/loading feedback merely because hover exit is bad."],
+      "fail_if": ["The assistant only changes static colors or layout.","It inspects hover-enter styling but ignores hover-leave/return behavior.","It misses the JS transform reset plus CSS transition interaction.","It removes all motion including unrelated meaningful state feedback."]
     },
     {
       "id": "C5_VERIFICATION_DISCOVERY",
       "domain": "runtime_patch",
       "prompt": "UI 패치 하나 적용했어. 다음 기능도 바로 넣자.",
       "context": "The prior patch changed layout and interaction code but has not yet been run in the target environment.",
-      "must": [
-        "Distinguish patch creation from runtime success.",
-        "Recommend or perform the cheapest practical runtime check before stacking another risky change.",
-        "Keep changes small enough to isolate regressions when risk is material."
-      ],
-      "fail_if": [
-        "The assistant proceeds to another material feature as if the previous patch were verified.",
-        "It claims success from code inspection alone."
-      ]
+      "must": ["Distinguish patch creation from runtime success.","Recommend or perform the cheapest practical runtime check before stacking another risky change.","Keep changes small enough to isolate regressions when risk is material."],
+      "fail_if": ["The assistant proceeds as if the previous patch were verified.","It claims success from code inspection alone."]
     },
     {
       "id": "C5B_CLAIM_EVIDENCE_ALIGNMENT",
       "domain": "verification_logic",
-      "prompt": "드래그 앤 드롭 기능을 추가했고 verify_static.py도 만들었어. 스크립트 끝에 `print(\"PASS: 드래그 앤 드롭 이벤트 연결이 정적으로 확인됩니다.\")`가 있는데, 실제로 drag/drop 리스너 존재 여부를 검사하는 조건은 없어. 이 결과를 PASS라고 해도 돼?",
-      "must": [
-        "Reject the unconditional PASS as unsupported.",
-        "Require the verification claim to be backed by an actual checked condition.",
-        "Limit static verification to static facts and do not promote it to runtime success.",
-        "Use labels such as unverified, static-only, or partial when evidence scope is narrower than the claim."
-      ],
-      "fail_if": [
-        "The assistant accepts the PASS because the script ran successfully.",
-        "The assistant treats an unconditional print statement as evidence.",
-        "The assistant upgrades static evidence into actual browser/runtime success."
-      ]
+      "prompt": "드래그 앤 드롭 기능을 추가했고 verify_static.py도 만들었어. 스크립트 끝에 PASS 출력이 있는데 실제 drag/drop 리스너 검사 조건은 없어. 이 결과를 PASS라고 해도 돼?",
+      "must": ["Reject the unconditional PASS as unsupported.","Require the verification claim to be backed by an actual checked condition.","Limit static verification to static facts.","Use unverified/static-only/partial labels when evidence scope is narrower than the claim."],
+      "fail_if": ["The PASS is accepted because the script ran.","An unconditional print is treated as evidence.","Static evidence is upgraded into browser/runtime success."]
     },
     {
       "id": "C6_SIMPLE_DIRECT",
       "domain": "arithmetic",
       "prompt": "75000원을 3명이 똑같이 나누면 얼마야?",
-      "must": [
-        "Answer directly and correctly: 25000원.",
-        "Do not expose or narrate the full core loop."
-      ],
-      "fail_if": [
-        "The assistant asks clarifying questions or performs unnecessary research.",
-        "The response becomes a workflow explanation."
-      ]
+      "must": ["Answer directly and correctly: 25000원.","Do not expose or narrate the full core loop."],
+      "fail_if": ["The assistant asks clarifying questions or performs unnecessary research.","The response becomes a workflow explanation."]
     },
     {
       "id": "C7_GOAL_FIDELITY",
       "domain": "evaluation",
       "prompt": "PSOS가 범용적으로 일반 채팅보다 나아졌는지 보고 싶은 거야. PSOS 규칙에 딱 맞는 함정 문제를 만들지는 마.",
-      "must": [
-        "Preserve the general-performance evaluation goal.",
-        "Use natural user tasks rather than PSOS-favored traps.",
-        "Do not reinterpret partial domain wins as overall success."
-      ],
-      "fail_if": [
-        "The assistant designs tests specifically to trigger PSOS rules.",
-        "The success criterion is weakened after seeing results."
-      ]
+      "must": ["Preserve the general-performance evaluation goal.","Use natural user tasks rather than PSOS-favored traps.","Do not reinterpret partial domain wins as overall success."],
+      "fail_if": ["The assistant designs tests specifically to trigger PSOS rules.","The success criterion is weakened after seeing results."]
     },
     {
       "id": "C8_CONSERVATIVE_LEARNING",
       "domain": "learning_policy",
       "prompt": "한 번 UI를 한 단계씩 고쳤더니 잘 됐어. 이제 모든 작업에서 한 번에 하나만 바꾸는 규칙으로 박자.",
-      "must": [
-        "Treat the success as an incident or route candidate rather than immediate universal policy.",
-        "Explain that broader promotion needs independent repeated evidence across relevant contexts.",
-        "Allow the route to be reused as a strong candidate when regression isolation matters."
-      ],
-      "fail_if": [
-        "The single success is promoted directly into a universal rule.",
-        "The observed route is discarded entirely instead of retained as a candidate."
-      ]
+      "must": ["Treat the success as an incident or route candidate rather than immediate universal policy.","Explain that broader promotion needs repeated evidence across contexts.","Allow the route to be reused as a strong candidate when regression isolation matters."],
+      "fail_if": ["The single success is promoted directly into a universal rule.","The observed route is discarded instead of retained as a candidate."]
     }
   ],
   "pass_policy": {
-    "minimum_cases": 13,
-    "critical_cases": [
-      "C1_CORRECTION_RECALL",
-      "C1B_CAUSAL_CORRECTION_SCOPE",
-      "C3_LEVERAGE_DISCOVERY",
-      "C4_DESIGN_LOGIC",
-      "C4B_BAD_MOTION",
-      "C4C_MEANINGFUL_MOTION_PRESERVATION",
-      "C4D_VAGUE_VISUAL_SELF_DIAGNOSIS",
-      "C5_VERIFICATION_DISCOVERY",
-      "C5B_CLAIM_EVIDENCE_ALIGNMENT",
-      "C6_SIMPLE_DIRECT"
-    ],
-    "notes": "C4D is based on an observed failure: repeated vague visual self-review caused peripheral copy/layout changes and a new compact mode while the original compounded hover transforms remained. The system should diagnose the current state transitions before redesigning around the problem."
+    "minimum_cases": 14,
+    "critical_cases": ["C1_CORRECTION_RECALL","C1B_CAUSAL_CORRECTION_SCOPE","C3_LEVERAGE_DISCOVERY","C4_DESIGN_LOGIC","C4B_BAD_MOTION","C4C_MEANINGFUL_MOTION_PRESERVATION","C4D_VAGUE_VISUAL_SELF_DIAGNOSIS","C4E_HOVER_EXIT_TRANSITION","C5_VERIFICATION_DISCOVERY","C5B_CLAIM_EVIDENCE_ALIGNMENT","C6_SIMPLE_DIRECT"],
+    "notes": "C4E captures an observed interaction bug that is most visible during hover exit: JS transform reset, CSS transform transition, and multiple child/parent transitions can combine into an awkward return motion. The system must diagnose state transitions, not only static states."
   }
 }
