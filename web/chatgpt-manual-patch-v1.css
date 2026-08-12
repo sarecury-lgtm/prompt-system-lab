@@ -1,0 +1,53 @@
+.manual-patch-panel {
+  border-color: #d6dde8;
+  background: #fbfcfe;
+}
+
+.manual-patch-panel[hidden] {
+  display: none;
+}
+
+.manual-patch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.manual-patch-panel ul {
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+.manual-patch-panel li + li {
+  margin-top: 6px;
+}
+
+.manual-patch-actions-row {
+  margin-top: 14px;
+  align-items: center;
+}
+
+#manual-patch-status {
+  color: #526071;
+}
+
+#manual-patch-badge {
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .manual-patch-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-patch-actions-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manual-patch-actions-row .manual-v5-actions,
+  .manual-patch-actions-row button {
+    width: 100%;
+  }
+}

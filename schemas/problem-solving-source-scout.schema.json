@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source_scout"],
+  "properties": {
+    "source_scout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_summary",
+        "external_research_needed",
+        "searches_used",
+        "probes",
+        "scouting_limitations"
+      ],
+      "properties": {
+        "request_summary": {"type": "string"},
+        "external_research_needed": {"type": "boolean"},
+        "searches_used": {"type": "integer"},
+        "probes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "family",
+              "queries",
+              "concrete_leads",
+              "repeated_specificity",
+              "recency",
+              "actionability",
+              "access",
+              "verification_need",
+              "signal_summary"
+            ],
+            "properties": {
+              "family": {
+                "type": "string",
+                "enum": ["COMMUNITY", "MARKETPLACE", "PRIMARY", "REUSE_INDEX", "BROAD_WEB"]
+              },
+              "queries": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "concrete_leads": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name", "url", "why_actionable"],
+                  "properties": {
+                    "name": {"type": "string"},
+                    "url": {"type": "string"},
+                    "why_actionable": {"type": "string"}
+                  }
+                }
+              },
+              "repeated_specificity": {
+                "type": "string",
+                "enum": ["none", "vague", "concrete"]
+              },
+              "recency": {
+                "type": "string",
+                "enum": ["stale", "unknown", "current"]
+              },
+              "actionability": {
+                "type": "string",
+                "enum": ["none", "lead", "decision_ready"]
+              },
+              "access": {
+                "type": "string",
+                "enum": ["open", "partial", "blocked"]
+              },
+              "verification_need": {
+                "type": "string",
+                "enum": ["none", "current_state", "primary_check"]
+              },
+              "signal_summary": {"type": "string"}
+            }
+          }
+        },
+        "scouting_limitations": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    }
+  }
+}

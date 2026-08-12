@@ -35,12 +35,12 @@ class PromptDefaultsAndExceptionsLimitTests(unittest.TestCase):
             "completion_condition": "사용자가 결과를 바로 판단할 수 있다.",
         }
 
-    def test_renderer_accepts_twelve_defaults_and_exceptions(self):
+    def test_renderer_accepts_one_hundred_defaults_and_exceptions(self):
         validated = RENDERER.BRIEF.validate_prompt_build_brief(
-            self.brief(12),
+            self.brief(100),
             self.ledger(),
         )
-        self.assertEqual(12, len(validated["defaults_and_exceptions"]))
+        self.assertEqual(100, len(validated["defaults_and_exceptions"]))
 
     def test_schema_matches_renderer_defaults_and_exceptions_limit(self):
         schema = json.loads(
@@ -53,10 +53,10 @@ class PromptDefaultsAndExceptionsLimitTests(unittest.TestCase):
             schema["properties"]["defaults_and_exceptions"]["maxItems"],
         )
 
-    def test_renderer_still_rejects_thirteen_defaults_and_exceptions(self):
+    def test_renderer_rejects_one_hundred_one_defaults_and_exceptions(self):
         with self.assertRaises(RENDERER.BRIEF.PromptBuildBriefError):
             RENDERER.BRIEF.validate_prompt_build_brief(
-                self.brief(13),
+                self.brief(101),
                 self.ledger(),
             )
 

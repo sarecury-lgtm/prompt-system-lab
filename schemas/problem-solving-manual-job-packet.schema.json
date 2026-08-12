@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "problem-solving-manual-job-packet.schema.json",
+  "title": "PSOS Manual Job Packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "job_id",
+    "created_at",
+    "execution_provider",
+    "route_hint",
+    "user_request",
+    "goal_ledger_task",
+    "execution_contract",
+    "inputs",
+    "output_contract"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "job_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "execution_provider": { "const": "chatgpt-manual" },
+    "route_hint": {
+      "enum": ["DIRECT", "RESEARCH", "DECISION", "CANDIDATE", "PROMPT", "WRITE"]
+    },
+    "user_request": { "type": "string", "minLength": 1 },
+    "goal_ledger_task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["derive", "preserve", "ask_only_when"],
+      "properties": {
+        "derive": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "preserve": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "ask_only_when": { "type": "string", "minLength": 1 }
+      }
+    },
+    "execution_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["procedure", "quality_gates", "completion_rule", "failure_rule"],
+      "properties": {
+        "procedure": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        },
+        "quality_gates": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        },
+        "completion_rule": { "type": "string", "minLength": 1 },
+        "failure_rule": { "type": "string", "minLength": 1 }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["context", "previous_answer", "previous_envelope", "correction", "attachments"],
+      "properties": {
+        "context": { "type": "string" },
+        "previous_answer": { "type": "string" },
+        "previous_envelope": { "type": ["object", "null"] },
+        "correction": { "type": "string" },
+        "attachments": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "output_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["answer_first", "envelope_required", "start_marker", "end_marker"],
+      "properties": {
+        "answer_first": { "const": true },
+        "envelope_required": { "const": true },
+        "start_marker": { "const": "<!-- PSOS_RESULT_ENVELOPE_START -->" },
+        "end_marker": { "const": "<!-- PSOS_RESULT_ENVELOPE_END -->" }
+      }
+    }
+  }
+}

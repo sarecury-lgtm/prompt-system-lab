@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["candidate_update"],
+  "properties": {
+    "candidate_update": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "updates",
+        "resolved_requirements",
+        "unresolved_requirements",
+        "completion_recommendation",
+        "reason"
+      ],
+      "properties": {
+        "updates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "candidate_id",
+              "name",
+              "source_family",
+              "source_url",
+              "why_actionable",
+              "attributes",
+              "evidence",
+              "strengths",
+              "risks",
+              "status",
+              "verification_status"
+            ],
+            "properties": {
+              "candidate_id": {"type": "string"},
+              "name": {"type": "string"},
+              "source_family": {
+                "type": "string",
+                "enum": ["COMMUNITY", "MARKETPLACE", "PRIMARY", "REUSE_INDEX", "BROAD_WEB"]
+              },
+              "source_url": {"type": "string"},
+              "why_actionable": {"type": "string"},
+              "attributes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["key", "value", "source"],
+                  "properties": {
+                    "key": {"type": "string"},
+                    "value": {"type": "string"},
+                    "source": {"type": "string"}
+                  }
+                }
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["source", "finding", "kind"],
+                  "properties": {
+                    "source": {"type": "string"},
+                    "finding": {"type": "string"},
+                    "kind": {"type": "string"}
+                  }
+                }
+              },
+              "strengths": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "risks": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "status": {
+                "type": "string",
+                "enum": ["kept", "needs_check"]
+              },
+              "verification_status": {
+                "type": "string",
+                "enum": ["unverified", "partially_verified", "verified", "blocked"]
+              }
+            }
+          }
+        },
+        "resolved_requirements": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "unresolved_requirements": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "completion_recommendation": {
+          "type": "string",
+          "enum": ["awaiting_correction", "completed", "partial"]
+        },
+        "reason": {"type": "string"}
+      }
+    }
+  }
+}

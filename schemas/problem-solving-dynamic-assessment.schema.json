@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["assessment"],
+  "properties": {
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verdict",
+        "reason",
+        "meaningful_information",
+        "discarded_information",
+        "missing_information",
+        "questions",
+        "required_change"
+      ],
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "enum": ["STOP", "CHANGE", "ASK"]
+        },
+        "reason": {"type": "string"},
+        "meaningful_information": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "claim",
+              "source",
+              "decision_effect",
+              "semantic_scope",
+              "reliability"
+            ],
+            "properties": {
+              "claim": {"type": "string"},
+              "source": {"type": "string"},
+              "decision_effect": {"type": "string"},
+              "semantic_scope": {"type": "string"},
+              "reliability": {
+                "type": "string",
+                "enum": ["strong", "limited", "unknown"]
+              }
+            }
+          }
+        },
+        "discarded_information": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["claim", "why_not_meaningful"],
+            "properties": {
+              "claim": {"type": "string"},
+              "why_not_meaningful": {"type": "string"}
+            }
+          }
+        },
+        "missing_information": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "text",
+              "why_changes_decision",
+              "observable_consequence",
+              "options"
+            ],
+            "properties": {
+              "id": {"type": "string"},
+              "text": {"type": "string"},
+              "why_changes_decision": {"type": "string"},
+              "observable_consequence": {"type": "string"},
+              "options": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            }
+          }
+        },
+        "required_change": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["dimension", "instruction"],
+          "properties": {
+            "dimension": {
+              "type": "string",
+              "enum": ["source", "tool", "target", "method", "verification"]
+            },
+            "instruction": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}

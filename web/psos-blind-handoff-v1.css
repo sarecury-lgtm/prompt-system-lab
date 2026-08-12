@@ -1,0 +1,52 @@
+.psos-blind-handoff {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 12px 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line, #d8dde5);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+}
+
+.psos-blind-handoff-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.psos-blind-handoff-copy strong {
+  font-size: 1rem;
+}
+
+.psos-blind-handoff-copy p,
+#psos-blind-handoff-status {
+  margin: 0;
+  color: var(--muted, #667085);
+}
+
+#psos-blind-handoff-status:empty {
+  display: none;
+}
+
+.psos-blind-handoff-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 760px) {
+  .psos-blind-handoff {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .psos-blind-handoff-actions {
+    flex-direction: column;
+  }
+
+  .psos-blind-handoff-actions button {
+    width: 100%;
+  }
+}

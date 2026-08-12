@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PSOS 브라우저 검증</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <span>PSOS</span>
+        <h1>실제 Chrome으로 상품 검증</h1>
+        <p>로그인된 현재 브라우저에서 가격·배송·판매 상태를 확인합니다.</p>
+      </header>
+      <label>
+        <span>실행 ID</span>
+        <input id="run-id" placeholder="psos-..." autocomplete="off">
+      </label>
+      <div class="actions">
+        <button id="start" class="primary" type="button">검증 시작</button>
+        <button id="resume" type="button">이어서 검증</button>
+      </div>
+      <section id="progress" hidden>
+        <div><strong id="state">대기</strong><span id="count"></span></div>
+        <progress id="bar" max="1" value="0"></progress>
+      </section>
+      <p id="message" role="status" aria-live="polite"></p>
+      <hr>
+      <button id="visual" class="quiet" type="button">현재 탭에서 사진 근거 고르기</button>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

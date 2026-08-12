@@ -1,0 +1,32 @@
+body.manual-v5-enabled .workspace > .section-heading,
+body.manual-v5-enabled .engine-selector {
+  display: none !important;
+}
+
+.manual-v5-focus-note {
+  display: grid;
+  gap: 4px;
+  margin: 14px 0 4px;
+  padding: 13px 14px;
+  border: 1px solid #b9dec8;
+  border-radius: 12px;
+  background: #eef9f2;
+  color: #245c3f;
+}
+
+.manual-v5-focus-note[hidden] {
+  display: none;
+}
+
+.manual-v5-focus-note strong {
+  font-size: 0.98rem;
+}
+
+.manual-v5-focus-note span {
+  color: #3e6d53;
+}
+
+.manual-v5-completed #manual-v5-imported {
+  border-color: #b9dec8;
+  background: #fbfefc;
+}

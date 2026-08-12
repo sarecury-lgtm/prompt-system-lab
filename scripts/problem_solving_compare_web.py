@@ -61,15 +61,16 @@ def build_integrated_design_prompt(request: str) -> str:
 [Prompt Build Brief 규칙]
 1. goal은 Goal Ledger의 목적을 실제 수행 작업으로 구체화한다.
 2. core_procedure는 범용 문구가 아니라 해당 도메인에서 판단과 결과를 좌우하는 구체적인 처리 순서로 작성한다.
-3. core_procedure는 서로 다른 판단 단계를 합치지 말고 필요한 만큼 작성하되 12개를 넘기지 않는다.
-4. supporting_inputs에는 절차 수행에 필요한 자료, 입력 형태, 분석 요소, 도구만 둔다.
+3. core_procedure는 서로 다른 판단 단계를 합치지 말고 권장 {prompt_renderer.BRIEF.PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 단계는 누락하지 않는다.
+4. supporting_inputs에는 절차 수행에 필요한 자료, 입력 형태, 분석 요소, 도구만 두며 권장 {prompt_renderer.BRIEF.PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
 5. fixed_constraints는 Goal Ledger의 fixed_constraints를 문구와 순서까지 정확히 복사한다.
 6. output_contract의 첫 항목은 Goal Ledger의 completion_condition과 정확히 같아야 한다.
-7. 나머지 output_contract에는 사용자가 실제로 비교·판단·행동하는 데 필요한 산출물만 둔다.
-8. defaults_and_exceptions에는 누락 정보 처리처럼 결과가 달라지는 기본값만 둔다.
-9. exclusions에는 목표 밖의 작업만 둔다.
-10. 같은 의미를 여러 필드에 반복하지 않는다.
-11. core_procedure를 “요청 파악 → 작업 수행 → 결과 제시” 같은 범용 절차로 끝내지 않는다.
+7. 나머지 output_contract에는 사용자가 실제로 비교·판단·행동하는 데 필요한 산출물만 두며 권장 {prompt_renderer.BRIEF.PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
+8. defaults_and_exceptions에는 누락 정보 처리처럼 결과가 달라지는 기본값만 두며 권장 {prompt_renderer.BRIEF.PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
+9. exclusions에는 목표 밖의 작업만 두며 권장 {prompt_renderer.BRIEF.PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
+10. upstream_context에는 최종 프롬프트에서 새로 사용할 검증된 내용만 두며 권장 {prompt_renderer.BRIEF.PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
+11. 같은 의미를 여러 필드에 반복하지 않는다.
+12. core_procedure를 “요청 파악 → 작업 수행 → 결과 제시” 같은 범용 절차로 끝내지 않는다.
 
 [최종 프롬프트 작성 규칙]
 1. final_prompt는 복사해 바로 실행할 완성된 프롬프트다.

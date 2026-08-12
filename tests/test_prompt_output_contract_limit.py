@@ -34,12 +34,12 @@ class PromptOutputContractLimitTests(unittest.TestCase):
             "completion_condition": "사용자가 결과를 바로 판단할 수 있다.",
         }
 
-    def test_renderer_accepts_twelve_output_contract_items(self):
+    def test_renderer_accepts_one_hundred_output_contract_items(self):
         validated = RENDERER.BRIEF.validate_prompt_build_brief(
-            self.brief(12),
+            self.brief(100),
             self.ledger(),
         )
-        self.assertEqual(12, len(validated["output_contract"]))
+        self.assertEqual(100, len(validated["output_contract"]))
 
     def test_schema_matches_renderer_output_contract_limit(self):
         schema = json.loads(
@@ -52,10 +52,10 @@ class PromptOutputContractLimitTests(unittest.TestCase):
             schema["properties"]["output_contract"]["maxItems"],
         )
 
-    def test_renderer_still_rejects_thirteen_output_contract_items(self):
+    def test_renderer_rejects_one_hundred_one_output_contract_items(self):
         with self.assertRaises(RENDERER.BRIEF.PromptBuildBriefError):
             RENDERER.BRIEF.validate_prompt_build_brief(
-                self.brief(13),
+                self.brief(101),
                 self.ledger(),
             )
 

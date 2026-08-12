@@ -1,0 +1,139 @@
+.manual-controller-panel {
+  display: grid;
+  gap: 16px;
+  margin: 16px 0 24px;
+  padding: 20px;
+  border: 1px solid var(--line, #d8dde5);
+  border-radius: 18px;
+  background: var(--surface, #fff);
+}
+
+.manual-controller-panel[hidden] {
+  display: none;
+}
+
+body.manual-controller-enabled #chatgpt-manual-panel {
+  display: none !important;
+}
+
+.manual-controller-head,
+.manual-controller-progress-head,
+.manual-controller-footer,
+.manual-controller-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.manual-controller-head {
+  align-items: flex-start;
+}
+
+.manual-controller-head h3 {
+  margin: 0.25rem 0 0.35rem;
+}
+
+.manual-controller-head p,
+.manual-controller-progress-head p,
+.manual-controller-terminal p,
+.manual-controller-isolation-note span {
+  margin: 0;
+  color: var(--muted, #667085);
+}
+
+.manual-controller-isolation-note {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f4f6f9;
+}
+
+.manual-controller-card {
+  padding: 16px;
+  border: 1px solid #e0e4ea;
+  border-radius: 14px;
+  background: #fbfcfd;
+}
+
+.manual-controller-card[hidden] {
+  display: none;
+}
+
+.manual-controller-card textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.manual-controller-context-details {
+  margin-top: 12px;
+}
+
+.manual-controller-context-details textarea,
+.manual-controller-packet-details pre {
+  margin-top: 10px;
+}
+
+.manual-controller-packet-details pre {
+  max-height: 380px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid #d8dee8;
+  border-radius: 10px;
+  background: #f6f8fb;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.manual-controller-actions {
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.manual-controller-budget {
+  display: grid;
+  gap: 4px;
+  min-width: 150px;
+  text-align: right;
+  color: #526071;
+  font-size: 0.9rem;
+}
+
+.manual-controller-terminal {
+  background: #edf7f1;
+  border-color: #cfe5d8;
+}
+
+.manual-controller-footer {
+  min-height: 38px;
+  color: #526071;
+}
+
+#manual-controller-history {
+  margin-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  .manual-controller-head,
+  .manual-controller-progress-head,
+  .manual-controller-footer,
+  .manual-controller-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manual-controller-isolation-note {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-controller-budget {
+    text-align: left;
+  }
+
+  .manual-controller-actions button,
+  .manual-controller-footer button {
+    width: 100%;
+  }
+}

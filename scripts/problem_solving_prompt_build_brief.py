@@ -32,14 +32,19 @@ BRIEF_FIELDS = {
     "exclusions",
     "upstream_context",
 }
+PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT = 12
+PROMPT_BRIEF_HARD_ITEM_LIMIT = 100
+CORE_PROCEDURE_LIMIT = PROMPT_BRIEF_HARD_ITEM_LIMIT
+OUTPUT_CONTRACT_LIMIT = PROMPT_BRIEF_HARD_ITEM_LIMIT
+DEFAULTS_AND_EXCEPTIONS_LIMIT = PROMPT_BRIEF_HARD_ITEM_LIMIT
 LIST_LIMITS: dict[str, tuple[int, int | None]] = {
-    "core_procedure": (0, 8),
-    "supporting_inputs": (0, 8),
+    "core_procedure": (0, CORE_PROCEDURE_LIMIT),
+    "supporting_inputs": (0, PROMPT_BRIEF_HARD_ITEM_LIMIT),
     "fixed_constraints": (0, None),
-    "output_contract": (1, 8),
-    "defaults_and_exceptions": (0, 6),
-    "exclusions": (0, 6),
-    "upstream_context": (0, 8),
+    "output_contract": (1, OUTPUT_CONTRACT_LIMIT),
+    "defaults_and_exceptions": (0, DEFAULTS_AND_EXCEPTIONS_LIMIT),
+    "exclusions": (0, PROMPT_BRIEF_HARD_ITEM_LIMIT),
+    "upstream_context": (0, PROMPT_BRIEF_HARD_ITEM_LIMIT),
 }
 
 
@@ -172,15 +177,15 @@ def build_prompt_build_brief_prompt(
 
 [컴파일 원칙]
 1. goal은 최종 프롬프트가 다른 AI에게 실제로 수행시킬 일을 쓴다.
-2. core_procedure에는 baseline에 없거나 명시적으로 고쳐야 하는 도메인 판단·처리 단계만 둔다.
+2. core_procedure에는 baseline에 없거나 명시적으로 고쳐야 하는 도메인 판단·처리 단계만 두며 권장 {PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
    baseline 절차를 요약하거나 짧게 다시 쓰지 않는다. 추가·수정이 없으면 빈 배열로 둔다.
-3. supporting_inputs에는 baseline에 없는 필수 자료·분석 요소·도구만 둔다.
+3. supporting_inputs에는 baseline에 없는 필수 자료·분석 요소·도구만 두며 권장 {PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
 4. fixed_constraints는 Goal Ledger의 fixed_constraints를 문구와 순서까지 정확히 복사한다.
 5. output_contract의 첫 항목은 Goal Ledger completion_condition을 정확히 복사한다.
-   나머지는 baseline에 빠진 필수 산출물만 둔다.
-6. defaults_and_exceptions에는 결과를 실제로 바꾸는 누락 처리만 둔다.
-7. exclusions에는 사용자가 원하지 않거나 목표를 벗어나는 작업만 둔다.
-8. upstream_context에는 최종 프롬프트가 새로 사용해야 할 검증된 내용만 둔다.
+   나머지는 baseline에 빠진 필수 산출물만 두며 권장 {PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
+6. defaults_and_exceptions에는 결과를 실제로 바꾸는 누락 처리만 두며 권장 {PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
+7. exclusions에는 사용자가 원하지 않거나 목표를 벗어나는 작업만 두며 권장 {PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
+8. upstream_context에는 최종 프롬프트가 새로 사용해야 할 검증된 내용만 두며 권장 {PROMPT_BRIEF_RECOMMENDED_ITEM_LIMIT}개 이하로 정리하되 필요한 항목은 누락하지 않는다.
 9. 단순한 문체 개선, 길이 축소, 제목 재배열은 패치 사유가 아니다.
 10. baseline에 이미 있는 절차·예외·출력 구조를 삭제하거나 일반화하지 않는다.
 11. 특정 도메인의 일반 상식을 새로 추가하지 않는다.
@@ -204,7 +209,9 @@ def deterministic_prompt_build_brief(
     ledger: Mapping[str, Any],
     primary_execution: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
-    uncertainties = _deduplicated_strings(ledger.get("important_uncertainties"))[:6]
+    uncertainties = _deduplicated_strings(ledger.get("important_uncertainties"))[
+        :DEFAULTS_AND_EXCEPTIONS_LIMIT
+    ]
     upstream: list[str] = []
     if primary_execution is not None:
         summary = primary_execution.get("summary")

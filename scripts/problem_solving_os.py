@@ -68,6 +68,7 @@ class EngineCapabilities:
     workspace_read: bool
     workspace_write: bool
     detail: str = ""
+    live_browser: bool = False
 
 
 @dataclass(frozen=True)
@@ -221,6 +222,23 @@ def find_codex() -> str:
         if found:
             return found
     raise ProblemSolvingError("Codex CLI를 찾을 수 없습니다. PATH 또는 CODEX_BIN을 확인하세요.")
+
+
+def find_live_browser() -> str | None:
+    candidates = [
+        shutil.which("chrome"),
+        shutil.which("chrome.exe"),
+        shutil.which("msedge"),
+        shutil.which("msedge.exe"),
+        str(Path(os.environ.get("PROGRAMFILES", "")) / "Google/Chrome/Application/chrome.exe"),
+        str(Path(os.environ.get("LOCALAPPDATA", "")) / "Google/Chrome/Application/chrome.exe"),
+        str(Path(os.environ.get("PROGRAMFILES(X86)", "")) / "Google/Chrome/Application/chrome.exe"),
+        str(Path(os.environ.get("PROGRAMFILES(X86)", "")) / "Microsoft/Edge/Application/msedge.exe"),
+    ]
+    for raw in candidates:
+        if raw and Path(raw).is_file():
+            return str(Path(raw).resolve())
+    return None
 
 
 def subprocess_command(executable: str, arguments: list[str]) -> list[str]:
@@ -1329,6 +1347,7 @@ class CodexEngine:
                     f"Codex CLI capability 확인 실패(exit {completed.returncode})"
                 )
             search_supported = "--search" in (completed.stdout or "")
+            live_browser = find_live_browser()
             self._capabilities = EngineCapabilities(
                 ai_reasoning=True,
                 web_search=self.enable_search and search_supported,
@@ -1339,6 +1358,7 @@ class CodexEngine:
                     f"web_search={'enabled' if self.enable_search and search_supported else 'disabled'}; "
                     f"workspace_write={'requested' if self.allow_workspace_write else 'disabled'}"
                 ),
+                live_browser=live_browser is not None,
             )
         except (OSError, subprocess.SubprocessError, ProblemSolvingError) as exc:
             self._capabilities = EngineCapabilities(
@@ -1679,6 +1699,9 @@ ROUTE_EXECUTION_RULES = {
     "RESEARCH": (
         "라이브 웹 검색으로 필요한 최신 사실을 조사한다. 공식·1차 출처를 우선하고, "
         "확인 사실·추론·미확인을 구분하며 evidence에 실제 출처를 기록한다. "
+        "웹 검색 결과나 캐시된 상품 페이지는 실시간 브라우저 확인이 아니다. 현재 판매·재고·"
+        "주문 가능 여부가 결론을 좌우하고 live_browser capability가 false이면 이를 직접 "
+        "검증했다고 주장하지 말고 partial과 limitation으로 남긴다. "
         "HYBRID의 주 경로라면 조사 결과만 만들고 후속 프롬프트까지 미리 작성하지 않는다."
     ),
     "REUSE": (
@@ -2518,5 +2541,13 @@ def main(argv: list[str] | None = None) -> int:
     return 2 if payload["execution"]["status"] == "blocked_by_capability" else 0
 
 
+def quality_cli_main(argv: list[str] | None = None) -> int:
+    """Run the public CLI through Result Contract assessment and repair."""
+
+    from problem_solving_os_quality_runtime import main as quality_main
+
+    return quality_main(argv)
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(quality_cli_main())

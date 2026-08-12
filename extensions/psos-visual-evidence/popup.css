@@ -1,0 +1,19 @@
+:root { color-scheme: light; font-family: Inter, Pretendard, "Noto Sans KR", sans-serif; }
+* { box-sizing: border-box; }
+body { width: 360px; margin: 0; background: #f4f6f2; color: #17211b; }
+main { display: grid; gap: 14px; padding: 18px; }
+header span { color: #176b46; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+h1 { margin: 5px 0 4px; font-size: 19px; line-height: 1.25; }
+header p, #message { margin: 0; color: #657168; font-size: 12px; line-height: 1.5; }
+label { display: grid; gap: 6px; color: #59645d; font-size: 11px; font-weight: 750; }
+input { width: 100%; height: 40px; padding: 0 11px; border: 1px solid #bfc8c0; border-radius: 8px; background: white; color: #17211b; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+button { min-height: 40px; padding: 0 12px; border: 1px solid #bfc8c0; border-radius: 8px; background: white; color: #26342b; font: inherit; font-weight: 750; cursor: pointer; }
+button.primary { border-color: #176b46; background: #176b46; color: white; }
+button.quiet { width: 100%; color: #59645d; }
+button:disabled { cursor: wait; opacity: .55; }
+#progress { display: grid; gap: 7px; padding: 11px; border: 1px solid #d9ded8; border-radius: 8px; background: white; }
+#progress div { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
+progress { width: 100%; accent-color: #176b46; }
+#message.error { color: #a2362d; }
+hr { width: 100%; margin: 0; border: 0; border-top: 1px solid #d9ded8; }

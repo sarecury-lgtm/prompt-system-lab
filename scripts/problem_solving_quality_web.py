@@ -21,6 +21,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import problem_solving_evidence_review as evidence_review
+import problem_solving_connected_browser as connected_browser
 import problem_solving_os_quality_runtime as quality_runtime
 import problem_solving_visual_evidence as visual_evidence
 import problem_solving_web as base_web
@@ -242,6 +243,31 @@ def submit_review_revision(
     }
 
 
+def create_connected_browser_queue(
+    run_id: str,
+    payload: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    run_dir = base_web.safe_run_dir(run_id)
+    reset = bool((payload or {}).get("reset", False))
+    return connected_browser.create_queue(run_dir, reset=reset)
+
+
+def submit_connected_browser_receipt(
+    jobs: base_web.JobManager,
+    run_id: str,
+    target_id: str,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    run_dir = base_web.safe_run_dir(run_id)
+    queue = connected_browser.submit_receipt(run_dir, target_id, payload)
+    revision = None
+    if queue["state"] == "completed" and not queue.get("revision"):
+        request = connected_browser.build_revision_request(run_dir, queue)
+        revision = jobs.submit(request, True)
+        queue = connected_browser.record_revision(run_dir, revision)
+    return {"queue": queue, "revision": revision}
+
+
 class QualityRequestHandler(base_web.PsosRequestHandler):
     server_version = "PSOSQualityWeb/2"
 
@@ -303,6 +329,15 @@ class QualityRequestHandler(base_web.PsosRequestHandler):
                 except (ValueError, OSError, json.JSONDecodeError) as exc:
                     self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
                 return
+            if action == "browser-verification":
+                try:
+                    run_dir = base_web.safe_run_dir(run_id)
+                    self.send_json(connected_browser.load_queue(run_dir))
+                except FileNotFoundError as exc:
+                    self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+                except (ValueError, OSError, json.JSONDecodeError) as exc:
+                    self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
         if (
             len(parts) == 5
             and parts[:2] == ["api", "runs"]
@@ -320,8 +355,48 @@ class QualityRequestHandler(base_web.PsosRequestHandler):
 
     def do_POST(self) -> None:
         parts = urlparse(self.path).path.strip("/").split("/")
+        if (
+            len(parts) == 5
+            and parts[:2] == ["api", "runs"]
+            and parts[3] == "browser-verification"
+        ):
+            try:
+                self.send_json(
+                    submit_connected_browser_receipt(
+                        self.app.jobs,
+                        unquote(parts[2]),
+                        unquote(parts[4]),
+                        self.read_json_body(),
+                    )
+                )
+            except FileNotFoundError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+            except (ValueError, OSError, json.JSONDecodeError) as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            except Exception as exc:
+                self.send_json(
+                    {"error": str(exc).strip() or exc.__class__.__name__},
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+            return
         if len(parts) == 4 and parts[:2] == ["api", "runs"]:
             run_id, action = unquote(parts[2]), parts[3]
+            if action == "browser-verification":
+                try:
+                    self.send_json(
+                        create_connected_browser_queue(run_id, self.read_json_body()),
+                        HTTPStatus.CREATED,
+                    )
+                except FileNotFoundError as exc:
+                    self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+                except (ValueError, OSError, json.JSONDecodeError) as exc:
+                    self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                except Exception as exc:
+                    self.send_json(
+                        {"error": str(exc).strip() or exc.__class__.__name__},
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                    )
+                return
             if action in {"evidence-review", "evidence-revision", "visual-evidence"}:
                 try:
                     payload = self.read_json_body()

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/problem-solving-controller-session.schema.json",
+  "title": "PSOS Controller Session State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "session_id",
+    "created_at",
+    "updated_at",
+    "request",
+    "context",
+    "goal",
+    "status",
+    "budget",
+    "verified_findings",
+    "unresolved",
+    "actions",
+    "current_action",
+    "awaiting_user_question",
+    "best_answer",
+    "final_answer",
+    "limitations"
+  ],
+  "properties": {
+    "version": {"const": 1},
+    "session_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "minLength": 1},
+    "updated_at": {"type": "string", "minLength": 1},
+    "request": {"type": "string", "minLength": 1},
+    "context": {"type": "string"},
+    "goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent_goal", "fixed_constraints", "completion_condition"],
+      "properties": {
+        "parent_goal": {"type": "string", "minLength": 1},
+        "fixed_constraints": {"type": "array", "items": {"type": "string"}},
+        "completion_condition": {"type": "string", "minLength": 1}
+      }
+    },
+    "status": {
+      "enum": ["awaiting_execution", "awaiting_user_input", "completed", "partial", "blocked"]
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_actions", "used_actions", "max_method_changes", "used_method_changes"],
+      "properties": {
+        "max_actions": {"const": 4},
+        "used_actions": {"type": "integer", "minimum": 0, "maximum": 4},
+        "max_method_changes": {"const": 1},
+        "used_method_changes": {"type": "integer", "minimum": 0, "maximum": 1}
+      }
+    },
+    "verified_findings": {"type": "array", "items": {"type": "object"}},
+    "unresolved": {"type": "array", "items": {"type": "string"}},
+    "actions": {"type": "array", "maxItems": 4, "items": {"type": "object"}},
+    "current_action": {"type": ["object", "null"]},
+    "awaiting_user_question": {"type": ["string", "null"]},
+    "best_answer": {"type": "string"},
+    "final_answer": {"type": "string"},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}
